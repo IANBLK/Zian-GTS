@@ -36,13 +36,16 @@ repositories {
 }
 
 dependencies {
-    implementation("thedarkcolour:kotlinforforge-neoforge:5.7.0")
-    // Cobblemon 1.8+ dependency is intentionally added after verifying its
-    // published NeoForge Maven coordinates. Do not guess coordinates here.
+    implementation("thedarkcolour:kotlinforforge-neoforge:${property("kotlin_for_forge_version")}")
+    implementation("maven.modrinth:cobblemon:${property("cobblemon_version")}")
 }
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
 }
 
 tasks.jar {
