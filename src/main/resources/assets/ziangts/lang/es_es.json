@@ -19,5 +19,20 @@
   "message.ziangts.claim.none": "No tienes ganancias pendientes por reclamar.",
   "message.ziangts.claim.success": "Has reclamado todas tus ganancias correctamente.",
   "message.ziangts.sell.party_empty": "Ese espacio del equipo está vacío.",
-  "message.ziangts.sell.max_listings": "Has alcanzado el número máximo de anuncios."
+  "message.ziangts.sell.max_listings": "Has alcanzado el número máximo de anuncios.",
+  "command.ziangts.sell.party_empty": "Ese espacio del equipo está vacío.",
+  "command.ziangts.sell.party_last": "No puedes poner a la venta tu último Pokémon del equipo.",
+  "command.ziangts.sell.not_tradeable": "Este Pokémon no se puede intercambiar.",
+  "command.ziangts.sell.max_listings": "Has alcanzado el máximo de anuncios permitidos.",
+  "command.ziangts.sell.invalid_currency": "La moneda configurada no es válida.",
+  "command.ziangts.sell.success": "Pokémon publicado correctamente en el GTS.",
+  "command.ziangts.claim.none": "No tienes ganancias pendientes por reclamar.",
+  "command.ziangts.claim.success": "Has reclamado todas tus ganancias.",
+  "command.ziangts.claim.partial": "Has reclamado parte de tus ganancias. Libera espacio en el inventario para reclamar el resto.",
+  "gui.ziangts.seller": "Vendedor: %s",
+  "gui.ziangts.price": "Precio: %s",
+  "gui.ziangts.level": "Nivel: %s",
+  "gui.ziangts.gender": "Género: %s",
+  "gui.ziangts.shiny": "Shiny: %s",
+  "gui.ziangts.stats": "Estadísticas:"
 }
