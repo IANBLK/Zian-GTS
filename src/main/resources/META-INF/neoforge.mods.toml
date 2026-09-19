@@ -1,0 +1,31 @@
+modLoader = "kotlinforforge"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "ziangts"
+version = "${file.jarVersion}"
+displayName = "Zian GTS"
+authors = "ZIANBLK"
+description = "Sistema GTS para Cobblemon, desarrollado para Aventura."
+
+[[dependencies.ziangts]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.21.1]"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.ziangts]]
+modId = "neoforge"
+mandatory = true
+versionRange = "[21.1.182,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.ziangts]]
+modId = "cobblemon"
+mandatory = true
+versionRange = "[1.8.0+1.21.1,)"
+ordering = "AFTER"
+side = "BOTH"
