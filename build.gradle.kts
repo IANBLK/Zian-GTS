@@ -72,7 +72,7 @@ tasks.withType<KotlinCompile>().configureEach {
 tasks.test { useJUnitPlatform() }
 
 tasks.jar {
-    from("LICENSE", "THIRD_PARTY_NOTICES.md") { into("META-INF") }
+    from(listOf("LICENSE", "THIRD_PARTY_NOTICES.md")) { into("META-INF") }
     manifest {
         attributes["Implementation-Title"] = project.property("mod_name")
         attributes["Implementation-Version"] = project.version

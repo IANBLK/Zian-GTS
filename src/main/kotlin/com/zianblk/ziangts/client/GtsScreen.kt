@@ -122,7 +122,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             val x = left + listWidth + 20
             var y = top + 51
             fun line(component: Component, color: Int = 0xE2E8F0) {
-                graphics.drawString(font, font.substrByWidth(component, panelWidth - listWidth - 28), x, y, color, false)
+                graphics.drawString(font, font.plainSubstrByWidth(component.string, panelWidth - listWidth - 28), x, y, color, false)
                 y += 11
             }
             line(Component.literal(entry.name + if (entry.expired) " ⌛" else ""), 0xF4D481)
