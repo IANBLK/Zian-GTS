@@ -69,7 +69,7 @@ tasks.withType<KotlinCompile>().configureEach {
 
 tasks.jar {
     manifest {
-        attributes["Implementation-Title"] = property("mod_name")
+        attributes["Implementation-Title"] = project.property("mod_name")
         attributes["Implementation-Version"] = project.version
     }
 }
