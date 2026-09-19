@@ -1,6 +1,7 @@
 package com.zianblk.ziangts.data
 
 import java.util.UUID
+import net.minecraft.core.RegistryAccess
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
@@ -14,7 +15,7 @@ import net.minecraft.world.level.saveddata.SavedData
  * Data is stored in the overworld data storage so every dimension shares the
  * same market. Every mutating operation marks the SavedData dirty.
  */
-class ListingsData : SavedData() {
+class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
     private val listings = linkedMapOf<UUID, Listing>()
 
     fun all(): List<Listing> = listings.values.toList()
@@ -49,7 +50,7 @@ class ListingsData : SavedData() {
     override fun save(tag: CompoundTag, registries: HolderLookup.Provider): CompoundTag {
         val entries = ListTag()
         listings.values.forEach { listing ->
-            entries.add(listing.toNbt(registries))
+            entries.add(listing.toNbt(registryAccess))
         }
         tag.put(KEY_LISTINGS, entries)
         return tag
@@ -59,19 +60,19 @@ class ListingsData : SavedData() {
         private const val DATA_NAME = "ziangts_listings"
         private const val KEY_LISTINGS = "listings"
 
-        private val FACTORY = Factory(
-            { ListingsData() },
-            { tag, registries -> load(tag, registries) },
-            null
-        )
-
         fun get(level: ServerLevel): ListingsData {
             val overworld = level.server.overworld()
-            return overworld.dataStorage.computeIfAbsent(FACTORY, DATA_NAME)
+            val access = overworld.registryAccess()
+            val factory = Factory(
+                { ListingsData(access) },
+                { tag, _ -> load(tag, access) },
+                null
+            )
+            return overworld.dataStorage.computeIfAbsent(factory, DATA_NAME)
         }
 
-        private fun load(tag: CompoundTag, registries: HolderLookup.Provider): ListingsData {
-            val data = ListingsData()
+        private fun load(tag: CompoundTag, registries: RegistryAccess): ListingsData {
+            val data = ListingsData(registries)
             val entries = tag.getList(KEY_LISTINGS, Tag.TAG_COMPOUND.toInt())
 
             for (index in 0 until entries.size) {
@@ -87,3 +88,4 @@ class ListingsData : SavedData() {
         }
     }
 }
+
