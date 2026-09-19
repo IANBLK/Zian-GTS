@@ -33,7 +33,7 @@ data class Listing(
         nowEpochMillis >= expiresAt
 
     fun toNbt(registryAccess: RegistryAccess): CompoundTag = CompoundTag().apply {
-        putUUID(KEY_ID, id)
+        putUUID(KEY_ID, this@Listing.id)
         putUUID(KEY_SELLER_ID, sellerId)
         putString(KEY_SELLER_NAME, sellerName)
         putInt(KEY_PRICE, price)
