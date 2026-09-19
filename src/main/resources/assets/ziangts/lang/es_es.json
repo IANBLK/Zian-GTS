@@ -1,0 +1,23 @@
+{
+  "gui.ziangts.title": "Mercado GTS",
+  "gui.ziangts.purchase": "Comprar",
+  "gui.ziangts.purchase_confirm": "Confirmar compra",
+  "gui.ziangts.remove_listing": "Retirar anuncio",
+  "gui.ziangts.filter": "Filtrar",
+  "gui.ziangts.filter.all": "Mostrar todos",
+  "gui.ziangts.filter.shiny": "Shiny",
+  "gui.ziangts.filter.alpha": "Alpha",
+  "gui.ziangts.filter.legendary": "Legendarios",
+  "gui.ziangts.filter.legendary_shiny": "Legendarios Shiny",
+  "gui.ziangts.sort": "Ordenar",
+  "gui.ziangts.sort.newest": "Más recientes",
+  "gui.ziangts.sort.oldest": "Más antiguos",
+  "gui.ziangts.sort.price_low": "Menor precio",
+  "gui.ziangts.sort.price_high": "Mayor precio",
+  "gui.ziangts.sort.level_low": "Menor nivel",
+  "gui.ziangts.sort.level_high": "Mayor nivel",
+  "message.ziangts.claim.none": "No tienes ganancias pendientes por reclamar.",
+  "message.ziangts.claim.success": "Has reclamado todas tus ganancias correctamente.",
+  "message.ziangts.sell.party_empty": "Ese espacio del equipo está vacío.",
+  "message.ziangts.sell.max_listings": "Has alcanzado el número máximo de anuncios."
+}
