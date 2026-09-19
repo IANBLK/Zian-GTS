@@ -12,14 +12,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven("https://maven.neoforged.net/releases")
         maven("https://thedarkcolour.github.io/KotlinForForge/")
-        exclusiveContent {
-            forRepository {
-                maven("https://api.modrinth.com/maven") {
-                    name = "Modrinth"
-                }
-            }
-            filter { includeGroup("maven.modrinth") }
-        }
+        maven("https://maven.impactdev.net/repository/development/")
     }
 }
 
