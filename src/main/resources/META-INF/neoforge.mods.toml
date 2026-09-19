@@ -4,7 +4,7 @@ license = "MIT"
 
 [[mods]]
 modId = "ziangts"
-version = "${file.jarVersion}"
+version = "${version}"
 displayName = "Zian GTS"
 authors = "ZIANBLK"
 description = "Sistema GTS para Cobblemon, desarrollado para Aventura."

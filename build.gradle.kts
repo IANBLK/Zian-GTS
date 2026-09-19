@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     java
     id("net.neoforged.moddev") version "2.0.107"
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm") version "2.2.20"
 }
 
 group = property("mod_group_id") as String
