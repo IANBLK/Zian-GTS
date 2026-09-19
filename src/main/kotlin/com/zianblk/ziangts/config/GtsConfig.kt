@@ -21,3 +21,4 @@ data class GtsConfig(
         require(economyProvider.isNotBlank()) { "economyProvider must not be blank" }
     }
 }
+

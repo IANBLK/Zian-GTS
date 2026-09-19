@@ -30,3 +30,4 @@ data class TransactionRecord(
         require(pokemonSnapshot.isNotBlank()) { "pokemonSnapshot must not be blank" }
     }
 }
+

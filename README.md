@@ -16,3 +16,10 @@ obtener una compilación reproducible y una implementación base estable antes
 de incorporar los cambios funcionales.
 
 Consulta `docs/RECONSTRUCTION.md` y `THIRD_PARTY_NOTICES.md`.
+
+
+## Development progress
+
+See [development status](docs/DEVELOPMENT_STATUS.md) for implemented commands,
+configuration, validation gates and remaining work. Trading defaults to disabled
+until tested in an isolated world. AVECOINS is not yet connected.

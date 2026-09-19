@@ -45,6 +45,8 @@ repositories {
 }
 
 dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("thedarkcolour:kotlinforforge-neoforge:${property("kotlin_for_forge_version")}")
     implementation("com.cobblemon:neoforge:${property("cobblemon_version")}") {
         isTransitive = false
@@ -67,9 +69,13 @@ tasks.withType<KotlinCompile>().configureEach {
     compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
 }
 
+tasks.test { useJUnitPlatform() }
+
 tasks.jar {
+    from("LICENSE", "THIRD_PARTY_NOTICES.md") { into("META-INF") }
     manifest {
         attributes["Implementation-Title"] = project.property("mod_name")
         attributes["Implementation-Version"] = project.version
     }
 }
+

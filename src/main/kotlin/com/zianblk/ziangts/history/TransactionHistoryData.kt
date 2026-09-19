@@ -18,6 +18,8 @@ import net.minecraft.world.level.saveddata.SavedData
  */
 class TransactionHistoryData : SavedData(), TransactionHistory {
     private val records = linkedMapOf<UUID, TransactionRecord>()
+    private val archived = ListTag()
+    private val unreadable = ListTag()
 
     override fun append(record: TransactionRecord) {
         require(!records.containsKey(record.transactionId)) {
@@ -35,8 +37,14 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
     override fun all(): List<TransactionRecord> =
         records.values.sortedByDescending { it.completedAt }
 
-    override fun delete(id: UUID): Boolean {
-        if (records.remove(id) == null) return false
+    override fun delete(id: UUID): Boolean = archive(id, "API")
+
+    fun archive(id: UUID, actor: String): Boolean {
+        val record = records.remove(id) ?: return false
+        archived.add(record.toNbt().apply {
+            putString("archivedBy", actor)
+            putLong("archivedAt", System.currentTimeMillis())
+        })
         setDirty()
         return true
     }
@@ -46,7 +54,9 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
         records.values.forEach { record ->
             entries.add(record.toNbt())
         }
+        entries.addAll(unreadable.map { it.copy() })
         tag.put(KEY_TRANSACTIONS, entries)
+        tag.put("archivedTransactions", archived.copy())
         return tag
     }
 
@@ -101,11 +111,17 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
                         completedAt = Instant.ofEpochMilli(entry.getLong("completedAt"))
                     )
                 }.onSuccess { record ->
-                    data.records[record.transactionId] = record
+                    if (data.records.containsKey(record.transactionId)) data.unreadable.add(entry.copy())
+                    else data.records[record.transactionId] = record
+                }.onFailure { error ->
+                    data.unreadable.add(entry.copy())
+                    com.zianblk.ziangts.ZianGts.LOGGER.error("Preserved unreadable GTS transaction at index {}", index, error)
                 }
             }
 
+            data.archived.addAll(tag.getList("archivedTransactions", Tag.TAG_COMPOUND.toInt()).map { it.copy() })
             return data
         }
     }
 }
+

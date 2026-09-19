@@ -55,6 +55,11 @@ data class Listing(
         private const val LEGACY_DEFAULT_CURRENCY = "minecraft:diamond"
 
         fun fromNbt(registryAccess: RegistryAccess, nbt: CompoundTag): Listing {
+            require(nbt.hasUUID(KEY_ID) && nbt.hasUUID(KEY_SELLER_ID)) { "Listing UUIDs are missing" }
+            require(nbt.getString(KEY_SELLER_NAME).isNotBlank()) { "Seller name is missing" }
+            require(nbt.getInt(KEY_PRICE) > 0) { "Invalid listing price" }
+            require(nbt.getLong(KEY_EXPIRES_AT) > nbt.getLong(KEY_CREATED_AT)) { "Invalid listing expiry" }
+            require(nbt.contains(KEY_POKEMON, 10)) { "Pokemon snapshot is missing" }
             val pokemon = Pokemon.loadFromNBT(registryAccess, nbt.getCompound(KEY_POKEMON))
             return Listing(
                 id = nbt.getUUID(KEY_ID),
@@ -73,3 +78,4 @@ data class Listing(
         }
     }
 }
+

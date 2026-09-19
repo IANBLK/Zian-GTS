@@ -15,3 +15,4 @@ interface TransactionHistory {
      */
     fun delete(id: UUID): Boolean
 }
+

@@ -22,3 +22,4 @@ sealed interface EconomyResult {
     data object Success : EconomyResult
     data class Failure(val reason: String) : EconomyResult
 }
+

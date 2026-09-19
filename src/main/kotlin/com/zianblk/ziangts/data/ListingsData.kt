@@ -17,6 +17,31 @@ import net.minecraft.world.level.saveddata.SavedData
  */
 class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
     private val listings = linkedMapOf<UUID, Listing>()
+    private val balances = linkedMapOf<UUID, MutableMap<String, Long>>()
+    private val unreadableListings = ListTag()
+    private val unreadableProceeds = ListTag()
+    fun hasUnreadableData(): Boolean = unreadableListings.isNotEmpty() || unreadableProceeds.isNotEmpty()
+
+    fun proceeds(seller: UUID): Map<String, Long> = balances[seller]?.toMap() ?: emptyMap()
+    fun proceeds(seller: UUID, currency: String): Long = balances[seller]?.get(currency) ?: 0L
+
+    fun credit(seller: UUID, currency: String, amount: Long) {
+        require(amount > 0 && currency.isNotBlank())
+        val total = Math.addExact(proceeds(seller, currency), amount)
+        balances.getOrPut(seller) { linkedMapOf() }[currency] = total
+        setDirty()
+    }
+
+    fun debit(seller: UUID, currency: String, amount: Long) {
+        require(amount > 0 && amount <= proceeds(seller, currency))
+        val remaining = proceeds(seller, currency) - amount
+        if (remaining == 0L) {
+            balances[seller]?.remove(currency)
+            if (balances[seller]?.isEmpty() == true) balances.remove(seller)
+        } else balances.getValue(seller)[currency] = remaining
+        setDirty()
+    }
+
 
     fun all(): List<Listing> = listings.values.toList()
 
@@ -38,21 +63,27 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
         return removed
     }
 
-    fun removeExpired(nowEpochMillis: Long = System.currentTimeMillis()): List<Listing> {
-        val expired = listings.values.filter { it.isExpired(nowEpochMillis) }
-        if (expired.isEmpty()) return emptyList()
-
-        expired.forEach { listings.remove(it.id) }
-        setDirty()
-        return expired
-    }
+    // Expiry hides an offer from buyers; it must not destroy the seller's Pokémon.
+    fun expiredBySeller(seller: UUID, now: Long = System.currentTimeMillis()): List<Listing> =
+        listings.values.filter { it.sellerId == seller && it.isExpired(now) }
 
     override fun save(tag: CompoundTag, registries: HolderLookup.Provider): CompoundTag {
         val entries = ListTag()
         listings.values.forEach { listing ->
             entries.add(listing.toNbt(registryAccess))
         }
+        entries.addAll(unreadableListings.map { it.copy() })
         tag.put(KEY_LISTINGS, entries)
+        val payouts = ListTag()
+        balances.forEach { (seller, currencies) -> currencies.forEach { (currency, amount) ->
+            payouts.add(CompoundTag().apply {
+                putUUID("seller", seller)
+                putString("currency", currency)
+                putLong("amount", amount)
+            })
+        } }
+        payouts.addAll(unreadableProceeds.map { it.copy() })
+        tag.put("proceeds", payouts)
         return tag
     }
 
@@ -71,7 +102,7 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
             return overworld.dataStorage.computeIfAbsent(factory, DATA_NAME)
         }
 
-        private fun load(tag: CompoundTag, registries: RegistryAccess): ListingsData {
+        internal fun load(tag: CompoundTag, registries: RegistryAccess): ListingsData {
             val data = ListingsData(registries)
             val entries = tag.getList(KEY_LISTINGS, Tag.TAG_COMPOUND.toInt())
 
@@ -80,10 +111,30 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
                 runCatching {
                     Listing.fromNbt(registries, listingTag)
                 }.onSuccess { listing ->
-                    data.listings[listing.id] = listing
+                    if (data.listings.containsKey(listing.id)) {
+                        data.unreadableListings.add(listingTag.copy())
+                    } else data.listings[listing.id] = listing
+                }.onFailure { error ->
+                    data.unreadableListings.add(listingTag.copy())
+                    com.zianblk.ziangts.ZianGts.LOGGER.error("Preserved unreadable GTS listing at index {}", index, error)
                 }
             }
 
+            val payouts = tag.getList("proceeds", Tag.TAG_COMPOUND.toInt())
+            for (index in 0 until payouts.size) {
+                val entry = payouts.getCompound(index)
+                runCatching {
+                    val seller = entry.getUUID("seller")
+                    val currency = entry.getString("currency")
+                    val amount = entry.getLong("amount")
+                    require(currency.isNotBlank() && amount > 0) { "Invalid GTS proceeds record" }
+                    require(data.balances[seller]?.containsKey(currency) != true) { "Duplicate GTS proceeds record" }
+                    data.balances.getOrPut(seller) { linkedMapOf() }[currency] = amount
+                }.onFailure { error ->
+                    data.unreadableProceeds.add(entry.copy())
+                    com.zianblk.ziangts.ZianGts.LOGGER.error("Preserved unreadable GTS payout at index {}", index, error)
+                }
+            }
             return data
         }
     }
