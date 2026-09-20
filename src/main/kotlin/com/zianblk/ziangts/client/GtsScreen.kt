@@ -48,6 +48,16 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     private val filterKeys = arrayOf("all", "shiny", "alpha", "legendary", "legendary_shiny", "mine")
     private val sortKeys = arrayOf("newest", "oldest", "price_low", "price_high", "level_low", "level_high")
 
+    /** Profile models use their native proportions; large bodies need a lower
+     * scale so they remain inside the preview card instead of being clipped. */
+    private fun previewScale(species: String): Float = when (species.substringAfter(':')) {
+        "snorlax", "wailord", "rayquaza", "kyogre", "groudon", "eternatus", "lugia",
+        "ho_oh", "steelix", "gyarados", "torterra" -> 27f
+        "charizard", "dragonite", "lapras", "blastoise", "venusaur", "milotic",
+        "tyranitar", "metagross", "ursaluna" -> 32f
+        else -> 38f
+    }
+
     fun update(next: MarketPage) {
         val id = page.entries.getOrNull(selected)?.id
         page = next
@@ -138,6 +148,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             val previewTop = top + 50
             graphics.fill(previewX, previewTop, detailRight, previewTop + previewSize, 0xFF111B2A.toInt())
             graphics.renderOutline(previewX, previewTop, previewSize, previewSize, 0xFF53677F.toInt())
+            graphics.drawString(font, "Vista previa", previewX + 7, previewTop + 7, 0x9FB3CB, false)
             var y = top + 51
             fun line(component: Component, color: Int = 0xE2E8F0) {
                 val lineRight = if (y < previewTop + previewSize) previewX - 8 else detailRight
@@ -167,10 +178,10 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
                 val stack = graphics.pose()
                 stack.pushPose()
                 try {
-                    stack.translate((previewX + previewSize / 2).toDouble(), (previewTop + 76).toDouble(), 100.0)
+                    stack.translate((previewX + previewSize / 2).toDouble(), (previewTop + 67).toDouble(), 100.0)
                     pose.currentAspects = entry.aspects.toSet()
                     drawProfilePokemon(ResourceLocation.parse(entry.species), stack, Quaternionf().rotationXYZ(0.1f, 0.5f, 0f),
-                        state = pose, partialTicks = partialTick, scale = 40f)
+                        state = pose, partialTicks = partialTick, scale = previewScale(entry.species))
                 } finally { stack.popPose() }
                 graphics.drawCenteredString(font, entry.name, previewX + previewSize / 2,
                     previewTop + previewSize - 14, 0xF4D481)
