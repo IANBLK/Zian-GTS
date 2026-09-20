@@ -118,7 +118,7 @@ object GtsService {
                 economy.deposit(player.uuid, listing.price.toLong())
             }
             if (refund != EconomyResult.Success) {
-                data.quarantineTransfer("buy_refund", player.uuid, snapshot)
+                preserveIncident(data, "buy_refund", player, snapshot)
                 fail("storage_failed")
             }
             data.add(listing)
@@ -150,10 +150,35 @@ object GtsService {
                                    snapshot: CompoundTag, action: () -> T): T = try {
         action()
     } catch (error: Exception) {
-        data.quarantineTransfer(operation, player.uuid, snapshot)
+        preserveIncident(data, operation, player, snapshot)
         ZianGts.LOGGER.error("GTS {} callback failed for {}. Trading blocked; inspect failedTransfers before recovery.",
             operation, player.uuid, error)
         fail("storage_failed")
+    }
+
+    /** Persist an independent incident copy before waiting for the next world save. */
+    private fun preserveIncident(data: ListingsData, operation: String, player: ServerPlayer, snapshot: CompoundTag) {
+        data.quarantineTransfer(operation, player.uuid, snapshot)
+        try {
+            val directory = player.server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+                .resolve("ziangts-recovery")
+            java.nio.file.Files.createDirectories(directory)
+            val incident = CompoundTag().apply {
+                putString("operation", operation)
+                putUUID("actor", player.uuid)
+                putLong("recordedAt", System.currentTimeMillis())
+                put("snapshot", snapshot.copy())
+            }
+            val bytes = java.nio.ByteBuffer.wrap(incident.toString().toByteArray(Charsets.UTF_8))
+            java.nio.channels.FileChannel.open(directory.resolve("${UUID.randomUUID()}.snbt"),
+                java.nio.file.StandardOpenOption.CREATE_NEW, java.nio.file.StandardOpenOption.WRITE).use { channel ->
+                while (bytes.hasRemaining()) channel.write(bytes)
+                channel.force(true)
+            }
+            player.server.overworld().dataStorage.save()
+        } catch (error: Exception) {
+            ZianGts.LOGGER.error("Could not persist GTS recovery incident; trading remains blocked. Snapshot: {}", snapshot, error)
+        }
     }
 
     /** Claims each payout through its original provider, even after configuration changes. */

@@ -8,6 +8,18 @@ import org.junit.jupiter.api.Test
 import java.util.UUID
 
 class ListingsDataTest {
+    @Test fun `incident diagnostics cannot modify stored snapshots`() {
+        val data = ListingsData(RegistryAccess.EMPTY)
+        val actor = UUID.randomUUID()
+        val snapshot = CompoundTag().apply { putLong("amount", 5) }
+        data.quarantineTransfer("claim", actor, snapshot)
+        snapshot.putLong("amount", 10)
+        val exposed = data.transferIncidents().single()
+        assertTrue(exposed.hasUUID("incidentId"))
+        exposed.getCompound("listing").putLong("amount", 99)
+        assertEquals(5L, data.transferIncidents().single().getCompound("listing").getLong("amount"))
+        assertTrue(data.hasUnreadableData())
+    }
     private val seller = UUID.randomUUID()
     private val registries = RegistryAccess.EMPTY
 

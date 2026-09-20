@@ -59,7 +59,8 @@ class AvecoinsWalletProvider(override val currencyId: String) : EconomyProvider 
         if (debit.invoke(candidate, playerId, currencyId, amount) != true) {
             return@synchronized EconomyResult.Failure("insufficient_funds")
         }
-        if (save.invoke(null, candidate) == true) EconomyResult.Success else EconomyResult.Failure("economy_save_failed")
+        check(save.invoke(null, candidate) == true) { "AVECOINS save outcome is uncertain; do not retry automatically" }
+        EconomyResult.Success
     }
 
     override fun deposit(playerId: UUID, amount: Long): EconomyResult = synchronized(store) {
@@ -67,7 +68,8 @@ class AvecoinsWalletProvider(override val currencyId: String) : EconomyProvider 
         if (capacity(playerId) < amount) return@synchronized EconomyResult.Failure("wallet_full")
         val candidate = copy.invoke(get.invoke(null))
         credit.invoke(candidate, playerId, currencyId, amount)
-        if (save.invoke(null, candidate) == true) EconomyResult.Success else EconomyResult.Failure("economy_save_failed")
+        check(save.invoke(null, candidate) == true) { "AVECOINS save outcome is uncertain; do not retry automatically" }
+        EconomyResult.Success
     }
 }
 

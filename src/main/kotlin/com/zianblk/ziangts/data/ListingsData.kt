@@ -24,8 +24,12 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
     private val failedTransfers = ListTag()
     private var unreadableRoot: CompoundTag? = null
 
+    /** Defensive copies: diagnostics must never expose mutable recovery records. */
+    fun transferIncidents(): List<CompoundTag> = failedTransfers.map { (it as CompoundTag).copy() }
+
     fun quarantineTransfer(operation: String, actor: UUID, snapshot: CompoundTag) {
         failedTransfers.add(CompoundTag().apply {
+            putUUID("incidentId", UUID.randomUUID())
             putString("operation", operation)
             putUUID("actor", actor)
             putLong("recordedAt", System.currentTimeMillis())
@@ -65,7 +69,7 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
         listings.values.count { it.sellerId == sellerId }
 
     fun add(listing: Listing): Boolean {
-        if (listings.containsKey(listing.id)) return false
+        if (listings.containsKey(listing.id) || listings.values.any { it.pokemon.uuid == listing.pokemon.uuid }) return false
         listings[listing.id] = listing
         setDirty()
         return true
@@ -137,7 +141,7 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
                 runCatching {
                     Listing.fromNbt(registries, listingTag)
                 }.onSuccess { listing ->
-                    if (data.listings.containsKey(listing.id)) {
+                    if (data.listings.containsKey(listing.id) || data.listings.values.any { it.pokemon.uuid == listing.pokemon.uuid }) {
                         data.unreadableListings.add(listingTag.copy())
                     } else data.listings[listing.id] = listing
                 }.onFailure { error ->
@@ -165,4 +169,3 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
         }
     }
 }
-

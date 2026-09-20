@@ -61,6 +61,16 @@ object GtsCommands {
                 }
             } })
             .then(literal("claim").executes { ctx -> run(ctx.source) { GtsService.claim(ctx.source.playerOrException) } })
+            .then(literal("recovery").requires { it.hasPermission(2) }
+                .executes { ctx -> run(ctx.source) {
+                    val data = ListingsData.get(ctx.source.level)
+                    val incidents = data.transferIncidents()
+                    ctx.source.sendSuccess({ Component.literal("GTS: bloqueo de almacenamiento=${data.hasUnreadableData()}, incidentes=${incidents.size}") }, false)
+                    incidents.takeLast(10).forEach { incident ->
+                        val actor = if (incident.hasUUID("actor")) incident.getUUID("actor").toString() else "desconocido"
+                        ctx.source.sendSuccess({ Component.literal("${incident.getString("operation")} | $actor | ${incident.getLong("recordedAt")}") }, false)
+                    }
+                } })
             .then(literal("history").requires { it.hasPermission(2) }
                 .executes { ctx -> run(ctx.source) { history(ctx.source, null, 1) } }
                 .then(argument("player_uuid", StringArgumentType.word()).executes { ctx -> run(ctx.source) {
@@ -87,7 +97,7 @@ object GtsCommands {
         catch (_: IllegalArgumentException) { throw GtsException("command.ziangts.invalid_request") }
 
     private fun show(source: CommandSourceStack, page: Int) {
-        val items = ListingsData.get(source.level).all().filter { !it.isExpired() }
+        val items = ListingsData.get(source.level).all().filter { !it.isExpired() && AvecoinsCatalog.isSupported(it.currency) }
             .sortedByDescending { it.createdAt }
         source.sendSuccess({ Component.translatable("command.ziangts.list.header", page, items.size) }, false)
         val offset = (page.toLong() - 1) * 10
