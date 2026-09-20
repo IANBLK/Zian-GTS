@@ -119,6 +119,10 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xFF182232.toInt())
         graphics.fill(left + 4, top + 44, left + listWidth + 4, top + panelHeight - 30, 0xFF101927.toInt())
         graphics.fill(left + listWidth + 12, top + 44, left + panelWidth - 4, top + panelHeight - 30, 0xFF1D2A3C.toInt())
+        // Widgets (and any NeoForge background pass they trigger) must be
+        // composed before the market content. Text and the Pokémon preview are
+        // deliberately the final opaque layer below the tooltip.
+        super.render(graphics, mouseX, mouseY, partialTick)
         var tooltip: Component? = null
         val heading = if (page.notice.isBlank()) title else Component.translatable(page.notice)
         graphics.drawString(font, font.plainSubstrByWidth(heading.string, panelWidth - 16), left + 8, top + 9, 0xF4D481, false)
@@ -166,7 +170,6 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
                 } finally { stack.popPose() }
             }
         }
-        super.render(graphics, mouseX, mouseY, partialTick)
         tooltip?.let { graphics.renderTooltip(font, it, mouseX, mouseY) }
     }
 
