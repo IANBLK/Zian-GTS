@@ -37,3 +37,10 @@ type = "optional"
 versionRange = "[2.3,2.4)"
 ordering = "AFTER"
 side = "BOTH"
+
+[[dependencies.ziangts]]
+modId = "luckperms"
+type = "optional"
+versionRange = "[0,)"
+ordering = "AFTER"
+side = "SERVER"
