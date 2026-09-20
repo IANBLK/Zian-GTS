@@ -66,7 +66,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         try {
             graphics.pose().translate(x.toDouble(), y.toDouble(), 0.0)
             graphics.pose().scale(scale, scale, 1f)
-            val cx = 90.0
+            val cx = 75.0
             val cy = 47.0
             val radius = 29.0
             val order = intArrayOf(0, 1, 2, 5, 4, 3)
@@ -276,11 +276,11 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
                 // the tooltip for whichever stat happened to be at that Y.
                 val textWidth = minOf(font.width(component), lineWidth)
                 if (mouseX in x..(x + textWidth) && mouseY in y..(y + 10)) tooltip = component
-                y += 11
+                y += 10
             }
             line(Component.literal(entry.name + if (entry.expired) " ⌛" else ""), 0xF4D481)
             line(Component.translatable("gui.ziangts.seller", entry.seller))
-            line(Component.translatable("gui.ziangts.price", "${entry.price} ${AvecoinsCatalog.displayName(entry.currency)}").append(" · ").append(Component.translatable("gui.ziangts.payment.${entry.economyProvider}")))
+            line(Component.translatable("gui.ziangts.price", "${entry.price} ${AvecoinsCatalog.displayName(entry.currency)}"))
             line(Component.translatable("gui.ziangts.level", entry.level))
             line(Component.translatable("gui.ziangts.gender", Component.translatable("gui.ziangts.gender.${entry.gender.lowercase()}")))
             line(Component.translatable("gui.ziangts.shiny", Component.translatable(if (entry.shiny) "gui.yes" else "gui.no")))
@@ -289,7 +289,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             line(Component.translatable("gui.ziangts.ability", Component.translatable(entry.ability)))
             line(Component.literal("IVs"), 0xF4D481)
             drawIvChart(graphics, x, y + 2, detailRight - x,
-                top + panelHeight - 36 - (y + 2), entry.ivs)
+                top + panelHeight - 44 - (y + 2), entry.ivs)
             if (panelWidth >= 420) {
                 val stack = graphics.pose()
                 stack.pushPose()

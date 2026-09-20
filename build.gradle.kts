@@ -49,6 +49,7 @@ repositories {
 }
 
 dependencies {
+    compileOnly("net.luckperms:api:5.4")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("thedarkcolour:kotlinforforge-neoforge:${property("kotlin_for_forge_version")}")
@@ -89,4 +90,3 @@ tasks.jar {
         attributes["Implementation-Version"] = project.version
     }
 }
-

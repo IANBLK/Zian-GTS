@@ -1,4 +1,5 @@
 {
+  "command.ziangts.no_permission": "No tienes permiso para realizar esta acción del GTS.",
   "gui.ziangts.title": "Mercado GTS",
   "gui.ziangts.purchase": "Comprar",
   "gui.ziangts.purchase_confirm": "Confirmar compra",

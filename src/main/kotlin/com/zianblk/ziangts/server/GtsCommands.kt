@@ -16,13 +16,13 @@ import java.util.UUID
 
 object GtsCommands {
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
-        dispatcher.register(literal("gts")
+        dispatcher.register(literal("gts").requires { GtsPermissions.allowed(it, "ziangts.use") }
             .executes { ctx -> run(ctx.source) { com.zianblk.ziangts.network.GtsNetwork.open(ctx.source.playerOrException) } }
-            .then(literal("list").executes { ctx -> run(ctx.source) { show(ctx.source, 1) } }
+            .then(literal("list").requires { GtsPermissions.allowed(it, "ziangts.list") }.executes { ctx -> run(ctx.source) { show(ctx.source, 1) } }
                 .then(argument("page", IntegerArgumentType.integer(1)).executes { ctx ->
                     run(ctx.source) { show(ctx.source, IntegerArgumentType.getInteger(ctx, "page")) }
                 }))
-            .then(literal("sell").then(argument("slot", IntegerArgumentType.integer(1, 6))
+            .then(literal("sell").requires { GtsPermissions.allowed(it, "ziangts.sell") }.then(argument("slot", IntegerArgumentType.integer(1, 6))
                 .then(argument("price", IntegerArgumentType.integer(1)).executes { ctx -> run(ctx.source) {
                     val listing = GtsService.sell(ctx.source.playerOrException,
                         IntegerArgumentType.getInteger(ctx, "slot"), IntegerArgumentType.getInteger(ctx, "price"))
@@ -38,7 +38,7 @@ object GtsCommands {
                             StringArgumentType.getString(ctx, "currency"))
                         ctx.source.sendSuccess({ Component.translatable("command.ziangts.sell.success").append(" ${listing.id}") }, false)
                     } }))))
-            .then(literal("buy").then(argument("listing", StringArgumentType.word())
+            .then(literal("buy").requires { GtsPermissions.allowed(it, "ziangts.buy") }.then(argument("listing", StringArgumentType.word())
                 .executes { ctx -> run(ctx.source) {
                     val id = uuid(StringArgumentType.getString(ctx, "listing"))
                     val listing = ListingsData.get(ctx.source.level).get(id) ?: throw GtsException("command.ziangts.not_found")
@@ -49,19 +49,19 @@ object GtsCommands {
                     GtsService.buy(ctx.source.playerOrException, uuid(StringArgumentType.getString(ctx, "listing")))
                     ctx.source.sendSuccess({ Component.translatable("command.ziangts.purchase.success") }, false)
                 } })))
-            .then(literal("cancel").then(argument("listing", StringArgumentType.word()).executes { ctx -> run(ctx.source) {
+            .then(literal("cancel").requires { GtsPermissions.allowed(it, "ziangts.cancel") }.then(argument("listing", StringArgumentType.word()).executes { ctx -> run(ctx.source) {
                 GtsService.cancel(ctx.source.playerOrException, uuid(StringArgumentType.getString(ctx, "listing")))
                 ctx.source.sendSuccess({ Component.translatable("command.ziangts.cancel.success") }, false)
             } }))
-            .then(literal("mine").executes { ctx -> run(ctx.source) {
+            .then(literal("mine").requires { GtsPermissions.allowed(it, "ziangts.mine") }.executes { ctx -> run(ctx.source) {
                 val player = ctx.source.playerOrException
                 ListingsData.get(player.serverLevel()).all().filter { it.sellerId == player.uuid }.forEach {
                     player.sendSystemMessage(Component.literal("${it.id} | ${it.pokemon.species.name} | ${it.price} ${it.currency}")
                         .append(Component.translatable(if (it.isExpired()) "command.ziangts.status.expired" else "command.ziangts.status.active")))
                 }
             } })
-            .then(literal("claim").executes { ctx -> run(ctx.source) { GtsService.claim(ctx.source.playerOrException) } })
-            .then(literal("recovery").requires { it.hasPermission(2) }
+            .then(literal("claim").requires { GtsPermissions.allowed(it, "ziangts.claim") }.executes { ctx -> run(ctx.source) { GtsService.claim(ctx.source.playerOrException) } })
+            .then(literal("recovery").requires { GtsPermissions.allowed(it, "ziangts.admin.recovery") }
                 .executes { ctx -> run(ctx.source) {
                     val data = ListingsData.get(ctx.source.level)
                     val incidents = data.transferIncidents()
@@ -71,14 +71,14 @@ object GtsCommands {
                         ctx.source.sendSuccess({ Component.literal("${incident.getString("operation")} | $actor | ${incident.getLong("recordedAt")}") }, false)
                     }
                 } })
-            .then(literal("history").requires { it.hasPermission(2) }
+            .then(literal("history").requires { GtsPermissions.allowed(it, "ziangts.admin.history") }
                 .executes { ctx -> run(ctx.source) { history(ctx.source, null, 1) } }
                 .then(argument("player_uuid", StringArgumentType.word()).executes { ctx -> run(ctx.source) {
                     history(ctx.source, uuid(StringArgumentType.getString(ctx, "player_uuid")), 1)
                 } }.then(argument("page", IntegerArgumentType.integer(1)).executes { ctx -> run(ctx.source) {
                     history(ctx.source, uuid(StringArgumentType.getString(ctx, "player_uuid")), IntegerArgumentType.getInteger(ctx, "page"))
                 } }))
-                .then(literal("delete").then(argument("transaction", StringArgumentType.word())
+                .then(literal("delete").requires { GtsPermissions.allowed(it, "ziangts.admin.history.archive") }.then(argument("transaction", StringArgumentType.word())
                     .executes { ctx -> run(ctx.source) {
                         ctx.source.sendSuccess({ Component.translatable("command.ziangts.history.confirm_delete",
                             "/gts history delete ${uuid(StringArgumentType.getString(ctx, "transaction"))} confirm") }, false)

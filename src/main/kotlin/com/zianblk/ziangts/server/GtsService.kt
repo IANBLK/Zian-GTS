@@ -52,6 +52,7 @@ object GtsService {
     private fun fail(key: String): Nothing = throw GtsException("command.ziangts.$key")
 
     private fun sellInternal(player: ServerPlayer, slot: Int, price: Int, currency: String): Listing {
+        GtsPermissions.require(player, "ziangts.sell")
         checkPlayer(player)
         if (slot !in 1..6 || price <= 0) fail("invalid_request")
         if (!AvecoinsCatalog.isSupported(currency)) fail("sell.invalid_currency")
@@ -83,6 +84,7 @@ object GtsService {
     }
 
     private fun buyInternal(player: ServerPlayer, id: UUID) {
+        GtsPermissions.require(player, "ziangts.buy")
         checkPlayer(player)
         val data = ListingsData.get(player.serverLevel())
         val listing = data.get(id) ?: fail("not_found")
@@ -129,6 +131,7 @@ object GtsService {
     }
 
     private fun cancelInternal(player: ServerPlayer, id: UUID) {
+        GtsPermissions.require(player, "ziangts.cancel")
         checkPlayer(player)
         val data = ListingsData.get(player.serverLevel())
         val listing = data.get(id) ?: fail("not_found")
@@ -183,6 +186,7 @@ object GtsService {
 
     /** Claims each payout through its original provider, even after configuration changes. */
     private fun claimInternal(player: ServerPlayer): String {
+        GtsPermissions.require(player, "ziangts.claim")
         checkPlayer(player)
         val data = ListingsData.get(player.serverLevel())
         var claimed = false

@@ -7,6 +7,7 @@ import com.zianblk.ziangts.data.ListingsData
 import com.zianblk.ziangts.economy.AvecoinsCatalog
 import com.zianblk.ziangts.server.GtsException
 import com.zianblk.ziangts.server.GtsService
+import com.zianblk.ziangts.server.GtsPermissions
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.chat.Component
 import net.minecraft.network.codec.StreamCodec
@@ -68,6 +69,7 @@ object GtsNetwork {
             lastRequest[player] = now
             var notice = ""
             try {
+                GtsPermissions.require(player, if (request.filter == 5) "ziangts.mine" else "ziangts.list")
                 when (request.action) {
                     1 -> GtsService.buy(player, request.listing)
                     2 -> GtsService.cancel(player, request.listing)
@@ -81,12 +83,18 @@ object GtsNetwork {
                 notice = error.key
                 player.sendSystemMessage(Component.translatable(error.key))
             }
-            open(player, request.page, request.filter, request.sort, openScreen = false, notice = notice)
+            try {
+                open(player, request.page, request.filter, request.sort, openScreen = false, notice = notice)
+            } catch (error: GtsException) {
+                PacketDistributor.sendToPlayer(player, MarketPagePayload(gson.toJson(
+                    MarketPage(emptyList(), 1, 1, request.filter, request.sort, false, error.key))))
+            }
         }
     }
 
     fun open(player: ServerPlayer, requestedPage: Int = 1, filter: Int = 0, sort: Int = 0,
              openScreen: Boolean = true, notice: String = "") {
+        GtsPermissions.require(player, if (filter == 5) "ziangts.mine" else "ziangts.list")
         if (openScreen && player.containerMenu !== player.inventoryMenu) player.closeContainer()
         val listings = ListingsData.get(player.serverLevel()).all().filter {
             if (filter == 5) it.sellerId == player.uuid
