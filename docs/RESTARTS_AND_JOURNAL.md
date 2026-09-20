@@ -58,6 +58,12 @@ Un diario corrupto o un checkpoint que no coincide no se desbloquean con resolve
 conservar los originales y reparar/restaurar un conjunto coherente antes de reiniciar.
 No borrar el diario para evitar el bloqueo: se perdería la evidencia independiente.
 
+Para inspección sin Minecraft, trabajar sobre una copia con el servidor detenido:
+`python tools/inspect_journal.py transactions.wal --export inspeccion-gts`.
+El directorio de salida debe ser nuevo. Exporta registros JSON y snapshots SNBT;
+verifica hashes y secuencia y se detiene ante daño, sin tocar el archivo original.
+La exportación permite encontrar ids anteriores a los diez mostrados en el comando.
+
 El archivo crece y no se poda automáticamente en esta versión. Las copias completas
 del GTS por operación favorecen la recuperación inicial pero tienen coste de disco
 y latencia en el hilo del servidor. Hay límite de 32 MiB por registro y fallo cerrado.

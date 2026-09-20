@@ -50,9 +50,7 @@ internal object GtsJournal {
 
     fun begin(player: ServerPlayer, operation: String, snapshot: CompoundTag): UUID = io {
         requireTrading(player.server)
-        journal!!.begin(operation, player.uuid, snapshot.copy().apply {
-            put("gtsBefore", checkpointTag(player.server))
-        }.toString())
+        journal!!.begin(operation, player.uuid, snapshot.toString(), checkpointTag(player.server).toString())
     }
 
     fun stage(id: UUID, stage: String) = io { checkNotNull(journal).stage(id, stage) }

@@ -46,12 +46,13 @@ internal class TransactionJournal(private val path: Path) : AutoCloseable {
     fun entries(): List<Pending> = pending.values.toList()
     fun blocksTrading(): Boolean = fault != null || inherited.isNotEmpty() || pending.values.any { !it.runtimeComplete }
 
-    fun begin(operation: String, actor: UUID, snapshot: String): UUID {
+    fun begin(operation: String, actor: UUID, snapshot: String, checkpointBefore: String? = null): UUID {
         check(!blocksTrading()) { "Journal requires reconciliation" }
         val id = UUID.randomUUID()
         append("begin", JsonObject().apply {
             addProperty("id", id.toString()); addProperty("operation", operation)
             addProperty("actor", actor.toString()); addProperty("snapshot", snapshot)
+            checkpointBefore?.let { addProperty("checkpointBefore", it) }
         })
         return id
     }
@@ -133,6 +134,7 @@ internal class TransactionJournal(private val path: Path) : AutoCloseable {
         when (event.get("kind").asString) {
             "begin" -> {
                 orderlyCheckpoint = null
+                data.get("checkpointBefore")?.let { latestCheckpoint = it.asString }
                 val id = UUID.fromString(data.get("id").asString)
                 require(id !in pending)
                 pending[id] = Pending(id, data.get("operation").asString,
