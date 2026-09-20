@@ -47,7 +47,8 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     private var listWidth = 130
     private val filterKeys = arrayOf("all", "shiny", "alpha", "legendary", "legendary_shiny", "mine")
     private val sortKeys = arrayOf("newest", "oldest", "price_low", "price_high", "level_low", "level_high")
-    private val entryTopOffset = 56
+    // Leave a dedicated row for the section captions below the toolbar.
+    private val entryTopOffset = 64
 
     /** Profile models use their native proportions; large bodies need a lower
      * scale so they remain inside the preview card instead of being clipped. */
@@ -143,8 +144,8 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         var tooltip: Component? = null
         val heading = if (page.notice.isBlank()) title else Component.translatable(page.notice)
         graphics.drawString(font, font.plainSubstrByWidth(heading.string, panelWidth - 16), left + 8, top + 9, 0xF4D481, false)
-        graphics.drawString(font, Component.translatable("gui.ziangts.listings"), left + 10, top + 47, 0x9FB3CB, false)
-        graphics.drawString(font, Component.translatable("gui.ziangts.details"), left + listWidth + 18, top + 47, 0x9FB3CB, false)
+        graphics.drawString(font, Component.translatable("gui.ziangts.listings"), left + 10, top + 49, 0x9FB3CB, false)
+        graphics.drawString(font, Component.translatable("gui.ziangts.details"), left + listWidth + 18, top + 49, 0x9FB3CB, false)
         if (mouseX in left..(left + panelWidth) && mouseY in (top + 8)..(top + 20)) tooltip = heading
         graphics.drawCenteredString(font, "${page.page}/${page.pages}", left + 8 + listWidth / 2, top + panelHeight - 20, 0xFFFFFF)
         val entry = page.entries.getOrNull(selected)
@@ -154,8 +155,8 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             val detailRight = left + panelWidth - 12
             val previewSize = 96
             val previewX = detailRight - previewSize
-            val previewTop = top + 50
-            var y = top + 51
+            val previewTop = top + 62
+            var y = top + 64
             fun line(component: Component, color: Int = 0xE2E8F0) {
                 val lineRight = if (y < previewTop + previewSize) previewX - 8 else detailRight
                 val lineWidth = (lineRight - x).coerceAtLeast(20)
