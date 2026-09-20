@@ -75,6 +75,11 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     }
 
     override fun init() {
+        // rebuildWidgets() removes the vanilla widgets, but our custom icon
+        // registry is independent of Screen's child list. Clear it as well,
+        // otherwise old buttons are painted over the newly created ones after
+        // changing page, filter, selection or purchase confirmation.
+        buttonIcons.clear()
         panelWidth = minOf(width - 16, 560)
         panelHeight = minOf(height - 16, 300)
         listWidth = if (panelWidth < 420) 96 else 130
