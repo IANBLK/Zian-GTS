@@ -133,7 +133,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         else {
             val x = left + listWidth + 20
             val detailRight = left + panelWidth - 12
-            val previewSize = 104
+            val previewSize = 128
             val previewX = detailRight - previewSize
             val previewTop = top + 50
             graphics.fill(previewX, previewTop, detailRight, previewTop + previewSize, 0xFF111B2A.toInt())
@@ -143,7 +143,11 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
                 val lineRight = if (y < previewTop + previewSize) previewX - 8 else detailRight
                 val lineWidth = (lineRight - x).coerceAtLeast(20)
                 graphics.drawString(font, font.plainSubstrByWidth(component.string, lineWidth), x, y, color, false)
-                if (mouseX in x..detailRight && mouseY in y..(y + 10)) tooltip = component
+                // Only the glyphs themselves are hoverable.  The old full-row
+                // hitbox covered the preview, so hovering the Pokémon showed
+                // the tooltip for whichever stat happened to be at that Y.
+                val textWidth = minOf(font.width(component), lineWidth)
+                if (mouseX in x..(x + textWidth) && mouseY in y..(y + 10)) tooltip = component
                 y += 11
             }
             line(Component.literal(entry.name + if (entry.expired) " ⌛" else ""), 0xF4D481)
@@ -157,17 +161,19 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             val names = arrayOf("hp", "attack", "defence", "special_attack", "special_defence", "speed")
             names.forEachIndexed { index, stat ->
                 line(Component.translatable("cobblemon.stat.$stat.name").append(
-                    " ${entry.stats[index]}  IV ${entry.ivs[index]}  EV ${entry.evs[index]}"))
+                    " ${entry.stats[index]}  IV ${entry.ivs[index]}"))
             }
             if (panelWidth >= 420) {
                 val stack = graphics.pose()
                 stack.pushPose()
                 try {
-                    stack.translate((previewX + previewSize / 2).toDouble(), (previewTop + 70).toDouble(), 100.0)
+                    stack.translate((previewX + previewSize / 2).toDouble(), (previewTop + 76).toDouble(), 100.0)
                     pose.currentAspects = entry.aspects.toSet()
                     drawProfilePokemon(ResourceLocation.parse(entry.species), stack, Quaternionf().rotationXYZ(0.1f, 0.5f, 0f),
-                        state = pose, partialTicks = partialTick, scale = 34f)
+                        state = pose, partialTicks = partialTick, scale = 40f)
                 } finally { stack.popPose() }
+                graphics.drawCenteredString(font, entry.name, previewX + previewSize / 2,
+                    previewTop + previewSize - 14, 0xF4D481)
             }
         }
         tooltip?.let { graphics.renderTooltip(font, it, mouseX, mouseY) }
