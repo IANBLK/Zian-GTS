@@ -55,7 +55,7 @@ reclaim; disconnect and restart; multiple dimensions; packet spam; small GUI sca
 preview models and custom forms. Unit tests cover proceeds persistence, overflow,
 overdraft, and retention/quarantine of malformed and duplicate records.
 
-AVECOINS 2.3 is a required dependency and is connected through a reflection adapter using its public
+AVECOINS 2.3 is connected through an optional reflection adapter using its public
 wallet methods. Physical AVECOINS coins also work as item currency. See
 [AVECOINS.md](AVECOINS.md) for configuration, supported denominations, wallet
 capacity, live-test requirements and the cross-store recovery limitation.

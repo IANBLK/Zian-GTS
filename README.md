@@ -22,4 +22,4 @@ Consulta `docs/RECONSTRUCTION.md` y `THIRD_PARTY_NOTICES.md`.
 
 See [development status](docs/DEVELOPMENT_STATUS.md) for implemented commands,
 configuration, validation gates and remaining work. Trading defaults to disabled
-until tested in an isolated world. AVECOINS 2.3 is required and its integration is documented in [AVECOINS integration](docs/AVECOINS.md).
+until tested in an isolated world. The optional AVECOINS 2.3 adapter is documented in [AVECOINS integration](docs/AVECOINS.md); AVECOINS is required in practice to trade because new offers accept only its currencies.
