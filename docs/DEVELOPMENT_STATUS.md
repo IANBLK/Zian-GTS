@@ -18,9 +18,11 @@
 - `/gts buy <listing-uuid>` shows the price; append `confirm` to purchase.
 - `/gts mine` includes expired offers; `/gts cancel <listing-uuid>` returns one.
 - `/gts claim` claims pending item or AVECOINS wallet proceeds, partially if inventory space is limited.
-- `/gts history [player-uuid] [page]` requires vanilla operator level 2.
+- `/gts history [player-uuid] [page]` requires `ziangts.admin.history` (OP level 2 by default).
 - `/gts history delete <transaction-uuid> confirm` archives the record, retaining
-  its original contents, actor and timestamp in SavedData. It requires level 2.
+  its original contents, actor and timestamp in SavedData. It requires `ziangts.admin.history.archive` (OP level 2 by default).
+- `/gts recovery` lists quarantined incidents with their ids; `/gts recovery resolve <incident-id> confirm`
+  (`ziangts.admin.recovery.resolve`, OP level 2 by default) marks one as resolved after manual reconciliation and keeps an audit copy.
 - UI: six entries per page, all/Shiny/Alpha/legendary/legendary Shiny/own filters,
   date/price/level sorting, confirmation, claim and withdrawal buttons, Pokémon
   preview on wider screens. Central details show seller, price, level, gender,
@@ -62,5 +64,5 @@ capacity, live-test requirements and the cross-store recovery limitation.
 Minecraft stays 1.21.1; NeoForge is now 21.1.228 to satisfy the supplied AVECOINS
 artifact. The external JAR and its decompiled source are not redistributed.
 
-Visual parity with the reference binary, trade evolution/event behavior, custom
-permission-node integrations, and crash recovery remain pending. Shiny stays Shiny.
+Visual parity with the reference binary, trade evolution/event behavior, live LuckPerms
+validation, and crash recovery remain pending. Shiny stays Shiny.

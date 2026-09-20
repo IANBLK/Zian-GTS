@@ -105,7 +105,7 @@ object GtsService {
             listing.pokemon.saveToNBT(player.registryAccess()).toString(), Instant.now(), listing.economyProvider)
         val history = TransactionHistoryData.get(player.serverLevel())
         if (history.hasUnreadableRoot()) fail("storage_failed")
-        val snapshot = listing.toNbt(player.registryAccess())
+        val snapshot = listing.toNbt(player.registryAccess()).apply { put("transaction", record.toNbt()) }
         // Remove the listing before invoking Cobblemon callbacks, preventing a reentrant purchase.
         check(data.remove(id) != null)
         val payment = storageMutation(data, "buy_payment", player, snapshot) {
@@ -126,8 +126,14 @@ object GtsService {
             data.add(listing)
             fail("storage_full")
         }
-        data.credit(listing.sellerId, economyKey.storageKey, listing.price.toLong())
-        history.append(record)
+        PurchaseFinalization.complete(
+            creditSeller = { data.credit(listing.sellerId, economyKey.storageKey, listing.price.toLong()) },
+            appendHistory = { history.append(record) },
+            quarantine = { operation, error ->
+                ZianGts.LOGGER.error("GTS {} failed after delivery of listing {}", operation, id, error)
+                preserveIncident(data, operation, player, snapshot)
+            }
+        )
     }
 
     private fun cancelInternal(player: ServerPlayer, id: UUID) {

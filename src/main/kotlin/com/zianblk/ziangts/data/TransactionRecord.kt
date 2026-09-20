@@ -23,6 +23,20 @@ data class TransactionRecord(
     val completedAt: Instant,
     val economyProvider: String = "vanilla_item"
 ) {
+    fun toNbt(): net.minecraft.nbt.CompoundTag = net.minecraft.nbt.CompoundTag().apply {
+        putUUID("transactionId", transactionId)
+        putUUID("listingId", listingId)
+        putUUID("buyerId", buyerId)
+        putString("buyerName", buyerName)
+        putUUID("sellerId", sellerId)
+        putString("sellerName", sellerName)
+        putLong("amount", amount)
+        putString("currency", currency)
+        putString("economyProvider", economyProvider)
+        putString("pokemonSnapshot", pokemonSnapshot)
+        putLong("completedAt", completedAt.toEpochMilli())
+    }
+
     init {
         require(buyerName.isNotBlank()) { "buyerName must not be blank" }
         require(sellerName.isNotBlank()) { "sellerName must not be blank" }
@@ -31,4 +45,3 @@ data class TransactionRecord(
         require(pokemonSnapshot.isNotBlank()) { "pokemonSnapshot must not be blank" }
     }
 }
-

@@ -22,6 +22,7 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
     private val unreadableListings = ListTag()
     private val unreadableProceeds = ListTag()
     private val failedTransfers = ListTag()
+    private val resolvedIncidentLog = ListTag()
     private var unreadableRoot: CompoundTag? = null
 
     /** Defensive copies: diagnostics must never expose mutable recovery records. */
@@ -37,6 +38,30 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
         })
         setDirty()
     }
+    /** Audit copies of incidents an administrator has marked as resolved. */
+    fun resolvedIncidents(): List<CompoundTag> = resolvedIncidentLog.map { (it as CompoundTag).copy() }
+
+    /**
+     * Marks one quarantined incident as resolved after manual reconciliation. This only lifts the trading
+     * block: it never refunds money or returns a Pokémon. The original record moves to an audit log.
+     */
+    fun resolveIncident(incidentId: UUID, resolvedBy: String, now: Long = System.currentTimeMillis(), resolvedById: UUID? = null): Boolean {
+        for (index in 0 until failedTransfers.size) {
+            val incident = failedTransfers.getCompound(index)
+            if (incident.hasUUID("incidentId") && incident.getUUID("incidentId") == incidentId) {
+                val archived = incident.copy()
+                archived.putString("resolvedBy", resolvedBy)
+                archived.putLong("resolvedAt", now)
+                resolvedById?.let { archived.putUUID("resolvedById", it) }
+                failedTransfers.removeAt(index)
+                resolvedIncidentLog.add(archived)
+                setDirty()
+                return true
+            }
+        }
+        return false
+    }
+
     fun hasUnreadableData(): Boolean = unreadableRoot != null || unreadableListings.isNotEmpty() || unreadableProceeds.isNotEmpty() || failedTransfers.isNotEmpty()
 
     fun proceeds(seller: UUID): Map<String, Long> = balances[seller]?.toMap() ?: emptyMap()
@@ -88,6 +113,7 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
     override fun save(tag: CompoundTag, registries: HolderLookup.Provider): CompoundTag {
         unreadableRoot?.let { return it.copy() }
         tag.put("failedTransfers", failedTransfers.copy())
+        tag.put("resolvedIncidents", resolvedIncidentLog.copy())
         val entries = ListTag()
         listings.values.forEach { listing ->
             entries.add(listing.toNbt(registryAccess))
@@ -126,7 +152,7 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
 
         internal fun load(tag: CompoundTag, registries: RegistryAccess): ListingsData {
             val data = ListingsData(registries)
-            for (key in listOf(KEY_LISTINGS, "proceeds", "failedTransfers")) {
+            for (key in listOf(KEY_LISTINGS, "proceeds", "failedTransfers", "resolvedIncidents")) {
                 val raw = tag.get(key) ?: continue
                 if (raw !is ListTag || (raw.isNotEmpty() && raw.elementType != Tag.TAG_COMPOUND)) {
                     data.unreadableRoot = tag.copy()
@@ -134,6 +160,7 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
                 }
             }
             data.failedTransfers.addAll(tag.getList("failedTransfers", Tag.TAG_COMPOUND.toInt()).map { it.copy() })
+            data.resolvedIncidentLog.addAll(tag.getList("resolvedIncidents", Tag.TAG_COMPOUND.toInt()).map { it.copy() })
             val entries = tag.getList(KEY_LISTINGS, Tag.TAG_COMPOUND.toInt())
 
             for (index in 0 until entries.size) {
