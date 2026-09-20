@@ -53,4 +53,22 @@ class ListingsDataTest {
         assertEquals(10L, data.proceeds(seller, "minecraft:diamond"))
         assertEquals(2, data.save(CompoundTag(), registries).getList("proceeds", 10).size)
     }
+
+    @Test fun `unexpected root types are retained verbatim and block trading`() {
+        val root = CompoundTag().apply { putString("listings", "unexpected external format") }
+        val data = ListingsData.load(root, registries)
+        assertTrue(data.hasUnreadableData())
+        assertEquals(root, data.save(CompoundTag(), registries))
+    }
+
+    @Test fun `uncertain transfer snapshots survive restart and block trading`() {
+        val snapshot = CompoundTag().apply { putString("pokemon", "retained snapshot") }
+        val data = ListingsData(registries)
+        data.quarantineTransfer("buy", seller, snapshot)
+        val saved = data.save(CompoundTag(), registries)
+        val reloaded = ListingsData.load(saved, registries)
+        assertTrue(reloaded.hasUnreadableData())
+        assertEquals(snapshot, reloaded.save(CompoundTag(), registries)
+            .getList("failedTransfers", 10).getCompound(0).getCompound("listing"))
+    }
 }

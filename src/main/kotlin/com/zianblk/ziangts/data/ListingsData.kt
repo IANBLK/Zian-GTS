@@ -20,7 +20,19 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
     private val balances = linkedMapOf<UUID, MutableMap<String, Long>>()
     private val unreadableListings = ListTag()
     private val unreadableProceeds = ListTag()
-    fun hasUnreadableData(): Boolean = unreadableListings.isNotEmpty() || unreadableProceeds.isNotEmpty()
+    private val failedTransfers = ListTag()
+    private var unreadableRoot: CompoundTag? = null
+
+    fun quarantineTransfer(operation: String, actor: UUID, snapshot: CompoundTag) {
+        failedTransfers.add(CompoundTag().apply {
+            putString("operation", operation)
+            putUUID("actor", actor)
+            putLong("recordedAt", System.currentTimeMillis())
+            put("listing", snapshot.copy())
+        })
+        setDirty()
+    }
+    fun hasUnreadableData(): Boolean = unreadableRoot != null || unreadableListings.isNotEmpty() || unreadableProceeds.isNotEmpty() || failedTransfers.isNotEmpty()
 
     fun proceeds(seller: UUID): Map<String, Long> = balances[seller]?.toMap() ?: emptyMap()
     fun proceeds(seller: UUID, currency: String): Long = balances[seller]?.get(currency) ?: 0L
@@ -68,6 +80,8 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
         listings.values.filter { it.sellerId == seller && it.isExpired(now) }
 
     override fun save(tag: CompoundTag, registries: HolderLookup.Provider): CompoundTag {
+        unreadableRoot?.let { return it.copy() }
+        tag.put("failedTransfers", failedTransfers.copy())
         val entries = ListTag()
         listings.values.forEach { listing ->
             entries.add(listing.toNbt(registryAccess))
@@ -104,6 +118,14 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
 
         internal fun load(tag: CompoundTag, registries: RegistryAccess): ListingsData {
             val data = ListingsData(registries)
+            for (key in listOf(KEY_LISTINGS, "proceeds", "failedTransfers")) {
+                val raw = tag.get(key) ?: continue
+                if (raw !is ListTag || (raw.isNotEmpty() && raw.elementType != Tag.TAG_COMPOUND)) {
+                    data.unreadableRoot = tag.copy()
+                    return data
+                }
+            }
+            data.failedTransfers.addAll(tag.getList("failedTransfers", Tag.TAG_COMPOUND.toInt()).map { it.copy() })
             val entries = tag.getList(KEY_LISTINGS, Tag.TAG_COMPOUND.toInt())
 
             for (index in 0 until entries.size) {

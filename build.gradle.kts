@@ -35,6 +35,10 @@ neoForge {
             sourceSet(sourceSets.main.get())
         }
     }
+    unitTest {
+        enable()
+        testedMod = mods.getByName("ziangts")
+    }
 }
 
 repositories {

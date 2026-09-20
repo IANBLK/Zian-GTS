@@ -20,8 +20,11 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
     private val records = linkedMapOf<UUID, TransactionRecord>()
     private val archived = ListTag()
     private val unreadable = ListTag()
+    private var unreadableRoot: CompoundTag? = null
+    fun hasUnreadableRoot(): Boolean = unreadableRoot != null
 
     override fun append(record: TransactionRecord) {
+        check(unreadableRoot == null) { "History root is unreadable" }
         require(!records.containsKey(record.transactionId)) {
             "transactionId already exists: ${record.transactionId}"
         }
@@ -40,6 +43,7 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
     override fun delete(id: UUID): Boolean = archive(id, "API")
 
     fun archive(id: UUID, actor: String): Boolean {
+        if (unreadableRoot != null) return false
         val record = records.remove(id) ?: return false
         archived.add(record.toNbt().apply {
             putString("archivedBy", actor)
@@ -50,6 +54,7 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
     }
 
     override fun save(tag: CompoundTag, registries: HolderLookup.Provider): CompoundTag {
+        unreadableRoot?.let { return it.copy() }
         val entries = ListTag()
         records.values.forEach { record ->
             entries.add(record.toNbt())
@@ -93,6 +98,13 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
             @Suppress("UNUSED_PARAMETER") registries: HolderLookup.Provider
         ): TransactionHistoryData {
             val data = TransactionHistoryData()
+            for (key in listOf(KEY_TRANSACTIONS, "archivedTransactions")) {
+                val raw = tag.get(key) ?: continue
+                if (raw !is ListTag || (raw.isNotEmpty() && raw.elementType != Tag.TAG_COMPOUND)) {
+                    data.unreadableRoot = tag.copy()
+                    return data
+                }
+            }
             val entries = tag.getList(KEY_TRANSACTIONS, Tag.TAG_COMPOUND.toInt())
 
             for (index in 0 until entries.size) {

@@ -5,6 +5,8 @@ import com.cobblemon.mod.common.battles.BattleRegistry
 import com.cobblemon.mod.common.pokemon.activestate.InactivePokemonState
 import com.cobblemon.mod.common.trade.TradeManager
 import com.zianblk.ziangts.config.GtsSettings
+import com.zianblk.ziangts.ZianGts
+import net.minecraft.nbt.CompoundTag
 import com.zianblk.ziangts.data.Listing
 import com.zianblk.ziangts.data.ListingsData
 import com.zianblk.ziangts.data.TransactionRecord
@@ -61,8 +63,8 @@ object GtsService {
         val listing = Listing(UUID.randomUUID(), player.uuid, player.gameProfile.name, price,
             config.currency, now, Math.addExact(now, Math.multiplyExact(config.expirationTimeHours, 3_600_000L)), pokemon)
         // Serialize before changing ownership, so serialization errors cannot consume a Pokémon.
-        listing.toNbt(player.registryAccess())
-        if (!party.remove(pokemon)) fail("storage_failed")
+        val snapshot = listing.toNbt(player.registryAccess())
+        if (!storageMutation(data, "sell", player, snapshot) { party.remove(pokemon) }) fail("storage_failed")
         if (!data.add(listing)) {
             party.set(slot - 1, pokemon)
             fail("duplicate")
@@ -88,13 +90,15 @@ object GtsService {
             listing.sellerId, listing.sellerName, listing.price.toLong(), listing.currency,
             listing.pokemon.saveToNBT(player.registryAccess()).toString(), Instant.now())
         val history = TransactionHistoryData.get(player.serverLevel())
+        if (history.hasUnreadableRoot()) fail("storage_failed")
+        val snapshot = listing.toNbt(player.registryAccess())
         // Remove the listing before invoking Cobblemon callbacks, preventing a reentrant purchase.
         check(data.remove(id) != null)
         if (!ItemPayments.withdraw(player, item, listing.price.toLong())) {
             data.add(listing)
             fail("insufficient_funds")
         }
-        if (!party.add(listing.pokemon)) {
+        if (!storageMutation(data, "buy", player, snapshot) { party.add(listing.pokemon) }) {
             check(ItemPayments.deposit(player, item, listing.price.toLong()))
             data.add(listing)
             fail("storage_full")
@@ -112,11 +116,23 @@ object GtsService {
         val pc = Cobblemon.storage.getPC(player)
         if (party.getFirstAvailablePosition() == null && pc.getFirstAvailablePosition() == null) fail("storage_full")
         if (party[listing.pokemon.uuid] != null || pc[listing.pokemon.uuid] != null) fail("duplicate")
+        val snapshot = listing.toNbt(player.registryAccess())
         check(data.remove(id) != null)
-        if (!party.add(listing.pokemon)) {
+        if (!storageMutation(data, "cancel", player, snapshot) { party.add(listing.pokemon) }) {
             data.add(listing)
             fail("storage_full")
         }
+    }
+
+    /** Unknown callback outcomes must be quarantined, never retried as a fresh purchase. */
+    private fun storageMutation(data: ListingsData, operation: String, player: ServerPlayer,
+                                snapshot: CompoundTag, action: () -> Boolean): Boolean = try {
+        action()
+    } catch (error: Exception) {
+        data.quarantineTransfer(operation, player.uuid, snapshot)
+        ZianGts.LOGGER.error("GTS {} callback failed for {}. Trading blocked; inspect failedTransfers before recovery.",
+            operation, player.uuid, error)
+        fail("storage_failed")
     }
 
     /** Claims item proceeds; expired Pokémon remain safely escrowed until explicitly returned. */

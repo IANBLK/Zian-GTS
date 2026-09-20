@@ -43,8 +43,10 @@ The current item transaction sequence is serialized on the server thread with
 reentrant mutation protection. It is NOT a crash-atomic transaction across
 Minecraft player inventory, Cobblemon asynchronous storage and GTS SavedData.
 Before enabling this on a real server, add a persistent recovery journal and test
-interruption at each ownership/payment boundary. Also test callbacks from other
-mods that throw during removal or delivery. Do not claim crash-safe trading yet.
+interruption at each ownership/payment boundary. Exceptions from Cobblemon
+removal/delivery callbacks quarantine the pre-operation listing snapshot in
+`failedTransfers` and block subsequent trading for manual recovery. This is not
+a substitute for a durable cross-store journal. Test these callback failures too. Do not claim crash-safe trading yet.
 
 Required in-game validation: dedicated-server startup; simultaneous purchases of
 the same offer; last Pokémon / untradeable / active battle / active trade rejection;
