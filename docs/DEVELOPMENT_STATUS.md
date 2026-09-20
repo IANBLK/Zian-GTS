@@ -44,11 +44,14 @@ purchases accept only the supported AVECOINS coin and ticket catalog.
 The current item transaction sequence is serialized on the server thread with
 reentrant mutation protection. It is NOT a crash-atomic transaction across
 Minecraft player inventory, Cobblemon asynchronous storage and GTS SavedData.
-Before enabling this on a real server, add a persistent recovery journal and test
-interruption at each ownership/payment boundary. Exceptions from Cobblemon
+The append-only recovery journal now records intent before each market mutation and
+quarantines sessions interrupted without an orderly shutdown marker. It preserves
+evidence; it does not replay money or Pokémon automatically. See
+[RESTARTS_AND_JOURNAL.md](RESTARTS_AND_JOURNAL.md). Before enabling this on a real
+server, validate interruption at each actual mod ownership/payment boundary. Exceptions from Cobblemon
 removal/delivery callbacks quarantine the pre-operation listing snapshot in
 `failedTransfers` and block subsequent trading for manual recovery. This is not
-a substitute for a durable cross-store journal. Test these callback failures too. Do not claim crash-safe trading yet.
+a substitute for verified cross-store durability. Test these callback failures too. Do not claim crash-safe trading yet.
 
 Required in-game validation: dedicated-server startup; simultaneous purchases of
 the same offer; last Pokémon / untradeable / active battle / active trade rejection;

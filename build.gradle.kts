@@ -76,6 +76,10 @@ tasks.withType<KotlinCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
+    doFirst {
+        // NeoForge tests use a transforming classloader; child JVMs need the real compiled outputs.
+        systemProperty("ziangts.crashTestClasspath", sourceSets.test.get().runtimeClasspath.asPath)
+    }
     maxHeapSize = "2G"
     testLogging {
         events("passed", "failed", "skipped")

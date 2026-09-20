@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption.APPEND
 import java.util.UUID
 
 class TransactionJournalTest {
@@ -89,15 +88,15 @@ class TransactionJournalTest {
         TransactionJournal(directory).use { assertTrue(it.blocksTrading()); assertNotNull(it.fault) }
     }
 
-    @Test fun `process termination at each purchase boundary preserves intent`() {
-        val classpath = listOf(JournalCrashProbe::class.java, TransactionJournal::class.java,
-            com.google.gson.Gson::class.java, kotlin.Unit::class.java).map {
-            Path.of(it.protectionDomain.codeSource.location.toURI()).toString()
-        }.distinct().joinToString(java.io.File.pathSeparator)
-        for (stage in listOf("prepared", "before_payment", "payment_complete_before_delivery", "delivered_before_credit", "credited_before_history", "runtime_complete")) {
-            val path = directory.resolve("$stage.wal")
+    @Test fun `process termination at market mutation boundaries preserves intent`() {
+        val classpath = checkNotNull(System.getProperty("ziangts.crashTestClasspath"))
+        val boundaries = listOf("prepared", "before_payment", "payment_complete_before_delivery", "delivered_before_credit", "credited_before_history", "runtime_complete").map { "buy" to it } +
+            listOf("sell" to "before_party_remove", "sell" to "party_removed", "cancel" to "before_return",
+                "claim" to "before_proceeds_debit", "claim" to "before_payout")
+        for ((operation, stage) in boundaries) {
+            val path = directory.resolve("$operation-$stage.wal")
             val process = ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
-                "-cp", classpath, JournalCrashProbe::class.java.name, path.toString(), stage)
+                "-cp", classpath, JournalCrashProbe::class.java.name, path.toString(), stage, operation)
                 .redirectErrorStream(true).redirectOutput(directory.resolve("$stage.log").toFile()).start()
             val exited = process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
             if (!exited) process.destroyForcibly()
@@ -108,6 +107,7 @@ class TransactionJournalTest {
                 assertTrue(journal.blocksTrading())
                 assertEquals("{pokemon:retained,price:5}", journal.entries().single().snapshot)
                 assertEquals(stage, journal.entries().single().stage)
+                assertEquals(operation, journal.entries().single().operation)
             }
         }
     }
@@ -116,7 +116,7 @@ class TransactionJournalTest {
 object JournalCrashProbe {
     @JvmStatic fun main(args: Array<String>) {
         val journal = TransactionJournal(Path.of(args[0]))
-        val id = journal.begin("buy", UUID.randomUUID(), "{pokemon:retained,price:5}")
+        val id = journal.begin(args[2], UUID.randomUUID(), "{pokemon:retained,price:5}")
         when (args[1]) {
             "prepared" -> Unit
             "runtime_complete" -> journal.finish(id, "checkpoint")
