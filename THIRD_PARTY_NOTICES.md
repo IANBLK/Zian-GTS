@@ -15,3 +15,10 @@ Upstream identity observed in the reference binary:
 Any source substantially derived from the upstream implementation must retain
 the applicable MIT copyright and permission notice. This repository will not
 represent upstream-authored code as original Zian GTS authorship.
+
+
+## AVECOINS
+
+Optional interoperability with AVECOINS 2.3 by SundGGs (All Rights Reserved).
+AVECOINS is a separately installed dependency. Neither its JAR nor decompiled
+source is included or redistributed. The adapter uses its public runtime methods.

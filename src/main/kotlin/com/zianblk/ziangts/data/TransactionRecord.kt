@@ -20,7 +20,8 @@ data class TransactionRecord(
     val amount: Long,
     val currency: String,
     val pokemonSnapshot: String,
-    val completedAt: Instant
+    val completedAt: Instant,
+    val economyProvider: String = "vanilla_item"
 ) {
     init {
         require(buyerName.isNotBlank()) { "buyerName must not be blank" }

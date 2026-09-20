@@ -43,9 +43,9 @@ data class MarketPagePayload(val json: String) : CustomPacketPayload {
 }
 
 data class MarketEntry(val id: String, val name: String, val species: String, val seller: String,
-    val price: Int, val currency: String, val level: Int, val gender: String, val shiny: Boolean,
+    val price: Int, val currency: String, val economyProvider: String, val level: Int, val gender: String, val shiny: Boolean,
     val aspects: List<String>, val stats: List<Int>, val ivs: List<Int>, val evs: List<Int>, val mine: Boolean, val expired: Boolean)
-data class MarketPage(val entries: List<MarketEntry>, val page: Int, val pages: Int, val filter: Int, val sort: Int)
+data class MarketPage(val entries: List<MarketEntry>, val page: Int, val pages: Int, val filter: Int, val sort: Int, val openScreen: Boolean, val notice: String)
 
 object GtsNetwork {
     private val gson = Gson()
@@ -64,22 +64,27 @@ object GtsNetwork {
             val now = System.nanoTime()
             if (lastRequest[player]?.let { now - it < 150_000_000L } == true) return@playToServer
             lastRequest[player] = now
+            var notice = ""
             try {
                 when (request.action) {
                     1 -> GtsService.buy(player, request.listing)
                     2 -> GtsService.cancel(player, request.listing)
-                    3 -> GtsService.claim(player)
+                    3 -> notice = GtsService.claim(player)
                 }
-                if (request.action in 1..2) player.sendSystemMessage(Component.translatable(
-                    if (request.action == 1) "command.ziangts.purchase.success" else "command.ziangts.cancel.success"))
+                if (request.action in 1..2) {
+                    notice = if (request.action == 1) "command.ziangts.purchase.success" else "command.ziangts.cancel.success"
+                    player.sendSystemMessage(Component.translatable(notice))
+                }
             } catch (error: GtsException) {
+                notice = error.key
                 player.sendSystemMessage(Component.translatable(error.key))
             }
-            open(player, request.page, request.filter, request.sort)
+            open(player, request.page, request.filter, request.sort, openScreen = false, notice = notice)
         }
     }
 
-    fun open(player: ServerPlayer, requestedPage: Int = 1, filter: Int = 0, sort: Int = 0) {
+    fun open(player: ServerPlayer, requestedPage: Int = 1, filter: Int = 0, sort: Int = 0,
+             openScreen: Boolean = true, notice: String = "") {
         val listings = ListingsData.get(player.serverLevel()).all().filter {
             if (filter == 5) it.sellerId == player.uuid
             else !it.isExpired() && when (filter) {
@@ -104,10 +109,10 @@ object GtsNetwork {
         val entries = ordered.drop((page - 1) * 6).take(6).map {
             val p = it.pokemon
             MarketEntry(it.id.toString(), p.species.name, p.species.resourceIdentifier.toString(), it.sellerName,
-                it.price, it.currency, p.level, p.gender.name, p.shiny, p.aspects.toList(), stats.map(p::getStat),
+                it.price, it.currency, it.economyProvider, p.level, p.gender.name, p.shiny, p.aspects.toList(), stats.map(p::getStat),
                 stats.map { stat -> p.ivs[stat] ?: 0 }, stats.map { stat -> p.evs[stat] ?: 0 },
                 it.sellerId == player.uuid, it.isExpired())
         }
-        PacketDistributor.sendToPlayer(player, MarketPagePayload(gson.toJson(MarketPage(entries, page, pages, filter, sort))))
+        PacketDistributor.sendToPlayer(player, MarketPagePayload(gson.toJson(MarketPage(entries, page, pages, filter, sort, openScreen, notice))))
     }
 }

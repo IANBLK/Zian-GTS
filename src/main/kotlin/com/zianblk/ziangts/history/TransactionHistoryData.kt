@@ -74,6 +74,7 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
         putString("sellerName", sellerName)
         putLong("amount", amount)
         putString("currency", currency)
+        putString("economyProvider", economyProvider)
         putString("pokemonSnapshot", pokemonSnapshot)
         putLong("completedAt", completedAt.toEpochMilli())
     }
@@ -120,7 +121,8 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
                         amount = entry.getLong("amount"),
                         currency = entry.getString("currency"),
                         pokemonSnapshot = entry.getString("pokemonSnapshot"),
-                        completedAt = Instant.ofEpochMilli(entry.getLong("completedAt"))
+                        completedAt = Instant.ofEpochMilli(entry.getLong("completedAt")),
+                        economyProvider = if (entry.contains("economyProvider")) entry.getString("economyProvider") else "vanilla_item"
                     )
                 }.onSuccess { record ->
                     if (data.records.containsKey(record.transactionId)) data.unreadable.add(entry.copy())

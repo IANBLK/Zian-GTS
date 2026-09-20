@@ -1,6 +1,7 @@
 package com.zianblk.ziangts.data
 
 import java.util.UUID
+import com.zianblk.ziangts.economy.EconomyKey
 import net.minecraft.core.RegistryAccess
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
@@ -92,7 +93,9 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
         balances.forEach { (seller, currencies) -> currencies.forEach { (currency, amount) ->
             payouts.add(CompoundTag().apply {
                 putUUID("seller", seller)
-                putString("currency", currency)
+                val key = EconomyKey.parse(currency)
+                putString("currency", key.currency)
+                putString("economyProvider", key.provider)
                 putLong("amount", amount)
             })
         } }
@@ -147,7 +150,7 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
                 val entry = payouts.getCompound(index)
                 runCatching {
                     val seller = entry.getUUID("seller")
-                    val currency = entry.getString("currency")
+                    val currency = EconomyKey(if (entry.contains("economyProvider")) entry.getString("economyProvider") else "vanilla_item", entry.getString("currency")).storageKey
                     val amount = entry.getLong("amount")
                     require(currency.isNotBlank() && amount > 0) { "Invalid GTS proceeds record" }
                     require(data.balances[seller]?.containsKey(currency) != true) { "Duplicate GTS proceeds record" }

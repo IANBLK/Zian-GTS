@@ -17,7 +17,7 @@
 - `/gts sell <party-slot 1..6> <price>` escrows a Pokémon.
 - `/gts buy <listing-uuid>` shows the price; append `confirm` to purchase.
 - `/gts mine` includes expired offers; `/gts cancel <listing-uuid>` returns one.
-- `/gts claim` claims pending item proceeds, partially if inventory space is limited.
+- `/gts claim` claims pending item or AVECOINS wallet proceeds, partially if inventory space is limited.
 - `/gts history [player-uuid] [page]` requires vanilla operator level 2.
 - `/gts history delete <transaction-uuid> confirm` archives the record, retaining
   its original contents, actor and timestamp in SavedData. It requires level 2.
@@ -55,11 +55,12 @@ reclaim; disconnect and restart; multiple dimensions; packet spam; small GUI sca
 preview models and custom forms. Unit tests cover proceeds persistence, overflow,
 overdraft, and retention/quarantine of malformed and duplicate records.
 
-AVECOINS is not wired up: its JAR/repository/API must be supplied. The existing
-EconomyProvider interface alone does not guarantee idempotency or atomic transfers.
-Integration needs documented failure semantics, offline-player support and stable
-operation IDs before external currency is debited. Item payments are explicitly
-isolated rather than pretending to support an unknown AVECOINS API.
+AVECOINS 2.3 is connected through an optional reflection adapter using its public
+wallet methods. Physical AVECOINS coins also work as item currency. See
+[AVECOINS.md](AVECOINS.md) for configuration, supported denominations, wallet
+capacity, live-test requirements and the cross-store recovery limitation.
+Minecraft stays 1.21.1; NeoForge is now 21.1.228 to satisfy the supplied AVECOINS
+artifact. The external JAR and its decompiled source are not redistributed.
 
 Visual parity with the reference binary, trade evolution/event behavior, custom
 permission-node integrations, and crash recovery remain pending. Shiny stays Shiny.

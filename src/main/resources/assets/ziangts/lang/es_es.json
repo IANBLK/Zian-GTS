@@ -44,7 +44,7 @@
   "command.ziangts.not_found": "Ese anuncio o registro ya no existe.",
   "command.ziangts.own_listing": "No puedes comprar tu propio anuncio.",
   "command.ziangts.expired": "El anuncio ha vencido.",
-  "command.ziangts.insufficient_funds": "No tienes suficientes objetos de la moneda requerida.",
+  "command.ziangts.insufficient_funds": "No tienes suficiente saldo en la moneda y forma de pago indicadas.",
   "command.ziangts.storage_full": "No hay espacio en tu equipo ni en el PC.",
   "command.ziangts.not_owner": "Este anuncio no te pertenece.",
   "command.ziangts.inventory_full": "Libera espacio en tu inventario para reclamar las ganancias.",
@@ -63,5 +63,13 @@
   "gui.ziangts.empty": "No hay anuncios.",
   "gui.ziangts.gender.male": "Macho",
   "gui.ziangts.gender.female": "Hembra",
-  "gui.ziangts.gender.genderless": "Sin género"
+  "gui.ziangts.gender.genderless": "Sin género",
+  "command.ziangts.close_container": "Cierra el monedero o contenedor abierto antes de operar en el GTS.",
+  "command.ziangts.economy_unavailable": "El proveedor de economía configurado no está disponible o no es compatible.",
+  "command.ziangts.economy_save_failed": "La economía no pudo guardar la operación. Inténtalo de nuevo después de revisar el servidor.",
+  "command.ziangts.wallet_full": "No hay suficiente espacio en tu monedero AVECOINS.",
+  "command.ziangts.payment_destination_full": "Libera espacio en el inventario o monedero correspondiente para reclamar.",
+  "gui.ziangts.payment.vanilla_item": "Objetos",
+  "gui.ziangts.payment.avecoins_wallet": "Monedero AVECOINS",
+  "command.ziangts.wallet_price_limit": "El monedero AVECOINS admite como máximo 1728 unidades de una moneda por compra."
 }

@@ -20,9 +20,11 @@ data class Listing(
     val currency: String,
     val createdAt: Long,
     val expiresAt: Long,
-    val pokemon: Pokemon
+    val pokemon: Pokemon,
+    val economyProvider: String = "vanilla_item"
 ) {
     init {
+        com.zianblk.ziangts.economy.EconomyKey(economyProvider, currency)
         require(sellerName.isNotBlank()) { "sellerName must not be blank" }
         require(price > 0) { "price must be greater than zero" }
         require(currency.isNotBlank()) { "currency must not be blank" }
@@ -38,6 +40,7 @@ data class Listing(
         putString(KEY_SELLER_NAME, sellerName)
         putInt(KEY_PRICE, price)
         putString(KEY_CURRENCY, currency)
+        putString("economyProvider", economyProvider)
         putLong(KEY_CREATED_AT, createdAt)
         putLong(KEY_EXPIRES_AT, expiresAt)
         put(KEY_POKEMON, pokemon.saveToNBT(registryAccess))
@@ -73,7 +76,8 @@ data class Listing(
                 },
                 createdAt = nbt.getLong(KEY_CREATED_AT),
                 expiresAt = nbt.getLong(KEY_EXPIRES_AT),
-                pokemon = pokemon
+                pokemon = pokemon,
+                economyProvider = if (nbt.contains("economyProvider")) nbt.getString("economyProvider") else "vanilla_item"
             )
         }
     }

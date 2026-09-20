@@ -13,6 +13,8 @@ interface EconomyProvider {
 
     fun balance(playerId: UUID): Long
 
+    fun capacity(playerId: UUID): Long
+
     fun withdraw(playerId: UUID, amount: Long): EconomyResult
 
     fun deposit(playerId: UUID, amount: Long): EconomyResult

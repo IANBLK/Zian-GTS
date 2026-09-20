@@ -7,6 +7,7 @@ object GtsSettings {
     private val builder = ModConfigSpec.Builder()
     val enabled = builder.comment("Enable trading only in a test world until recovery and multiplayer tests are complete.")
         .define("tradingEnabled", false)
+    val provider = builder.defineInList("economyProvider", "vanilla_item", listOf("vanilla_item", "avecoins_wallet"))
     val currency = builder.define("currency", "minecraft:diamond")
     val maxListings = builder.defineInRange("maxListings", 20, 1, 1000)
     val expirationHours = builder.defineInRange("expirationHours", 48, 1, 8760)
@@ -14,6 +15,7 @@ object GtsSettings {
 
     fun snapshot() = GtsConfig(
         currency = currency.get(),
+        economyProvider = provider.get(),
         maxListings = maxListings.get(),
         expirationTimeHours = expirationHours.get().toLong()
     )

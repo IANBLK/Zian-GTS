@@ -22,4 +22,4 @@ Consulta `docs/RECONSTRUCTION.md` y `THIRD_PARTY_NOTICES.md`.
 
 See [development status](docs/DEVELOPMENT_STATUS.md) for implemented commands,
 configuration, validation gates and remaining work. Trading defaults to disabled
-until tested in an isolated world. AVECOINS is not yet connected.
+until tested in an isolated world. The optional AVECOINS 2.3 adapter is documented in [AVECOINS integration](docs/AVECOINS.md).

@@ -37,7 +37,7 @@ neoForge {
     }
     unitTest {
         enable()
-        testedMod = mods.getByName("ziangts")
+        testedMod.set(mods.getByName("ziangts"))
     }
 }
 
@@ -73,7 +73,14 @@ tasks.withType<KotlinCompile>().configureEach {
     compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
 }
 
-tasks.test { useJUnitPlatform() }
+tasks.test {
+    useJUnitPlatform()
+    maxHeapSize = "2G"
+    testLogging {
+        events("passed", "failed", "skipped")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
 
 tasks.jar {
     from(listOf("LICENSE", "THIRD_PARTY_NOTICES.md")) { into("META-INF") }

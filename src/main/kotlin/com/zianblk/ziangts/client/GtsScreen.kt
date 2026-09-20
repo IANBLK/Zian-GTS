@@ -30,7 +30,7 @@ object GtsClientEvents {
                 val client = Minecraft.getInstance()
                 val screen = client.screen
                 if (screen is GtsScreen) screen.update(page)
-                else client.setScreen(GtsScreen(page))
+                else if (page.openScreen) client.setScreen(GtsScreen(page))
             }
         }
     }
@@ -114,7 +114,10 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         graphics.fill(0, 0, width, height, 0xB0101520.toInt())
         graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xF0182232.toInt())
-        graphics.drawString(font, title, left + 8, top + 9, 0xF4D481, false)
+        var tooltip: Component? = null
+        val heading = if (page.notice.isBlank()) title else Component.translatable(page.notice)
+        graphics.drawString(font, font.plainSubstrByWidth(heading.string, panelWidth - 16), left + 8, top + 9, 0xF4D481, false)
+        if (mouseX in left..(left + panelWidth) && mouseY in (top + 8)..(top + 20)) tooltip = heading
         graphics.drawCenteredString(font, "${page.page}/${page.pages}", left + 8 + listWidth / 2, top + panelHeight - 20, 0xFFFFFF)
         val entry = page.entries.getOrNull(selected)
         if (entry == null) graphics.drawString(font, Component.translatable("gui.ziangts.empty"), left + listWidth + 20, top + 56, 0xFFFFFF)
@@ -123,11 +126,12 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             var y = top + 51
             fun line(component: Component, color: Int = 0xE2E8F0) {
                 graphics.drawString(font, font.plainSubstrByWidth(component.string, panelWidth - listWidth - 28), x, y, color, false)
+                if (mouseX in x..(left + panelWidth - 8) && mouseY in y..(y + 10)) tooltip = component
                 y += 11
             }
             line(Component.literal(entry.name + if (entry.expired) " ⌛" else ""), 0xF4D481)
             line(Component.translatable("gui.ziangts.seller", entry.seller))
-            line(Component.translatable("gui.ziangts.price", "${entry.price} ${entry.currency}"))
+            line(Component.translatable("gui.ziangts.price", "${entry.price} ${entry.currency}").append(" · ").append(Component.translatable("gui.ziangts.payment.${entry.economyProvider}")))
             line(Component.translatable("gui.ziangts.level", entry.level))
             line(Component.translatable("gui.ziangts.gender", Component.translatable("gui.ziangts.gender.${entry.gender.lowercase()}")))
             line(Component.translatable("gui.ziangts.shiny", Component.translatable(if (entry.shiny) "gui.yes" else "gui.no")))
@@ -150,6 +154,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             }
         }
         super.render(graphics, mouseX, mouseY, partialTick)
+        tooltip?.let { graphics.renderTooltip(font, it, mouseX, mouseY) }
     }
 
     override fun isPauseScreen() = false

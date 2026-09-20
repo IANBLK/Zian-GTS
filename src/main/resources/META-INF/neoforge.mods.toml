@@ -19,7 +19,7 @@ side = "BOTH"
 [[dependencies.ziangts]]
 modId = "neoforge"
 mandatory = true
-versionRange = "[21.1.182,)"
+versionRange = "[21.1.228,)"
 ordering = "NONE"
 side = "BOTH"
 
@@ -30,3 +30,10 @@ versionRange = "[1.8.0+1.21.1,)"
 ordering = "AFTER"
 side = "BOTH"
 
+
+[[dependencies.ziangts]]
+modId = "avecoins"
+type = "optional"
+versionRange = "[2.3,2.4)"
+ordering = "AFTER"
+side = "BOTH"

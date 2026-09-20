@@ -31,7 +31,7 @@ object GtsCommands {
                     val id = uuid(StringArgumentType.getString(ctx, "listing"))
                     val listing = ListingsData.get(ctx.source.level).get(id) ?: throw GtsException("command.ziangts.not_found")
                     ctx.source.sendSuccess({ Component.translatable("command.ziangts.confirm_purchase", listing.price,
-                        listing.currency, "/gts buy $id confirm") }, false)
+                        "${listing.currency} (${listing.economyProvider})", "/gts buy $id confirm") }, false)
                 } }
                 .then(literal("confirm").executes { ctx -> run(ctx.source) {
                     GtsService.buy(ctx.source.playerOrException, uuid(StringArgumentType.getString(ctx, "listing")))
@@ -92,7 +92,7 @@ object GtsCommands {
         val offset = (page.toLong() - 1) * 10
         if (offset >= items.size) return
         items.drop(offset.toInt()).take(10).forEach {
-            source.sendSuccess({ Component.literal("${it.transactionId} | ${it.completedAt} | ${it.buyerName} ← ${it.sellerName} | ${it.amount} ${it.currency}") }, false)
+            source.sendSuccess({ Component.literal("${it.transactionId} | ${it.completedAt} | ${it.buyerName} ← ${it.sellerName} | ${it.amount} ${it.currency} (${it.economyProvider})") }, false)
         }
     }
 
