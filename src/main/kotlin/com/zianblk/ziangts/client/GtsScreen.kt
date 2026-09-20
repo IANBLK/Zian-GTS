@@ -22,7 +22,7 @@ import java.util.UUID
 
 @EventBusSubscriber(modid = ZianGts.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = [Dist.CLIENT])
 object GtsClientEvents {
-    @JvmStatic
+    // Kotlin for Forge registers Kotlin objects by INSTANCE, not by Java class.
     @SubscribeEvent
     fun setup(event: FMLClientSetupEvent) {
         event.enqueueWork {
