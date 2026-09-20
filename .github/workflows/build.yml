@@ -35,6 +35,10 @@ jobs:
       - name: Build
         run: ./gradlew build --stacktrace
 
+      - name: Print failed test reports
+        if: failure()
+        run: find build/test-results/test -name '*.xml' -type f -exec cat {} +
+
       - name: Upload JARs
         if: success()
         uses: actions/upload-artifact@v4
