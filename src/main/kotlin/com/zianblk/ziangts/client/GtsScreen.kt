@@ -47,6 +47,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     private var listWidth = 130
     private val filterKeys = arrayOf("all", "shiny", "alpha", "legendary", "legendary_shiny", "mine")
     private val sortKeys = arrayOf("newest", "oldest", "price_low", "price_high", "level_low", "level_high")
+    private val entryTopOffset = 56
 
     /** Profile models use their native proportions; large bodies need a lower
      * scale so they remain inside the preview card instead of being clipped. */
@@ -83,7 +84,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         button(left + panelWidth - 64, top + 24, 56, Component.translatable("gui.ziangts.refresh")) { request() }
         page.entries.forEachIndexed { index, entry ->
             val label = (if (entry.shiny) "★ " else "") + entry.name
-            button(left + 8, top + 50 + index * 22, listWidth, Component.literal(label)) {
+            button(left + 8, top + entryTopOffset + index * 23, listWidth, Component.literal(label)) {
                 selected = index
                 confirmation = null
                 pose = FloatingState()
@@ -127,9 +128,14 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         // GTS surface is intentionally opaque so that blur cannot bleed through
         // text, stats or the Pokémon preview.
         graphics.fill(0, 0, width, height, 0xFF0B1220.toInt())
-        graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xFF182232.toInt())
-        graphics.fill(left + 4, top + 44, left + listWidth + 4, top + panelHeight - 30, 0xFF101927.toInt())
-        graphics.fill(left + listWidth + 12, top + 44, left + panelWidth - 4, top + panelHeight - 30, 0xFF1D2A3C.toInt())
+        graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xFF0D1726.toInt())
+        graphics.fill(left + 4, top + 4, left + panelWidth - 4, top + 44, 0xFF1D2B40.toInt())
+        graphics.fill(left + 4, top + 48, left + listWidth + 4, top + panelHeight - 30, 0xFF0A1320.toInt())
+        graphics.fill(left + listWidth + 12, top + 48, left + panelWidth - 4, top + panelHeight - 30, 0xFF162235.toInt())
+        graphics.renderOutline(left, top, panelWidth, panelHeight, 0xFF31445B.toInt())
+        graphics.renderOutline(left + 4, top + 48, listWidth, panelHeight - 78, 0xFF243950.toInt())
+        graphics.renderOutline(left + listWidth + 12, top + 48, panelWidth - listWidth - 16, panelHeight - 78, 0xFF243950.toInt())
+        graphics.vLine(left + listWidth + 8, top + 48, top + panelHeight - 30, 0xFF263B53.toInt())
         // Widgets (and any NeoForge background pass they trigger) must be
         // composed before the market content. Text and the Pokémon preview are
         // deliberately the final opaque layer below the tooltip.
@@ -137,6 +143,8 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         var tooltip: Component? = null
         val heading = if (page.notice.isBlank()) title else Component.translatable(page.notice)
         graphics.drawString(font, font.plainSubstrByWidth(heading.string, panelWidth - 16), left + 8, top + 9, 0xF4D481, false)
+        graphics.drawString(font, Component.translatable("gui.ziangts.listings"), left + 10, top + 47, 0x9FB3CB, false)
+        graphics.drawString(font, Component.translatable("gui.ziangts.details"), left + listWidth + 18, top + 47, 0x9FB3CB, false)
         if (mouseX in left..(left + panelWidth) && mouseY in (top + 8)..(top + 20)) tooltip = heading
         graphics.drawCenteredString(font, "${page.page}/${page.pages}", left + 8 + listWidth / 2, top + panelHeight - 20, 0xFFFFFF)
         val entry = page.entries.getOrNull(selected)
