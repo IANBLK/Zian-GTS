@@ -52,10 +52,10 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
      * scale so they remain inside the preview card instead of being clipped. */
     private fun previewScale(species: String): Float = when (species.substringAfter(':')) {
         "snorlax", "wailord", "rayquaza", "kyogre", "groudon", "eternatus", "lugia",
-        "ho_oh", "steelix", "gyarados", "torterra" -> 27f
+        "ho_oh", "steelix", "gyarados", "torterra" -> 21f
         "charizard", "dragonite", "lapras", "blastoise", "venusaur", "milotic",
-        "tyranitar", "metagross", "ursaluna" -> 32f
-        else -> 38f
+        "tyranitar", "metagross", "ursaluna" -> 25f
+        else -> 30f
     }
 
     fun update(next: MarketPage) {
@@ -143,12 +143,11 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         else {
             val x = left + listWidth + 20
             val detailRight = left + panelWidth - 12
-            val previewSize = 128
+            val previewSize = 96
             val previewX = detailRight - previewSize
             val previewTop = top + 50
             graphics.fill(previewX, previewTop, detailRight, previewTop + previewSize, 0xFF111B2A.toInt())
             graphics.renderOutline(previewX, previewTop, previewSize, previewSize, 0xFF53677F.toInt())
-            graphics.drawString(font, "Vista previa", previewX + 7, previewTop + 7, 0x9FB3CB, false)
             var y = top + 51
             fun line(component: Component, color: Int = 0xE2E8F0) {
                 val lineRight = if (y < previewTop + previewSize) previewX - 8 else detailRight
@@ -167,6 +166,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             line(Component.translatable("gui.ziangts.level", entry.level))
             line(Component.translatable("gui.ziangts.gender", Component.translatable("gui.ziangts.gender.${entry.gender.lowercase()}")))
             line(Component.translatable("gui.ziangts.shiny", Component.translatable(if (entry.shiny) "gui.yes" else "gui.no")))
+            line(Component.translatable("gui.ziangts.alpha", Component.translatable(if (entry.aspects.any { it.equals("alpha", true) }) "gui.yes" else "gui.no")))
             // Only Nature and Ability are omitted from this detail panel.
             line(Component.translatable("gui.ziangts.stats"), 0xF4D481)
             val names = arrayOf("hp", "attack", "defence", "special_attack", "special_defence", "speed")
@@ -178,13 +178,11 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
                 val stack = graphics.pose()
                 stack.pushPose()
                 try {
-                    stack.translate((previewX + previewSize / 2).toDouble(), (previewTop + 67).toDouble(), 100.0)
+                    stack.translate((previewX + previewSize / 2).toDouble(), (previewTop + 53).toDouble(), 100.0)
                     pose.currentAspects = entry.aspects.toSet()
                     drawProfilePokemon(ResourceLocation.parse(entry.species), stack, Quaternionf().rotationXYZ(0.1f, 0.5f, 0f),
                         state = pose, partialTicks = partialTick, scale = previewScale(entry.species))
                 } finally { stack.popPose() }
-                graphics.drawCenteredString(font, entry.name, previewX + previewSize / 2,
-                    previewTop + previewSize - 14, 0xF4D481)
             }
         }
         tooltip?.let { graphics.renderTooltip(font, it, mouseX, mouseY) }

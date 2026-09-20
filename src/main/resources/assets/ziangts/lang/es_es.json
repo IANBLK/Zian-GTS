@@ -34,6 +34,7 @@
   "gui.ziangts.level": "Nivel: %s",
   "gui.ziangts.gender": "Género: %s",
   "gui.ziangts.shiny": "Shiny: %s",
+  "gui.ziangts.alpha": "Alpha: %s",
   "gui.ziangts.stats": "Estadísticas:",
   "command.ziangts.disabled": "El comercio GTS está desactivado en la configuración del servidor.",
   "command.ziangts.busy": "Finaliza el combate o intercambio antes de usar el GTS.",
