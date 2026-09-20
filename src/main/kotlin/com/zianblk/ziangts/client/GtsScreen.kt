@@ -11,6 +11,8 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.Renderable
 import net.minecraft.client.gui.screens.Screen
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.neoforged.api.distmarker.Dist
@@ -20,6 +22,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent
 import net.neoforged.neoforge.network.PacketDistributor
 import org.joml.Quaternionf
 import java.util.UUID
+import java.util.IdentityHashMap
 
 @EventBusSubscriber(modid = ZianGts.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = [Dist.CLIENT])
 object GtsClientEvents {
@@ -46,6 +49,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     private var panelWidth = 0
     private var panelHeight = 0
     private var listWidth = 130
+    private val buttonIcons = IdentityHashMap<Button, ItemStack>()
     private val filterKeys = arrayOf("all", "shiny", "alpha", "legendary", "legendary_shiny", "mine")
     private val sortKeys = arrayOf("newest", "oldest", "price_low", "price_high", "level_low", "level_high")
     // Leave a dedicated row for the section captions below the toolbar.
@@ -77,13 +81,13 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         listWidth = if (panelWidth < 420) 96 else 130
         left = (width - panelWidth) / 2
         top = (height - panelHeight) / 2
-        button(left + 8, top + 24, listWidth, Component.translatable("gui.ziangts.filter.${filterKeys[page.filter]}")) {
+        button(left + 8, top + 24, listWidth, Component.translatable("gui.ziangts.filter.${filterKeys[page.filter]}"), Items.CHEST) {
             request(filter = (page.filter + 1) % filterKeys.size, number = 1)
         }
-        button(left + listWidth + 16, top + 24, panelWidth - listWidth - 88, Component.translatable("gui.ziangts.sort.${sortKeys[page.sort]}")) {
+        button(left + listWidth + 16, top + 24, panelWidth - listWidth - 88, Component.translatable("gui.ziangts.sort.${sortKeys[page.sort]}"), Items.CLOCK) {
             request(sort = (page.sort + 1) % sortKeys.size, number = 1)
         }
-        button(left + panelWidth - 64, top + 24, 56, Component.translatable("gui.ziangts.refresh")) { request() }
+        button(left + panelWidth - 64, top + 24, 56, Component.translatable("gui.ziangts.refresh"), Items.COMPASS) { request() }
         page.entries.forEachIndexed { index, entry ->
             val label = (if (entry.shiny) "★ " else "") + entry.name
             button(left + 8, top + entryTopOffset + index * 23, listWidth, Component.literal(label)) {
@@ -96,14 +100,15 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         val bottom = top + panelHeight - 26
         button(left + 8, bottom, 30, Component.literal("<")) { request(number = page.page - 1) }.active = page.page > 1
         button(left + listWidth - 22, bottom, 30, Component.literal(">")) { request(number = page.page + 1) }.active = page.page < page.pages
-        button(left + listWidth + 16, bottom, 80, Component.translatable("gui.ziangts.claim")) { request(action = 3) }
+        button(left + listWidth + 16, bottom, 80, Component.translatable("gui.ziangts.claim"), Items.CHEST) { request(action = 3) }
         val entry = page.entries.getOrNull(selected)
         val key = when {
             entry?.mine == true -> "remove_listing"
             entry != null && confirmation == entry.id -> "purchase_confirm"
             else -> "purchase"
         }
-        button(left + listWidth + 100, bottom, panelWidth - listWidth - 108, Component.translatable("gui.ziangts.$key")) {
+        button(left + listWidth + 100, bottom, panelWidth - listWidth - 108, Component.translatable("gui.ziangts.$key"),
+            if (entry?.mine == true) Items.BARRIER else Items.EMERALD) {
             if (entry != null) {
                 if (entry.mine) request(action = 2, id = UUID.fromString(entry.id))
                 else if (confirmation == entry.id) {
@@ -117,8 +122,33 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         }.active = entry != null && (!entry.expired || entry.mine)
     }
 
-    private fun button(x: Int, y: Int, w: Int, text: Component, action: () -> Unit): Button =
-        addRenderableWidget(Button.builder(text) { action() }.bounds(x, y, w, 20).build())
+    private fun button(x: Int, y: Int, w: Int, text: Component, icon: net.minecraft.world.item.Item? = null,
+                       action: () -> Unit): Button {
+        val widget = addRenderableWidget(Button.builder(text) { action() }.bounds(x, y, w, 20).build())
+        icon?.let { buttonIcons[widget] = ItemStack(it) }
+        return widget
+    }
+
+    private fun drawAvecoinsButtons(graphics: GuiGraphics, mouseX: Int, mouseY: Int) {
+        buttonIcons.forEach { (button, icon) ->
+            if (!button.visible) return@forEach
+            val hovered = button.isHoveredOrFocused
+            val background = when {
+                !button.active -> 0xFF25292D.toInt()
+                hovered -> 0xFF3A4046.toInt()
+                else -> 0xFF343A40.toInt()
+            }
+            val border = if (hovered && button.active) 0xFFE5E7E9.toInt() else 0xFF5D646B.toInt()
+            graphics.fill(button.x, button.y, button.x + button.width, button.y + button.height, background)
+            graphics.renderOutline(button.x, button.y, button.width, button.height, border)
+            graphics.renderItem(icon, button.x + 4, button.y + 2)
+            val available = (button.width - 25).coerceAtLeast(8)
+            val label = font.plainSubstrByWidth(button.message.string, available)
+            val textX = button.x + 23 + (available - font.width(label)) / 2
+            val textColor = if (button.active) 0xFFE5E7E9 else 0xFFA1A6AB
+            graphics.drawString(font, label, textX, button.y + 6, textColor, false)
+        }
+    }
 
     private fun request(action: Int = 0, id: UUID = UUID(0, 0), number: Int = page.page,
                         filter: Int = page.filter, sort: Int = page.sort) {
@@ -149,6 +179,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         children().forEach { child ->
             if (child is Renderable) child.render(graphics, mouseX, mouseY, partialTick)
         }
+        drawAvecoinsButtons(graphics, mouseX, mouseY)
         // Text and the Pokémon preview are deliberately the final layer below
         // the tooltip.
         var tooltip: Component? = null
