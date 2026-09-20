@@ -53,8 +53,67 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     private val filterKeys = arrayOf("all", "shiny", "alpha", "legendary", "legendary_shiny", "mine")
     private val sortKeys = arrayOf("newest", "oldest", "price_low", "price_high", "level_low", "level_high")
     // Leave a dedicated row for the section captions below the toolbar.
-    private val entryTopOffset = 69
+    private val entryTopOffset = 76
     private val sectionTopOffset = 52
+    private val sectionLabelOffset = sectionTopOffset + 6
+
+    /** IVs only, with a fixed 0..31 scale shared by every Pokémon. */
+    private fun drawIvChart(graphics: GuiGraphics, x: Int, y: Int, availableWidth: Int, availableHeight: Int,
+                            ivs: List<Int>) {
+        val scale = minOf(1f, availableWidth / 180f, availableHeight / 94f)
+        if (scale <= 0f) return
+        graphics.pose().pushPose()
+        try {
+            graphics.pose().translate(x.toDouble(), y.toDouble(), 0.0)
+            graphics.pose().scale(scale, scale, 1f)
+            val cx = 90.0
+            val cy = 47.0
+            val radius = 29.0
+            val order = intArrayOf(0, 1, 2, 5, 4, 3)
+            val labels = arrayOf("PS", "At.", "Def.", "Vel.", "Def. esp.", "At. esp.")
+            fun point(index: Int, fraction: Double): Pair<Double, Double> {
+                val angle = -Math.PI / 2 + index * Math.PI / 3
+                return Pair(cx + kotlin.math.cos(angle) * radius * fraction,
+                    cy + kotlin.math.sin(angle) * radius * fraction)
+            }
+            fun edge(a: Pair<Double, Double>, b: Pair<Double, Double>, color: Int) {
+                val steps = kotlin.math.ceil(maxOf(kotlin.math.abs(b.first - a.first), kotlin.math.abs(b.second - a.second))).toInt().coerceAtLeast(1)
+                for (step in 0..steps) {
+                    val t = step.toDouble() / steps
+                    val px = kotlin.math.round(a.first + (b.first - a.first) * t).toInt()
+                    val py = kotlin.math.round(a.second + (b.second - a.second) * t).toInt()
+                    graphics.fill(px, py, px + 1, py + 1, color)
+                }
+            }
+            for (ring in 1..4) for (i in 0..5)
+                edge(point(i, ring / 4.0), point((i + 1) % 6, ring / 4.0), 0xFF596068.toInt())
+            val points = order.mapIndexed { i, stat -> point(i, (ivs.getOrElse(stat) { 0 }.coerceIn(0, 31)) / 31.0) }
+            // Scanline polygon fill stays within GuiGraphics' normal GUI pipeline.
+            for (row in 18..76) {
+                val scanY = row + 0.5
+                val crossings = points.indices.mapNotNull { i ->
+                    val a = points[i]; val b = points[(i + 1) % 6]
+                    if ((a.second <= scanY && b.second > scanY) || (b.second <= scanY && a.second > scanY))
+                        a.first + (scanY - a.second) * (b.first - a.first) / (b.second - a.second)
+                    else null
+                }.sorted()
+                for (i in 0 until crossings.size - 1 step 2)
+                    graphics.fill(kotlin.math.ceil(crossings[i]).toInt(), row,
+                        kotlin.math.ceil(crossings[i + 1]).toInt(), row + 1, 0xAABB63D5.toInt())
+            }
+            for (i in 0..5) {
+                edge(points[i], points[(i + 1) % 6], 0xFFE397FF.toInt())
+                val anchor = point(i, 1.45)
+                val labelX = anchor.first.toInt()
+                val labelY = anchor.second.toInt() - 6
+                val value = ivs.getOrElse(order[i]) { 0 }.coerceIn(0, 31).toString()
+                // Side labels extend outwards, leaving the polygon unobstructed.
+                val offset = when (i) { 1, 2 -> 8; 4, 5 -> -8; else -> 0 }
+                graphics.drawCenteredString(font, labels[i], labelX + offset, labelY, 0xE2E8F0)
+                graphics.drawCenteredString(font, value, labelX + offset, labelY + 9, 0xE2E8F0)
+            }
+        } finally { graphics.pose().popPose() }
+    }
 
     /** Profile models use their native proportions; large bodies need a lower
      * scale so they remain inside the preview card instead of being clipped. */
@@ -195,19 +254,19 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         val heading = if (page.notice.isBlank()) title else Component.translatable(page.notice)
         graphics.drawCenteredString(font, font.plainSubstrByWidth(heading.string, panelWidth - 16),
             left + panelWidth / 2, top + 9, 0xF4D481)
-        graphics.drawString(font, Component.translatable("gui.ziangts.listings"), left + 10, top + 53, 0x9FB3CB, false)
-        graphics.drawString(font, Component.translatable("gui.ziangts.details"), left + listWidth + 18, top + 53, 0x9FB3CB, false)
+        graphics.drawString(font, Component.translatable("gui.ziangts.listings"), left + 10, top + sectionLabelOffset, 0x9FB3CB, false)
+        graphics.drawString(font, Component.translatable("gui.ziangts.details"), left + listWidth + 18, top + sectionLabelOffset, 0x9FB3CB, false)
         if (mouseX in left..(left + panelWidth) && mouseY in (top + 8)..(top + 20)) tooltip = heading
         graphics.drawCenteredString(font, "${page.page}/${page.pages}", left + 8 + listWidth / 2, top + panelHeight - 20, 0xFFFFFF)
         val entry = page.entries.getOrNull(selected)
-        if (entry == null) graphics.drawString(font, Component.translatable("gui.ziangts.empty"), left + listWidth + 20, top + 56, 0xFFFFFF)
+        if (entry == null) graphics.drawString(font, Component.translatable("gui.ziangts.empty"), left + listWidth + 20, top + entryTopOffset, 0xFFFFFF)
         else {
             val x = left + listWidth + 20
             val detailRight = left + panelWidth - 12
             val previewSize = 96
             val previewX = detailRight - previewSize
             val previewTop = top + 67
-            var y = top + 69
+            var y = top + entryTopOffset
             fun line(component: Component, color: Int = 0xE2E8F0) {
                 val lineRight = if (y < previewTop + previewSize) previewX - 8 else detailRight
                 val lineWidth = (lineRight - x).coerceAtLeast(20)
@@ -228,12 +287,9 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             line(Component.translatable("gui.ziangts.alpha", Component.translatable(if (entry.aspects.any { it.equals("alpha", true) }) "gui.yes" else "gui.no")))
             line(Component.translatable("gui.ziangts.nature", Component.translatable(entry.nature)))
             line(Component.translatable("gui.ziangts.ability", Component.translatable(entry.ability)))
-            line(Component.translatable("gui.ziangts.stats"), 0xF4D481)
-            val names = arrayOf("hp", "attack", "defence", "special_attack", "special_defence", "speed")
-            names.forEachIndexed { index, stat ->
-                line(Component.translatable("cobblemon.stat.$stat.name").append(
-                    " ${entry.stats[index]}  IV ${entry.ivs[index]}"))
-            }
+            line(Component.literal("IVs"), 0xF4D481)
+            drawIvChart(graphics, x, y + 2, detailRight - x,
+                top + panelHeight - 36 - (y + 2), entry.ivs)
             if (panelWidth >= 420) {
                 val stack = graphics.pose()
                 stack.pushPose()
