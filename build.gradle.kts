@@ -48,7 +48,11 @@ repositories {
     maven("https://maven.impactdev.net/repository/development/")
 }
 
+val journalProbeRuntime by configurations.creating
+
 dependencies {
+    add(journalProbeRuntime.name, "org.jetbrains.kotlin:kotlin-stdlib:2.2.20")
+    add(journalProbeRuntime.name, "com.google.code.gson:gson:2.10.1")
     compileOnly("net.luckperms:api:5.4")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -78,7 +82,8 @@ tasks.test {
     useJUnitPlatform()
     doFirst {
         // NeoForge tests use a transforming classloader; child JVMs need the real compiled outputs.
-        systemProperty("ziangts.crashTestClasspath", sourceSets.test.get().runtimeClasspath.asPath)
+        systemProperty("ziangts.crashTestClasspath",
+            files(sourceSets.main.get().output, sourceSets.test.get().output, journalProbeRuntime).asPath)
     }
     maxHeapSize = "2G"
     testLogging {
