@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 
 class GtsPermissionsTest {
     @Test fun `default players cannot use administrative nodes`() {
-        listOf("history", "history.archive", "recovery").forEach {
+        listOf("history", "history.archive", "recovery", "recovery.resolve").forEach {
             assertFalse(GtsPermissions.defaultAccess("ziangts.admin.$it", false))
             assertTrue(GtsPermissions.defaultAccess("ziangts.admin.$it", true))
         }
