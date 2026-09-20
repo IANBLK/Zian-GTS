@@ -112,8 +112,13 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        graphics.fill(0, 0, width, height, 0xB0101520.toInt())
-        graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xF0182232.toInt())
+        // NeoForge/Minecraft may render a blurred world behind Screen.  Every
+        // GTS surface is intentionally opaque so that blur cannot bleed through
+        // text, stats or the Pokémon preview.
+        graphics.fill(0, 0, width, height, 0xFF0B1220.toInt())
+        graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xFF182232.toInt())
+        graphics.fill(left + 4, top + 44, left + listWidth + 4, top + panelHeight - 30, 0xFF101927.toInt())
+        graphics.fill(left + listWidth + 12, top + 44, left + panelWidth - 4, top + panelHeight - 30, 0xFF1D2A3C.toInt())
         var tooltip: Component? = null
         val heading = if (page.notice.isBlank()) title else Component.translatable(page.notice)
         graphics.drawString(font, font.plainSubstrByWidth(heading.string, panelWidth - 16), left + 8, top + 9, 0xF4D481, false)
@@ -123,10 +128,18 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         if (entry == null) graphics.drawString(font, Component.translatable("gui.ziangts.empty"), left + listWidth + 20, top + 56, 0xFFFFFF)
         else {
             val x = left + listWidth + 20
+            val detailRight = left + panelWidth - 12
+            val previewSize = 104
+            val previewX = detailRight - previewSize
+            val previewTop = top + 50
+            graphics.fill(previewX, previewTop, detailRight, previewTop + previewSize, 0xFF111B2A.toInt())
+            graphics.renderOutline(previewX, previewTop, previewSize, previewSize, 0xFF53677F.toInt())
             var y = top + 51
             fun line(component: Component, color: Int = 0xE2E8F0) {
-                graphics.drawString(font, font.plainSubstrByWidth(component.string, panelWidth - listWidth - 28), x, y, color, false)
-                if (mouseX in x..(left + panelWidth - 8) && mouseY in y..(y + 10)) tooltip = component
+                val lineRight = if (y < previewTop + previewSize) previewX - 8 else detailRight
+                val lineWidth = (lineRight - x).coerceAtLeast(20)
+                graphics.drawString(font, font.plainSubstrByWidth(component.string, lineWidth), x, y, color, false)
+                if (mouseX in x..detailRight && mouseY in y..(y + 10)) tooltip = component
                 y += 11
             }
             line(Component.literal(entry.name + if (entry.expired) " ⌛" else ""), 0xF4D481)
@@ -142,14 +155,14 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
                 line(Component.translatable("cobblemon.stat.$stat.name").append(
                     " ${entry.stats[index]}  IV ${entry.ivs[index]}  EV ${entry.evs[index]}"))
             }
-            if (panelWidth >= 500) {
+            if (panelWidth >= 420) {
                 val stack = graphics.pose()
                 stack.pushPose()
                 try {
-                    stack.translate((left + panelWidth - 42).toDouble(), (top + 116).toDouble(), 100.0)
+                    stack.translate((previewX + previewSize / 2).toDouble(), (previewTop + 70).toDouble(), 100.0)
                     pose.currentAspects = entry.aspects.toSet()
                     drawProfilePokemon(ResourceLocation.parse(entry.species), stack, Quaternionf().rotationXYZ(0.1f, 0.5f, 0f),
-                        state = pose, partialTicks = partialTick, scale = 22f)
+                        state = pose, partialTicks = partialTick, scale = 34f)
                 } finally { stack.popPose() }
             }
         }
