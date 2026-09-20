@@ -53,10 +53,10 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     private fun previewScale(species: String): Float = when (species.substringAfter(':')) {
         "snorlax", "wailord", "rayquaza", "kyogre", "groudon", "eternatus", "lugia",
         "ho_oh", "steelix", "gyarados", "torterra", "giratina", "dialga", "palkia",
-        "arceus", "reshiram", "zekrom", "zacian", "zamazenta" -> 27f
+        "arceus", "reshiram", "zekrom", "zacian", "zamazenta" -> 30f
         "charizard", "dragonite", "lapras", "blastoise", "venusaur", "milotic",
-        "tyranitar", "metagross", "ursaluna" -> 32f
-        else -> 40f
+        "tyranitar", "metagross", "ursaluna" -> 36f
+        else -> 46f
     }
 
     fun update(next: MarketPage) {
@@ -147,8 +147,6 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             val previewSize = 96
             val previewX = detailRight - previewSize
             val previewTop = top + 50
-            graphics.fill(previewX, previewTop, detailRight, previewTop + previewSize, 0xFF111B2A.toInt())
-            graphics.renderOutline(previewX, previewTop, previewSize, previewSize, 0xFF53677F.toInt())
             var y = top + 51
             fun line(component: Component, color: Int = 0xE2E8F0) {
                 val lineRight = if (y < previewTop + previewSize) previewX - 8 else detailRight
