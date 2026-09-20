@@ -52,7 +52,8 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     private val filterKeys = arrayOf("all", "shiny", "alpha", "legendary", "legendary_shiny", "mine")
     private val sortKeys = arrayOf("newest", "oldest", "price_low", "price_high", "level_low", "level_high")
     // Leave a dedicated row for the section captions below the toolbar.
-    private val entryTopOffset = 64
+    private val entryTopOffset = 69
+    private val sectionTopOffset = 52
 
     /** Profile models use their native proportions; large bodies need a lower
      * scale so they remain inside the preview card instead of being clipped. */
@@ -85,16 +86,20 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         listWidth = if (panelWidth < 420) 96 else 130
         left = (width - panelWidth) / 2
         top = (height - panelHeight) / 2
-        button(left + 8, top + 24, listWidth, Component.translatable("gui.ziangts.filter.${filterKeys[page.filter]}"), Items.CHEST) {
+        val listButtonWidth = (listWidth - 8).coerceAtLeast(30)
+        val refreshWidth = if (panelWidth < 420) 64 else 84
+        val refreshX = left + panelWidth - 8 - refreshWidth
+        button(left + 8, top + 24, listButtonWidth, Component.translatable("gui.ziangts.filter.${filterKeys[page.filter]}"), Items.CHEST) {
             request(filter = (page.filter + 1) % filterKeys.size, number = 1)
         }
-        button(left + listWidth + 16, top + 24, panelWidth - listWidth - 88, Component.translatable("gui.ziangts.sort.${sortKeys[page.sort]}"), Items.CLOCK) {
+        val sortWidth = (refreshX - 12 - (left + listWidth + 16)).coerceAtLeast(80)
+        button(left + listWidth + 16, top + 24, sortWidth, Component.translatable("gui.ziangts.sort.${sortKeys[page.sort]}"), Items.CLOCK) {
             request(sort = (page.sort + 1) % sortKeys.size, number = 1)
         }
-        button(left + panelWidth - 64, top + 24, 56, Component.translatable("gui.ziangts.refresh"), Items.COMPASS) { request() }
+        button(refreshX, top + 24, refreshWidth, Component.translatable("gui.ziangts.refresh"), Items.COMPASS) { request() }
         page.entries.forEachIndexed { index, entry ->
             val label = (if (entry.shiny) "★ " else "") + entry.name
-            button(left + 8, top + entryTopOffset + index * 23, listWidth, Component.literal(label)) {
+            button(left + 8, top + entryTopOffset + index * 23, listButtonWidth, Component.literal(label)) {
                 selected = index
                 confirmation = null
                 pose = FloatingState()
@@ -103,7 +108,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         }
         val bottom = top + panelHeight - 26
         button(left + 8, bottom, 30, Component.literal("<")) { request(number = page.page - 1) }.active = page.page > 1
-        button(left + listWidth - 22, bottom, 30, Component.literal(">")) { request(number = page.page + 1) }.active = page.page < page.pages
+        button(left + listWidth - 34, bottom, 30, Component.literal(">")) { request(number = page.page + 1) }.active = page.page < page.pages
         button(left + listWidth + 16, bottom, 80, Component.translatable("gui.ziangts.claim"), Items.CHEST) { request(action = 3) }
         val entry = page.entries.getOrNull(selected)
         val key = when {
@@ -174,12 +179,12 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         graphics.fill(0, 0, width, height, 0xFF101214.toInt())
         graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xFF171A1D.toInt())
         graphics.fill(left + 4, top + 4, left + panelWidth - 4, top + 44, 0xFF24282C.toInt())
-        graphics.fill(left + 4, top + 48, left + listWidth + 4, top + panelHeight - 30, 0xFF202428.toInt())
-        graphics.fill(left + listWidth + 12, top + 48, left + panelWidth - 4, top + panelHeight - 30, 0xFF202428.toInt())
+        graphics.fill(left + 4, top + sectionTopOffset, left + listWidth + 4, top + panelHeight - 30, 0xFF202428.toInt())
+        graphics.fill(left + listWidth + 12, top + sectionTopOffset, left + panelWidth - 4, top + panelHeight - 30, 0xFF202428.toInt())
         graphics.renderOutline(left, top, panelWidth, panelHeight, 0xFF5D646B.toInt())
-        graphics.renderOutline(left + 4, top + 48, listWidth, panelHeight - 78, 0xFF5D646B.toInt())
-        graphics.renderOutline(left + listWidth + 12, top + 48, panelWidth - listWidth - 16, panelHeight - 78, 0xFF5D646B.toInt())
-        graphics.vLine(left + listWidth + 8, top + 48, top + panelHeight - 30, 0xFF3A3F44.toInt())
+        graphics.renderOutline(left + 4, top + sectionTopOffset, listWidth, panelHeight - 82, 0xFF5D646B.toInt())
+        graphics.renderOutline(left + listWidth + 12, top + sectionTopOffset, panelWidth - listWidth - 16, panelHeight - 82, 0xFF5D646B.toInt())
+        graphics.vLine(left + listWidth + 8, top + sectionTopOffset, top + panelHeight - 30, 0xFF3A3F44.toInt())
         // Paint the styled controls exactly once; vanilla widget rendering is
         // intentionally omitted to avoid duplicated/overlapping labels.
         drawAvecoinsButtons(graphics, mouseX, mouseY)
@@ -189,8 +194,8 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         val heading = if (page.notice.isBlank()) title else Component.translatable(page.notice)
         graphics.drawCenteredString(font, font.plainSubstrByWidth(heading.string, panelWidth - 16),
             left + panelWidth / 2, top + 9, 0xF4D481)
-        graphics.drawString(font, Component.translatable("gui.ziangts.listings"), left + 10, top + 49, 0x9FB3CB, false)
-        graphics.drawString(font, Component.translatable("gui.ziangts.details"), left + listWidth + 18, top + 49, 0x9FB3CB, false)
+        graphics.drawString(font, Component.translatable("gui.ziangts.listings"), left + 10, top + 53, 0x9FB3CB, false)
+        graphics.drawString(font, Component.translatable("gui.ziangts.details"), left + listWidth + 18, top + 53, 0x9FB3CB, false)
         if (mouseX in left..(left + panelWidth) && mouseY in (top + 8)..(top + 20)) tooltip = heading
         graphics.drawCenteredString(font, "${page.page}/${page.pages}", left + 8 + listWidth / 2, top + panelHeight - 20, 0xFFFFFF)
         val entry = page.entries.getOrNull(selected)
@@ -200,8 +205,8 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             val detailRight = left + panelWidth - 12
             val previewSize = 96
             val previewX = detailRight - previewSize
-            val previewTop = top + 62
-            var y = top + 64
+            val previewTop = top + 67
+            var y = top + 69
             fun line(component: Component, color: Int = 0xE2E8F0) {
                 val lineRight = if (y < previewTop + previewSize) previewX - 8 else detailRight
                 val lineWidth = (lineRight - x).coerceAtLeast(20)
