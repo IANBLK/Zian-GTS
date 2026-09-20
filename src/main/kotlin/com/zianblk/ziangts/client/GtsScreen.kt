@@ -128,15 +128,18 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         // NeoForge/Minecraft may render a blurred world behind Screen.  Every
         // GTS surface is intentionally opaque so that blur cannot bleed through
         // text, stats or the Pokémon preview.
-        graphics.fill(0, 0, width, height, 0xFF0B1220.toInt())
-        graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xFF0D1726.toInt())
-        graphics.fill(left + 4, top + 4, left + panelWidth - 4, top + 44, 0xFF1D2B40.toInt())
-        graphics.fill(left + 4, top + 48, left + listWidth + 4, top + panelHeight - 30, 0xFF0A1320.toInt())
-        graphics.fill(left + listWidth + 12, top + 48, left + panelWidth - 4, top + panelHeight - 30, 0xFF162235.toInt())
-        graphics.renderOutline(left, top, panelWidth, panelHeight, 0xFF31445B.toInt())
-        graphics.renderOutline(left + 4, top + 48, listWidth, panelHeight - 78, 0xFF243950.toInt())
-        graphics.renderOutline(left + listWidth + 12, top + 48, panelWidth - listWidth - 16, panelHeight - 78, 0xFF243950.toInt())
-        graphics.vLine(left + listWidth + 8, top + 48, top + panelHeight - 30, 0xFF263B53.toInt())
+        // AVECOINS 2.3 GuiTheme palette: charcoal surfaces, neutral borders
+        // and muted dividers.  The values are reproduced locally so the GTS
+        // remains independent of the proprietary client classes.
+        graphics.fill(0, 0, width, height, 0xFF101214.toInt())
+        graphics.fill(left, top, left + panelWidth, top + panelHeight, 0xFF171A1D.toInt())
+        graphics.fill(left + 4, top + 4, left + panelWidth - 4, top + 44, 0xFF24282C.toInt())
+        graphics.fill(left + 4, top + 48, left + listWidth + 4, top + panelHeight - 30, 0xFF202428.toInt())
+        graphics.fill(left + listWidth + 12, top + 48, left + panelWidth - 4, top + panelHeight - 30, 0xFF202428.toInt())
+        graphics.renderOutline(left, top, panelWidth, panelHeight, 0xFF5D646B.toInt())
+        graphics.renderOutline(left + 4, top + 48, listWidth, panelHeight - 78, 0xFF5D646B.toInt())
+        graphics.renderOutline(left + listWidth + 12, top + 48, panelWidth - listWidth - 16, panelHeight - 78, 0xFF5D646B.toInt())
+        graphics.vLine(left + listWidth + 8, top + 48, top + panelHeight - 30, 0xFF3A3F44.toInt())
         // Widgets (and any NeoForge background pass they trigger) must be
         // composed before the market content. Text and the Pokémon preview are
         // deliberately the final opaque layer below the tooltip.
