@@ -162,9 +162,10 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        // Let Screen render NeoForge's background/blur first. Painting the
-        // surface before super.render lets that blur pass appear over the GTS.
-        super.render(graphics, mouseX, mouseY, partialTick)
+        // Render only NeoForge's native background/blur. Screen.render() also
+        // paints vanilla widgets, which would leave a second label beneath
+        // our AVECOINS-styled controls.
+        renderBackground(graphics, mouseX, mouseY, partialTick)
         // Every GTS surface is opaque, so the native blur cannot bleed through
         // text, stats or the Pokémon preview.
         // AVECOINS 2.3 GuiTheme palette: charcoal surfaces, neutral borders
@@ -179,9 +180,8 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         graphics.renderOutline(left + 4, top + 48, listWidth, panelHeight - 78, 0xFF5D646B.toInt())
         graphics.renderOutline(left + listWidth + 12, top + 48, panelWidth - listWidth - 16, panelHeight - 78, 0xFF5D646B.toInt())
         graphics.vLine(left + listWidth + 8, top + 48, top + panelHeight - 30, 0xFF3A3F44.toInt())
-        // The first super.render pass is intentionally hidden by the opaque
-        // panels. Paint the styled controls exactly once here; drawing the
-        // vanilla widgets a second time caused duplicated/overlapping labels.
+        // Paint the styled controls exactly once; vanilla widget rendering is
+        // intentionally omitted to avoid duplicated/overlapping labels.
         drawAvecoinsButtons(graphics, mouseX, mouseY)
         // Text and the Pokémon preview are deliberately the final layer below
         // the tooltip.
