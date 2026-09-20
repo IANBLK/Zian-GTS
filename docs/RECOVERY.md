@@ -1,5 +1,9 @@
 # Recovery diagnostics
 
+The write-ahead journal now retains every market operation independently of SavedData.
+See [RESTARTS_AND_JOURNAL.md](RESTARTS_AND_JOURNAL.md) for orderly restarts,
+crash quarantine, journal resolution and limitations on Youer. It does not replay payments.
+
 `/gts recovery` requires `ziangts.admin.recovery` (operator level 2 by default) and reports whether storage is blocked,
 the incident count and the last ten failed transfers. The listing itself is read-only: it does
 not refund money, deliver Pokémon or clear the block. Each incident line starts with its incident id.
@@ -33,7 +37,7 @@ would duplicate it). An incident of type `buy_credit` or `buy_history` is preser
 instead, including the complete intended transaction record (id, parties, payment and Pokémon snapshot), and trading is blocked until an administrator reconciles the seller proceeds or
 the history record and resolves it.
 
-This is incident preservation, not a write-ahead transaction journal. Abrupt
-termination before an exception is handled can still leave inconsistent stores.
+The incident records below supplement the write-ahead journal. Abrupt
+termination can still leave inconsistent external stores requiring manual reconciliation.
 Automatic cross-store crash recovery and real multiplayer validation remain
 pending. Keep production trading disabled until these are addressed.

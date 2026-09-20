@@ -15,6 +15,9 @@ class ZianGts(container: ModContainer, bus: net.neoforged.bus.api.IEventBus) {
         bus.addListener(com.zianblk.ziangts.network.GtsNetwork::register)
         container.registerConfig(ModConfig.Type.SERVER, GtsSettings.spec)
         NeoForge.EVENT_BUS.addListener { event: RegisterCommandsEvent -> GtsCommands.register(event.dispatcher) }
+        NeoForge.EVENT_BUS.addListener(com.zianblk.ziangts.server.GtsJournal::started)
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, com.zianblk.ziangts.server.GtsJournal::stopping)
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, com.zianblk.ziangts.server.GtsJournal::stopped)
         LOGGER.info("Inicializando Zian GTS")
     }
 
@@ -23,4 +26,3 @@ class ZianGts(container: ModContainer, bus: net.neoforged.bus.api.IEventBus) {
         val LOGGER = LoggerFactory.getLogger("Zian GTS")
     }
 }
-

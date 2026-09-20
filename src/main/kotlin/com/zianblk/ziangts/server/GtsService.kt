@@ -31,6 +31,7 @@ object GtsService {
         check(player.server.isSameThread) { "GTS requires the server thread" }
         if (!GtsSettings.enabled.get()) fail("disabled")
         if (mutating) fail("busy")
+        GtsJournal.requireTrading(player.server)
         if (ListingsData.get(player.serverLevel()).hasUnreadableData()) fail("storage_failed")
         mutating = true
         try { return action() } finally { mutating = false }
@@ -75,11 +76,19 @@ object GtsService {
             pokemon, settings.economyProvider)
         // Serialize before changing ownership, so serialization errors cannot consume a Pokémon.
         val snapshot = listing.toNbt(player.registryAccess())
-        if (!storageMutation(data, "sell", player, snapshot) { party.remove(pokemon) }) fail("storage_failed")
+        val operation = GtsJournal.begin(player, "sell", snapshot)
+        GtsJournal.stage(operation, "before_party_remove")
+        if (!storageMutation(data, "sell", player, snapshot) { party.remove(pokemon) }) {
+            GtsJournal.finish(player, operation)
+            fail("storage_failed")
+        }
+        GtsJournal.stage(operation, "party_removed")
         if (!data.add(listing)) {
             party.set(slot - 1, pokemon)
+            GtsJournal.finish(player, operation)
             fail("duplicate")
         }
+        GtsJournal.finish(player, operation)
         return listing
     }
 
@@ -106,16 +115,21 @@ object GtsService {
         val history = TransactionHistoryData.get(player.serverLevel())
         if (history.hasUnreadableRoot()) fail("storage_failed")
         val snapshot = listing.toNbt(player.registryAccess()).apply { put("transaction", record.toNbt()) }
+        val operation = GtsJournal.begin(player, "buy", snapshot)
         // Remove the listing before invoking Cobblemon callbacks, preventing a reentrant purchase.
         check(data.remove(id) != null)
+        GtsJournal.stage(operation, "before_payment")
         val payment = storageMutation(data, "buy_payment", player, snapshot) {
             economy.withdraw(player.uuid, listing.price.toLong())
         }
         if (payment is EconomyResult.Failure) {
             data.add(listing)
+            GtsJournal.finish(player, operation)
             fail(payment.reason)
         }
+        GtsJournal.stage(operation, "payment_complete_before_delivery")
         if (!storageMutation(data, "buy", player, snapshot) { party.add(listing.pokemon) }) {
+            GtsJournal.stage(operation, "delivery_rejected_before_refund")
             val refund = storageMutation(data, "buy_refund", player, snapshot) {
                 economy.deposit(player.uuid, listing.price.toLong())
             }
@@ -124,16 +138,19 @@ object GtsService {
                 fail("storage_failed")
             }
             data.add(listing)
+            GtsJournal.finish(player, operation)
             fail("storage_full")
         }
+        GtsJournal.stage(operation, "delivered_before_credit")
         PurchaseFinalization.complete(
             creditSeller = { data.credit(listing.sellerId, economyKey.storageKey, listing.price.toLong()) },
-            appendHistory = { history.append(record) },
+            appendHistory = { GtsJournal.stage(operation, "credited_before_history"); history.append(record) },
             quarantine = { operation, error ->
                 ZianGts.LOGGER.error("GTS {} failed after delivery of listing {}", operation, id, error)
                 preserveIncident(data, operation, player, snapshot)
             }
         )
+        GtsJournal.finish(player, operation)
     }
 
     private fun cancelInternal(player: ServerPlayer, id: UUID) {
@@ -147,11 +164,15 @@ object GtsService {
         if (party.getFirstAvailablePosition() == null && pc.getFirstAvailablePosition() == null) fail("storage_full")
         if (party[listing.pokemon.uuid] != null || pc[listing.pokemon.uuid] != null) fail("duplicate")
         val snapshot = listing.toNbt(player.registryAccess())
+        val operation = GtsJournal.begin(player, "cancel", snapshot)
         check(data.remove(id) != null)
+        GtsJournal.stage(operation, "before_return")
         if (!storageMutation(data, "cancel", player, snapshot) { party.add(listing.pokemon) }) {
             data.add(listing)
+            GtsJournal.finish(player, operation)
             fail("storage_full")
         }
+        GtsJournal.finish(player, operation)
     }
 
     /** Unknown callback outcomes must be quarantined, never retried as a fresh purchase. */
@@ -210,14 +231,20 @@ object GtsService {
                 putString("economyProvider", key.provider)
                 putString("currency", key.currency)
                 putLong("amount", give)
+                putLong("pendingBefore", amount)
             }
+            val operation = GtsJournal.begin(player, "claim", snapshot)
+            GtsJournal.stage(operation, "before_proceeds_debit")
             data.debit(player.uuid, currency, give)
+            GtsJournal.stage(operation, "before_payout")
             val result = storageMutation(data, "claim", player, snapshot) { economy.deposit(player.uuid, give) }
             if (result is EconomyResult.Failure) {
                 data.credit(player.uuid, currency, give)
+                GtsJournal.finish(player, operation)
                 failure = result.reason
                 continue
             }
+            GtsJournal.finish(player, operation)
             claimed = true
         }
         val key = when {

@@ -67,12 +67,28 @@ object GtsCommands {
                     val incidents = data.transferIncidents()
                     ctx.source.sendSuccess({ Component.translatable("command.ziangts.recovery.summary",
                         data.hasUnreadableData(), incidents.size) }, false)
+                    journalStatus(ctx.source)
                     incidents.takeLast(10).forEach { incident ->
                         val id = if (incident.hasUUID("incidentId")) incident.getUUID("incidentId").toString() else "sin-id"
                         val actor = if (incident.hasUUID("actor")) incident.getUUID("actor").toString() else "desconocido"
                         ctx.source.sendSuccess({ Component.literal("$id | ${incident.getString("operation")} | $actor | ${incident.getLong("recordedAt")}") }, false)
                     }
                 } }
+                .then(literal("journal")
+                    .executes { ctx -> run(ctx.source) { journalStatus(ctx.source) } }
+                    .then(literal("resolve").requires { GtsPermissions.allowed(it, "ziangts.admin.recovery.resolve") }
+                        .then(argument("operation", StringArgumentType.word())
+                            .executes { ctx -> run(ctx.source) {
+                                val id = uuid(StringArgumentType.getString(ctx, "operation"))
+                                ctx.source.sendSuccess({ Component.translatable("command.ziangts.recovery.confirm_resolve",
+                                    "/gts recovery journal resolve $id confirm") }, false)
+                            } }
+                            .then(literal("confirm").executes { ctx -> run(ctx.source) {
+                                val id = uuid(StringArgumentType.getString(ctx, "operation"))
+                                if (!GtsJournal.resolve(ctx.source.server, id, ctx.source.textName, ctx.source.entity?.uuid))
+                                    throw GtsException("command.ziangts.not_found")
+                                ctx.source.sendSuccess({ Component.translatable("command.ziangts.recovery.resolved", id.toString()) }, true)
+                            } }))))
                 .then(literal("resolve").requires { GtsPermissions.allowed(it, "ziangts.admin.recovery.resolve") }
                     .then(argument("incident", StringArgumentType.word())
                         .executes { ctx -> run(ctx.source) {
@@ -113,6 +129,14 @@ object GtsCommands {
 
     private fun uuid(value: String): UUID = try { UUID.fromString(value) }
         catch (_: IllegalArgumentException) { throw GtsException("command.ziangts.invalid_request") }
+
+    private fun journalStatus(source: CommandSourceStack) {
+        val entries = GtsJournal.entries(source.server)
+        source.sendSuccess({ Component.translatable("command.ziangts.journal_status", GtsJournal.status(source.server), entries.size) }, false)
+        entries.takeLast(10).forEach { entry ->
+            source.sendSuccess({ Component.literal("${entry.id} | ${entry.operation} | ${entry.actor} | ${entry.stage}") }, false)
+        }
+    }
 
     private fun show(source: CommandSourceStack, page: Int) {
         val items = ListingsData.get(source.level).all().filter { !it.isExpired() && AvecoinsCatalog.isSupported(it.currency) }

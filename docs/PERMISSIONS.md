@@ -16,7 +16,7 @@ No se incluye LuckPerms dentro del JAR.
 | `ziangts.admin.history` | Consultar historial | OP nivel 2 |
 | `ziangts.admin.history.archive` | Archivar historial | OP nivel 2 |
 | `ziangts.admin.recovery` | Consultar incidentes | OP nivel 2 |
-| `ziangts.admin.recovery.resolve` | Marcar incidentes como resueltos | OP nivel 2 |
+| `ziangts.admin.recovery.resolve` | Marcar incidentes y operaciones del diario como resueltos | OP nivel 2 |
 
 Todos requieren `ziangts.use`. Archivar también requiere acceso al historial y resolver incidentes requiere también `ziangts.admin.recovery`.
 La interfaz requiere list o mine según el filtro, además del permiso específico
