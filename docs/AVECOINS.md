@@ -35,6 +35,8 @@ Supported denominations: `coppercoin`, `ironcoin`, `goldcoin`, `diamondcoin`,
 `netheritecoin`, `goldticket`, `diamondticket`, `netheriteticket`, all in the
 `avecoins` namespace. The configured denomination is the unit of the price. New
 offers reject every currency outside this catalog; `avecoins:coppercoin` is the default.
+An older server configuration that still contains a non-AVECOINS default is
+treated as `avecoins:coppercoin` at runtime.
 There is no automatic conversion or mixing inventory and wallet funds in this
 adapter. This is explicit in the market payment method.
 

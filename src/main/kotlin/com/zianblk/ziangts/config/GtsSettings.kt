@@ -1,5 +1,6 @@
 package com.zianblk.ziangts.config
 
+import com.zianblk.ziangts.economy.AvecoinsCatalog
 import net.neoforged.neoforge.common.ModConfigSpec
 
 /** World-specific server settings. Trading stays opt-in while reconstruction is being validated. */
@@ -14,10 +15,13 @@ object GtsSettings {
     val expirationHours = builder.defineInRange("expirationHours", 48, 1, 8760)
     val spec: ModConfigSpec = builder.build()
 
-    fun snapshot() = GtsConfig(
-        currency = currency.get(),
-        economyProvider = provider.get(),
-        maxListings = maxListings.get(),
-        expirationTimeHours = expirationHours.get().toLong()
-    )
+    fun snapshot(): GtsConfig {
+        val configuredCurrency = currency.get()
+        return GtsConfig(
+            currency = configuredCurrency.takeIf(AvecoinsCatalog::isSupported) ?: "avecoins:coppercoin",
+            economyProvider = provider.get(),
+            maxListings = maxListings.get(),
+            expirationTimeHours = expirationHours.get().toLong()
+        )
+    }
 }
