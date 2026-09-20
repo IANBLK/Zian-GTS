@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - dev/reconstruction
+      - 'feat/**'
   pull_request:
     branches:
       - main
