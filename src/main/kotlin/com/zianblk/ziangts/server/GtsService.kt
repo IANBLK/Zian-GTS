@@ -35,7 +35,8 @@ object GtsService {
         try { return action() } finally { mutating = false }
     }
 
-    fun sell(player: ServerPlayer, slot: Int, price: Int): Listing = mutate(player) { sellInternal(player, slot, price) }
+    fun sell(player: ServerPlayer, slot: Int, price: Int, currency: String = config.currency): Listing =
+        mutate(player) { sellInternal(player, slot, price, currency) }
     fun buy(player: ServerPlayer, id: UUID) = mutate(player) { buyInternal(player, id) }
     fun cancel(player: ServerPlayer, id: UUID) = mutate(player) { cancelInternal(player, id) }
     fun claim(player: ServerPlayer): String = mutate(player) { claimInternal(player) }
@@ -49,11 +50,11 @@ object GtsService {
 
     private fun fail(key: String): Nothing = throw GtsException("command.ziangts.$key")
 
-    private fun sellInternal(player: ServerPlayer, slot: Int, price: Int): Listing {
+    private fun sellInternal(player: ServerPlayer, slot: Int, price: Int, currency: String): Listing {
         checkPlayer(player)
         if (slot !in 1..6 || price <= 0) fail("invalid_request")
         val settings = config
-        val economyKey = try { EconomyKey(settings.economyProvider, settings.currency) }
+        val economyKey = try { EconomyKey(settings.economyProvider, currency) }
             catch (_: IllegalArgumentException) { fail("sell.invalid_currency") }
         Economies.forPlayer(player, economyKey)
         if (economyKey.provider == "avecoins_wallet" && price > 1728) fail("wallet_price_limit")
@@ -67,7 +68,7 @@ object GtsService {
         if (data.all().any { it.pokemon.uuid == pokemon.uuid }) fail("duplicate")
         val now = System.currentTimeMillis()
         val listing = Listing(UUID.randomUUID(), player.uuid, player.gameProfile.name, price,
-            settings.currency, now, Math.addExact(now, Math.multiplyExact(settings.expirationTimeHours, 3_600_000L)),
+            currency, now, Math.addExact(now, Math.multiplyExact(settings.expirationTimeHours, 3_600_000L)),
             pokemon, settings.economyProvider)
         // Serialize before changing ownership, so serialization errors cannot consume a Pokémon.
         val snapshot = listing.toNbt(player.registryAccess())

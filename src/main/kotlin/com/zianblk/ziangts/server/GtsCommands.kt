@@ -5,11 +5,13 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.zianblk.ziangts.ZianGts
 import com.zianblk.ziangts.data.ListingsData
+import com.zianblk.ziangts.economy.AvecoinsCatalog
 import com.zianblk.ziangts.history.TransactionHistoryData
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.Commands.literal
 import net.minecraft.network.chat.Component
+import net.minecraft.commands.SharedSuggestionProvider
 import java.util.UUID
 
 object GtsCommands {
@@ -25,7 +27,17 @@ object GtsCommands {
                     val listing = GtsService.sell(ctx.source.playerOrException,
                         IntegerArgumentType.getInteger(ctx, "slot"), IntegerArgumentType.getInteger(ctx, "price"))
                     ctx.source.sendSuccess({ Component.translatable("command.ziangts.sell.success").append(" ${listing.id}") }, false)
-                } })))
+                } }.then(argument("currency", StringArgumentType.word())
+                    .suggests { _, builder ->
+                        SharedSuggestionProvider.suggest(AvecoinsCatalog.all(), builder)
+                    }
+                    .executes { ctx -> run(ctx.source) {
+                        val listing = GtsService.sell(ctx.source.playerOrException,
+                            IntegerArgumentType.getInteger(ctx, "slot"),
+                            IntegerArgumentType.getInteger(ctx, "price"),
+                            StringArgumentType.getString(ctx, "currency"))
+                        ctx.source.sendSuccess({ Component.translatable("command.ziangts.sell.success").append(" ${listing.id}") }, false)
+                    } }))))
             .then(literal("buy").then(argument("listing", StringArgumentType.word())
                 .executes { ctx -> run(ctx.source) {
                     val id = uuid(StringArgumentType.getString(ctx, "listing"))
