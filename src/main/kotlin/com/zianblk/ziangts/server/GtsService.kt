@@ -160,7 +160,11 @@ object GtsService {
         var failure: String? = null
         for ((currency, amount) in data.proceeds(player.uuid)) {
             val key = EconomyKey.parse(currency)
-            val economy = Economies.forPlayer(player, key)
+            val economy = try { Economies.forPlayer(player, key) }
+                catch (error: GtsException) {
+                    failure = error.key.removePrefix("command.ziangts.")
+                    continue
+                }
             val give = minOf(amount, economy.capacity(player.uuid))
             if (give <= 0) continue
             val snapshot = CompoundTag().apply {

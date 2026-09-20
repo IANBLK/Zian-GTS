@@ -49,7 +49,8 @@ records without a provider are interpreted as physical item currency.
 - Offers using the wallet cannot exceed its 1728-unit per-currency balance limit.
 - `/gts claim` deposits what fits and keeps the rest pending, including when the
   seller was offline during a purchase.
-- Any open container must be closed before payment/claim. In particular,
+- `/gts` closes an existing container before opening the market. Direct payment
+  and claim commands require containers to be closed. In particular,
   AVECOINS's wallet menu holds a snapshot and saves on close; mutating the backing
   balance while that menu is open could overwrite a payment.
 - Mutations work on a copy and check WalletStore.save's boolean result. An
@@ -61,3 +62,16 @@ AVECOINS's exposed methods do not provide external transaction identifiers or
 an idempotency lookup. A cross-store recovery protocol remains necessary before
 production trading is enabled. Never treat an exception as proof that no debit
 occurred, and never blindly retry an uncertain payment.
+
+## Repeat the isolated wallet contract check
+
+With Java 21 and the separately installed AVECOINS 2.3 JAR:
+
+```sh
+java --class-path /path/to/avecoins-2.3.jar tools/VerifyAvecoinsWallet.java
+```
+
+This check passed against the artifact fingerprint above. It verifies copy
+isolation, exact debit, overdraft rejection, defensive balance maps and the
+aggregate 27-slot limit. It does not initialize a Minecraft server or exercise
+WalletStore disk persistence, network menus or a live Pokémon transfer.

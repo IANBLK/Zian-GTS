@@ -53,7 +53,7 @@ object GtsNetwork {
     private val lastRequest = java.util.WeakHashMap<ServerPlayer, Long>()
 
     fun register(event: RegisterPayloadHandlersEvent) {
-        val registrar = event.registrar("1")
+        val registrar = event.registrar("2")
         registrar.playToClient(MarketPagePayload.TYPE, MarketPagePayload.CODEC) { payload, _ ->
             clientReceiver(gson.fromJson(payload.json, MarketPage::class.java))
         }
@@ -85,6 +85,7 @@ object GtsNetwork {
 
     fun open(player: ServerPlayer, requestedPage: Int = 1, filter: Int = 0, sort: Int = 0,
              openScreen: Boolean = true, notice: String = "") {
+        if (openScreen && player.containerMenu !== player.inventoryMenu) player.closeContainer()
         val listings = ListingsData.get(player.serverLevel()).all().filter {
             if (filter == 5) it.sellerId == player.uuid
             else !it.isExpired() && when (filter) {

@@ -40,6 +40,7 @@ class ListingsData(private val registryAccess: RegistryAccess) : SavedData() {
 
     fun credit(seller: UUID, currency: String, amount: Long) {
         require(amount > 0 && currency.isNotBlank())
+        EconomyKey.parse(currency)
         val total = Math.addExact(proceeds(seller, currency), amount)
         balances.getOrPut(seller) { linkedMapOf() }[currency] = total
         setDirty()

@@ -25,7 +25,9 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
 
     override fun append(record: TransactionRecord) {
         check(unreadableRoot == null) { "History root is unreadable" }
-        require(!records.containsKey(record.transactionId)) {
+        require(!records.containsKey(record.transactionId) && archived.none {
+            it is CompoundTag && it.hasUUID("transactionId") && it.getUUID("transactionId") == record.transactionId
+        }) {
             "transactionId already exists: ${record.transactionId}"
         }
         records[record.transactionId] = record
@@ -94,7 +96,7 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
             return overworld.dataStorage.computeIfAbsent(FACTORY, DATA_NAME)
         }
 
-        private fun load(
+        internal fun load(
             tag: CompoundTag,
             @Suppress("UNUSED_PARAMETER") registries: HolderLookup.Provider
         ): TransactionHistoryData {
