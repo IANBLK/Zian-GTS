@@ -27,7 +27,7 @@ object GtsCommands {
                     val listing = GtsService.sell(ctx.source.playerOrException,
                         IntegerArgumentType.getInteger(ctx, "slot"), IntegerArgumentType.getInteger(ctx, "price"))
                     ctx.source.sendSuccess({ Component.translatable("command.ziangts.sell.success").append(" ${listing.id}") }, false)
-                } }.then(argument("currency", StringArgumentType.word())
+                } }.then(argument("currency", StringArgumentType.greedyString())
                     .suggests { _, builder ->
                         SharedSuggestionProvider.suggest(AvecoinsCatalog.all(), builder)
                     }

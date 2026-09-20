@@ -9,6 +9,7 @@ import com.zianblk.ziangts.network.MarketRequest
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.Renderable
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
@@ -125,8 +126,10 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        // NeoForge/Minecraft may render a blurred world behind Screen.  Every
-        // GTS surface is intentionally opaque so that blur cannot bleed through
+        // Let Screen render NeoForge's background/blur first. Painting the
+        // surface before super.render lets that blur pass appear over the GTS.
+        super.render(graphics, mouseX, mouseY, partialTick)
+        // Every GTS surface is opaque, so the native blur cannot bleed through
         // text, stats or the Pokémon preview.
         // AVECOINS 2.3 GuiTheme palette: charcoal surfaces, neutral borders
         // and muted dividers.  The values are reproduced locally so the GTS
@@ -140,10 +143,14 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         graphics.renderOutline(left + 4, top + 48, listWidth, panelHeight - 78, 0xFF5D646B.toInt())
         graphics.renderOutline(left + listWidth + 12, top + 48, panelWidth - listWidth - 16, panelHeight - 78, 0xFF5D646B.toInt())
         graphics.vLine(left + listWidth + 8, top + 48, top + panelHeight - 30, 0xFF3A3F44.toInt())
-        // Widgets (and any NeoForge background pass they trigger) must be
-        // composed before the market content. Text and the Pokémon preview are
-        // deliberately the final opaque layer below the tooltip.
-        super.render(graphics, mouseX, mouseY, partialTick)
+        // super.render drew widgets before the opaque panels. Draw the widget
+        // layer once more without invoking Screen.render again (which would
+        // reintroduce the background blur).
+        children().forEach { child ->
+            if (child is Renderable) child.render(graphics, mouseX, mouseY, partialTick)
+        }
+        // Text and the Pokémon preview are deliberately the final layer below
+        // the tooltip.
         var tooltip: Component? = null
         val heading = if (page.notice.isBlank()) title else Component.translatable(page.notice)
         graphics.drawString(font, font.plainSubstrByWidth(heading.string, panelWidth - 16), left + 8, top + 9, 0xF4D481, false)
