@@ -10,6 +10,7 @@ import net.minecraft.nbt.CompoundTag
 import com.zianblk.ziangts.economy.Economies
 import com.zianblk.ziangts.economy.EconomyKey
 import com.zianblk.ziangts.economy.EconomyResult
+import com.zianblk.ziangts.economy.AvecoinsCatalog
 import com.zianblk.ziangts.data.Listing
 import com.zianblk.ziangts.data.ListingsData
 import com.zianblk.ziangts.data.TransactionRecord
@@ -53,6 +54,7 @@ object GtsService {
     private fun sellInternal(player: ServerPlayer, slot: Int, price: Int, currency: String): Listing {
         checkPlayer(player)
         if (slot !in 1..6 || price <= 0) fail("invalid_request")
+        if (!AvecoinsCatalog.isSupported(currency)) fail("sell.invalid_currency")
         val settings = config
         val economyKey = try { EconomyKey(settings.economyProvider, currency) }
             catch (_: IllegalArgumentException) { fail("sell.invalid_currency") }
@@ -86,6 +88,7 @@ object GtsService {
         val listing = data.get(id) ?: fail("not_found")
         if (listing.sellerId == player.uuid) fail("own_listing")
         if (listing.isExpired()) fail("expired")
+        if (!AvecoinsCatalog.isSupported(listing.currency)) fail("unsupported_currency")
         val economyKey = EconomyKey(listing.economyProvider, listing.currency)
         val economy = Economies.forPlayer(player, economyKey)
         if (economy.balance(player.uuid) < listing.price) fail("insufficient_funds")

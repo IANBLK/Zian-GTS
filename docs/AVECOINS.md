@@ -19,9 +19,9 @@ Configure the world's `serverconfig/ziangts-server.toml`:
 ```toml
 # Keep false on production until cross-store crash recovery is implemented.
 tradingEnabled = false
-# Physical coins in player inventory (also supports ordinary item currencies):
+# Physical AVECOINS coins or tickets in the player inventory:
 economyProvider = "vanilla_item"
-currency = "avecoins:goldcoin"
+currency = "avecoins:coppercoin"
 ```
 
 For the AVECOINS wallet instead:
@@ -33,14 +33,16 @@ currency = "avecoins:goldcoin"
 
 Supported denominations: `coppercoin`, `ironcoin`, `goldcoin`, `diamondcoin`,
 `netheritecoin`, `goldticket`, `diamondticket`, `netheriteticket`, all in the
-`avecoins` namespace. The configured denomination is the unit of the price.
+`avecoins` namespace. The configured denomination is the unit of the price. New
+offers reject every currency outside this catalog; `avecoins:coppercoin` is the default.
 There is no automatic conversion or mixing inventory and wallet funds in this
-adapter. This is explicit in the market payment method. The default remains
-vanilla diamonds until an administrator selects a mode and currency.
+adapter. This is explicit in the market payment method.
 
 Existing listings, pending payouts and transaction records retain their original
 provider and denomination. Changing the config affects new offers only. Legacy
-records without a provider are interpreted as physical item currency.
+records without a provider are interpreted as physical item currency. Legacy
+offers with a non-AVECOINS currency remain visible to their owner for withdrawal,
+but are hidden from buyers and cannot be purchased.
 
 ## Wallet behavior and limits
 

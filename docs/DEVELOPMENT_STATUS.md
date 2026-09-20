@@ -23,8 +23,8 @@
   its original contents, actor and timestamp in SavedData. It requires level 2.
 - UI: six entries per page, all/Shiny/Alpha/legendary/legendary Shiny/own filters,
   date/price/level sorting, confirmation, claim and withdrawal buttons, Pokémon
-  preview on wider screens. Central details retain seller, price, level, gender,
-  Shiny, stats, IVs and EVs. Nature and Ability are omitted only from this panel.
+  preview on wider screens. Central details show seller, price, level, gender,
+  Shiny, Alpha, Nature, Ability, stats and IVs; EVs are not shown.
 - Networking uses bounded requests, a per-player request limit and server-side
   lookups. No client-supplied Pokémon, ownership, price or balance is accepted.
 - Corrupt listings/payouts are retained verbatim and block trading. Corrupt history
@@ -36,8 +36,8 @@
 This remains a development build. `tradingEnabled` defaults to false in the
 world's `serverconfig/ziangts-server.toml`. Enable it only in a backed-up test world.
 Browsing is available independently. Currency, listing limit and expiry are also
-world-specific settings. Default currency remains unmodified vanilla diamonds;
-named or component-modified diamonds are deliberately not counted as money.
+world-specific settings. The default is `avecoins:coppercoin`; new offers and
+purchases accept only the supported AVECOINS coin and ticket catalog.
 
 The current item transaction sequence is serialized on the server thread with
 reentrant mutation protection. It is NOT a crash-atomic transaction across
@@ -55,7 +55,7 @@ reclaim; disconnect and restart; multiple dimensions; packet spam; small GUI sca
 preview models and custom forms. Unit tests cover proceeds persistence, overflow,
 overdraft, and retention/quarantine of malformed and duplicate records.
 
-AVECOINS 2.3 is connected through an optional reflection adapter using its public
+AVECOINS 2.3 is a required dependency and is connected through a reflection adapter using its public
 wallet methods. Physical AVECOINS coins also work as item currency. See
 [AVECOINS.md](AVECOINS.md) for configuration, supported denominations, wallet
 capacity, live-test requirements and the cross-store recovery limitation.

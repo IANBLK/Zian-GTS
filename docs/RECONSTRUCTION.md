@@ -34,7 +34,7 @@ The reference JAR contains user-visible English strings directly in compiled cod
 1. Establish a reproducible NeoForge 1.21.1 project.
 2. Reconstruct baseline behavior before feature changes.
 3. Replace visible hard-coded strings with translation keys; Spanish (Spain) is primary and the term "Shiny" remains unchanged.
-4. Preserve the requested GTS UI while removing only Nature and Ability from the specified central detail area.
+4. Preserve the requested GTS UI and show localized Nature and Ability in the central detail area.
 5. Add AVECOINS integration behind an economy abstraction.
 6. Add persistent transaction history with transaction ID, buyer, seller, Pokemon snapshot/identifier, amount/currency and timestamp.
 7. Add permission-gated history search/deletion with confirmation and audit-safe behavior.

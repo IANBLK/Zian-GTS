@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.api.pokemon.stats.Stats
 import com.google.gson.Gson
 import com.zianblk.ziangts.ZianGts
 import com.zianblk.ziangts.data.ListingsData
+import com.zianblk.ziangts.economy.AvecoinsCatalog
 import com.zianblk.ziangts.server.GtsException
 import com.zianblk.ziangts.server.GtsService
 import net.minecraft.network.RegistryFriendlyByteBuf
@@ -44,7 +45,8 @@ data class MarketPagePayload(val json: String) : CustomPacketPayload {
 
 data class MarketEntry(val id: String, val name: String, val species: String, val seller: String,
     val price: Int, val currency: String, val economyProvider: String, val level: Int, val gender: String, val shiny: Boolean,
-    val aspects: List<String>, val stats: List<Int>, val ivs: List<Int>, val evs: List<Int>, val mine: Boolean, val expired: Boolean)
+    val nature: String, val ability: String, val aspects: List<String>, val stats: List<Int>, val ivs: List<Int>,
+    val mine: Boolean, val expired: Boolean)
 data class MarketPage(val entries: List<MarketEntry>, val page: Int, val pages: Int, val filter: Int, val sort: Int, val openScreen: Boolean, val notice: String)
 
 object GtsNetwork {
@@ -53,7 +55,7 @@ object GtsNetwork {
     private val lastRequest = java.util.WeakHashMap<ServerPlayer, Long>()
 
     fun register(event: RegisterPayloadHandlersEvent) {
-        val registrar = event.registrar("2")
+        val registrar = event.registrar("3")
         registrar.playToClient(MarketPagePayload.TYPE, MarketPagePayload.CODEC) { payload, _ ->
             clientReceiver(gson.fromJson(payload.json, MarketPage::class.java))
         }
@@ -88,7 +90,7 @@ object GtsNetwork {
         if (openScreen && player.containerMenu !== player.inventoryMenu) player.closeContainer()
         val listings = ListingsData.get(player.serverLevel()).all().filter {
             if (filter == 5) it.sellerId == player.uuid
-            else !it.isExpired() && when (filter) {
+            else !it.isExpired() && AvecoinsCatalog.isSupported(it.currency) && when (filter) {
                 1 -> it.pokemon.shiny
                 2 -> "alpha" in it.pokemon.aspects
                 3 -> it.pokemon.isLegendary()
@@ -110,8 +112,9 @@ object GtsNetwork {
         val entries = ordered.drop((page - 1) * 6).take(6).map {
             val p = it.pokemon
             MarketEntry(it.id.toString(), p.species.name, p.species.resourceIdentifier.toString(), it.sellerName,
-                it.price, it.currency, it.economyProvider, p.level, p.gender.name, p.shiny, p.aspects.toList(), stats.map(p::getStat),
-                stats.map { stat -> p.ivs[stat] ?: 0 }, stats.map { stat -> p.evs[stat] ?: 0 },
+                it.price, it.currency, it.economyProvider, p.level, p.gender.name, p.shiny,
+                p.effectiveNature.displayName, p.ability.displayName, p.aspects.toList(), stats.map(p::getStat),
+                stats.map { stat -> p.ivs[stat] ?: 0 },
                 it.sellerId == player.uuid, it.isExpired())
         }
         PacketDistributor.sendToPlayer(player, MarketPagePayload(gson.toJson(MarketPage(entries, page, pages, filter, sort, openScreen, notice))))

@@ -3,15 +3,15 @@ package com.zianblk.ziangts.config
 /**
  * Runtime configuration for Zian GTS.
  *
- * The reference mod defaults were 48 hours, 20 listings and
- * minecraft:diamond. Zian GTS keeps those values as migration-safe defaults,
- * while the economy provider will allow AVECOINS to replace item currency.
+ * The reference mod defaults were 48 hours and 20 listings. New offers use
+ * AVECOINS currency exclusively; legacy listing data remains readable so it
+ * can be recovered safely.
  */
 data class GtsConfig(
     val expirationTimeHours: Long = 48,
     val enableDebugLogging: Boolean = false,
     val maxListings: Int = 20,
-    val currency: String = "minecraft:diamond",
+    val currency: String = "avecoins:coppercoin",
     val economyProvider: String = "vanilla_item"
 ) {
     init {
@@ -21,4 +21,3 @@ data class GtsConfig(
         require(economyProvider.isNotBlank()) { "economyProvider must not be blank" }
     }
 }
-

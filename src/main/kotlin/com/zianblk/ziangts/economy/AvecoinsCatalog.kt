@@ -26,4 +26,20 @@ object AvecoinsCatalog {
         }
         return values
     }
+
+    fun isSupported(currency: String): Boolean =
+        currency.startsWith("avecoins:") && currency in all()
+
+    /** Human-readable denomination used by the market UI (for example CopperCoin). */
+    fun displayName(currency: String): String {
+        val path = currency.substringAfter(':').substringAfterLast('/')
+        val suffix = when {
+            path.endsWith("coin") -> "Coin"
+            path.endsWith("ticket") -> "Ticket"
+            else -> ""
+        }
+        val base = if (suffix.isEmpty()) path else path.dropLast(suffix.length)
+        return base.split('_', '-').filter(String::isNotBlank)
+            .joinToString(" ") { it.replaceFirstChar(Char::uppercase) } + suffix
+    }
 }

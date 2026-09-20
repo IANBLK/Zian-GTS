@@ -3,6 +3,7 @@ package com.zianblk.ziangts.client
 import com.cobblemon.mod.common.client.gui.drawProfilePokemon
 import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState
 import com.zianblk.ziangts.ZianGts
+import com.zianblk.ziangts.economy.AvecoinsCatalog
 import com.zianblk.ziangts.network.GtsNetwork
 import com.zianblk.ziangts.network.MarketPage
 import com.zianblk.ziangts.network.MarketRequest
@@ -220,12 +221,13 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             }
             line(Component.literal(entry.name + if (entry.expired) " ⌛" else ""), 0xF4D481)
             line(Component.translatable("gui.ziangts.seller", entry.seller))
-            line(Component.translatable("gui.ziangts.price", "${entry.price} ${entry.currency}").append(" · ").append(Component.translatable("gui.ziangts.payment.${entry.economyProvider}")))
+            line(Component.translatable("gui.ziangts.price", "${entry.price} ${AvecoinsCatalog.displayName(entry.currency)}").append(" · ").append(Component.translatable("gui.ziangts.payment.${entry.economyProvider}")))
             line(Component.translatable("gui.ziangts.level", entry.level))
             line(Component.translatable("gui.ziangts.gender", Component.translatable("gui.ziangts.gender.${entry.gender.lowercase()}")))
             line(Component.translatable("gui.ziangts.shiny", Component.translatable(if (entry.shiny) "gui.yes" else "gui.no")))
             line(Component.translatable("gui.ziangts.alpha", Component.translatable(if (entry.aspects.any { it.equals("alpha", true) }) "gui.yes" else "gui.no")))
-            // Only Nature and Ability are omitted from this detail panel.
+            line(Component.translatable("gui.ziangts.nature", Component.translatable(entry.nature)))
+            line(Component.translatable("gui.ziangts.ability", Component.translatable(entry.ability)))
             line(Component.translatable("gui.ziangts.stats"), 0xF4D481)
             val names = arrayOf("hp", "attack", "defence", "special_attack", "special_defence", "speed")
             names.forEachIndexed { index, stat ->
