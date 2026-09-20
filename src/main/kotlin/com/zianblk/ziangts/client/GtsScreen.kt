@@ -52,10 +52,11 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
      * scale so they remain inside the preview card instead of being clipped. */
     private fun previewScale(species: String): Float = when (species.substringAfter(':')) {
         "snorlax", "wailord", "rayquaza", "kyogre", "groudon", "eternatus", "lugia",
-        "ho_oh", "steelix", "gyarados", "torterra" -> 21f
+        "ho_oh", "steelix", "gyarados", "torterra", "giratina", "dialga", "palkia",
+        "arceus", "reshiram", "zekrom", "zacian", "zamazenta" -> 27f
         "charizard", "dragonite", "lapras", "blastoise", "venusaur", "milotic",
-        "tyranitar", "metagross", "ursaluna" -> 25f
-        else -> 30f
+        "tyranitar", "metagross", "ursaluna" -> 32f
+        else -> 40f
     }
 
     fun update(next: MarketPage) {
@@ -178,7 +179,10 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
                 val stack = graphics.pose()
                 stack.pushPose()
                 try {
-                    stack.translate((previewX + previewSize / 2).toDouble(), (previewTop + 53).toDouble(), 100.0)
+                    // Cobblemon profile models are anchored near their feet;
+                    // move the origin above the mathematical card centre so
+                    // both short and tall models occupy the same card.
+                    stack.translate((previewX + previewSize / 2).toDouble(), (previewTop + 27).toDouble(), 100.0)
                     pose.currentAspects = entry.aspects.toSet()
                     drawProfilePokemon(ResourceLocation.parse(entry.species), stack, Quaternionf().rotationXYZ(0.1f, 0.5f, 0f),
                         state = pose, partialTicks = partialTick, scale = previewScale(entry.species))
