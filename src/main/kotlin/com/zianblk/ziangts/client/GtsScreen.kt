@@ -125,7 +125,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
     private fun button(x: Int, y: Int, w: Int, text: Component, icon: net.minecraft.world.item.Item? = null,
                        action: () -> Unit): Button {
         val widget = addRenderableWidget(Button.builder(text) { action() }.bounds(x, y, w, 20).build())
-        icon?.let { buttonIcons[widget] = ItemStack(it) }
+        buttonIcons[widget] = icon?.let { ItemStack(it) } ?: ItemStack.EMPTY
         return widget
     }
 
@@ -141,10 +141,12 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             val border = if (hovered && button.active) 0xFFE5E7E9.toInt() else 0xFF5D646B.toInt()
             graphics.fill(button.x, button.y, button.x + button.width, button.y + button.height, background)
             graphics.renderOutline(button.x, button.y, button.width, button.height, border)
-            graphics.renderItem(icon, button.x + 4, button.y + 2)
-            val available = (button.width - 25).coerceAtLeast(8)
+            val hasIcon = !icon.isEmpty
+            if (hasIcon) graphics.renderItem(icon, button.x + 4, button.y + 2)
+            val sidePadding = if (hasIcon) 25 else 12
+            val available = (button.width - sidePadding).coerceAtLeast(8)
             val label = font.plainSubstrByWidth(button.message.string, available)
-            val textX = button.x + 23 + (available - font.width(label)) / 2
+            val textX = button.x + (if (hasIcon) 23 else 6) + (available - font.width(label)) / 2
             val textColor = if (button.active) 0xFFE5E7E9.toInt() else 0xFFA1A6AB.toInt()
             graphics.drawString(font, Component.literal(label), textX, button.y + 6, textColor, false)
         }
