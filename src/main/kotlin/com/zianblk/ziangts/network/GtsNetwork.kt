@@ -82,12 +82,21 @@ object GtsNetwork {
             } catch (error: GtsException) {
                 notice = error.key
                 player.sendSystemMessage(Component.translatable(error.key))
+            } catch (error: Exception) {
+                // An unexpected failure must not escape the payload handler: NeoForge could disconnect the player.
+                ZianGts.LOGGER.error("Unexpected GTS failure for {} (action {})", player.uuid, request.action, error)
+                notice = "command.ziangts.storage_failed"
+                player.sendSystemMessage(Component.translatable(notice))
             }
             try {
                 open(player, request.page, request.filter, request.sort, openScreen = false, notice = notice)
             } catch (error: GtsException) {
                 PacketDistributor.sendToPlayer(player, MarketPagePayload(gson.toJson(
                     MarketPage(emptyList(), 1, 1, request.filter, request.sort, false, error.key))))
+            } catch (error: Exception) {
+                ZianGts.LOGGER.error("Could not refresh the GTS page for {}", player.uuid, error)
+                PacketDistributor.sendToPlayer(player, MarketPagePayload(gson.toJson(
+                    MarketPage(emptyList(), 1, 1, request.filter, request.sort, false, "command.ziangts.storage_failed"))))
             }
         }
     }
