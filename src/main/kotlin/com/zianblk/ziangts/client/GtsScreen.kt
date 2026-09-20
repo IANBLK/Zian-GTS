@@ -145,7 +145,7 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
             val available = (button.width - 25).coerceAtLeast(8)
             val label = font.plainSubstrByWidth(button.message.string, available)
             val textX = button.x + 23 + (available - font.width(label)) / 2
-            val textColor = if (button.active) 0xFFE5E7E9 else 0xFFA1A6AB
+            val textColor = if (button.active) 0xFFE5E7E9.toInt() else 0xFFA1A6AB.toInt()
             graphics.drawString(font, Component.literal(label), textX, button.y + 6, textColor, false)
         }
     }
