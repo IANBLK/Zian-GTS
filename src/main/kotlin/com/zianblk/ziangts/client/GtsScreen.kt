@@ -9,7 +9,6 @@ import com.zianblk.ziangts.network.MarketRequest
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
-import net.minecraft.client.gui.components.Renderable
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
@@ -175,18 +174,16 @@ class GtsScreen(private var page: MarketPage) : Screen(Component.translatable("g
         graphics.renderOutline(left + 4, top + 48, listWidth, panelHeight - 78, 0xFF5D646B.toInt())
         graphics.renderOutline(left + listWidth + 12, top + 48, panelWidth - listWidth - 16, panelHeight - 78, 0xFF5D646B.toInt())
         graphics.vLine(left + listWidth + 8, top + 48, top + panelHeight - 30, 0xFF3A3F44.toInt())
-        // super.render drew widgets before the opaque panels. Draw the widget
-        // layer once more without invoking Screen.render again (which would
-        // reintroduce the background blur).
-        children().forEach { child ->
-            if (child is Renderable) child.render(graphics, mouseX, mouseY, partialTick)
-        }
+        // The first super.render pass is intentionally hidden by the opaque
+        // panels. Paint the styled controls exactly once here; drawing the
+        // vanilla widgets a second time caused duplicated/overlapping labels.
         drawAvecoinsButtons(graphics, mouseX, mouseY)
         // Text and the Pokémon preview are deliberately the final layer below
         // the tooltip.
         var tooltip: Component? = null
         val heading = if (page.notice.isBlank()) title else Component.translatable(page.notice)
-        graphics.drawString(font, font.plainSubstrByWidth(heading.string, panelWidth - 16), left + 8, top + 9, 0xF4D481, false)
+        graphics.drawCenteredString(font, font.plainSubstrByWidth(heading.string, panelWidth - 16),
+            left + panelWidth / 2, top + 9, 0xF4D481)
         graphics.drawString(font, Component.translatable("gui.ziangts.listings"), left + 10, top + 49, 0x9FB3CB, false)
         graphics.drawString(font, Component.translatable("gui.ziangts.details"), left + listWidth + 18, top + 49, 0x9FB3CB, false)
         if (mouseX in left..(left + panelWidth) && mouseY in (top + 8)..(top + 20)) tooltip = heading
