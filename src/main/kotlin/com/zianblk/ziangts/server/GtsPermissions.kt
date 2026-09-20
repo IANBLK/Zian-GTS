@@ -29,6 +29,10 @@ object GtsPermissions {
 private object LuckPermsBridge {
     fun allowed(player: ServerPlayer, node: String, fallback: Boolean): Boolean {
         val user = net.luckperms.api.LuckPermsProvider.get().userManager.getUser(player.uuid) ?: return false
-        return user.cachedData.permissionData.checkPermission(node).asBooleanOrElse(fallback)
+        return when (user.cachedData.permissionData.checkPermission(node)) {
+            net.luckperms.api.util.Tristate.TRUE -> true
+            net.luckperms.api.util.Tristate.FALSE -> false
+            else -> fallback
+        }
     }
 }
