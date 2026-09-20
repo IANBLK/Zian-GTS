@@ -67,20 +67,6 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
         return tag
     }
 
-    private fun TransactionRecord.toNbt(): CompoundTag = CompoundTag().apply {
-        putUUID("transactionId", transactionId)
-        putUUID("listingId", listingId)
-        putUUID("buyerId", buyerId)
-        putString("buyerName", buyerName)
-        putUUID("sellerId", sellerId)
-        putString("sellerName", sellerName)
-        putLong("amount", amount)
-        putString("currency", currency)
-        putString("economyProvider", economyProvider)
-        putString("pokemonSnapshot", pokemonSnapshot)
-        putLong("completedAt", completedAt.toEpochMilli())
-    }
-
     companion object {
         private const val DATA_NAME = "ziangts_transactions"
         private const val KEY_TRANSACTIONS = "transactions"
@@ -140,4 +126,3 @@ class TransactionHistoryData : SavedData(), TransactionHistory {
         }
     }
 }
-

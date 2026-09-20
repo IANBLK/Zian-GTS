@@ -77,6 +77,66 @@ class ListingsDataTest {
         assertEquals(root, data.save(CompoundTag(), registries))
     }
 
+    @Test fun `resolving an incident unblocks trading and keeps an audit copy across reload`() {
+        val snapshot = CompoundTag().apply { putString("pokemon", "retained snapshot") }
+        val data = ListingsData(registries)
+        data.quarantineTransfer("buy", seller, snapshot)
+        val incidentId = data.transferIncidents().single().getUUID("incidentId")
+        assertTrue(data.hasUnreadableData())
+        assertFalse(data.resolveIncident(UUID.randomUUID(), "admin"))
+        assertTrue(data.hasUnreadableData())
+        val adminId = UUID.randomUUID()
+        assertTrue(data.resolveIncident(incidentId, "admin", now = 1234L, resolvedById = adminId))
+        assertFalse(data.hasUnreadableData())
+        assertTrue(data.transferIncidents().isEmpty())
+        val reloaded = ListingsData.load(data.save(CompoundTag(), registries), registries)
+        assertFalse(reloaded.hasUnreadableData())
+        val archived = reloaded.resolvedIncidents().single()
+        assertEquals(incidentId, archived.getUUID("incidentId"))
+        assertEquals("admin", archived.getString("resolvedBy"))
+        assertEquals(adminId, archived.getUUID("resolvedById"))
+        assertEquals(1234L, archived.getLong("resolvedAt"))
+        assertFalse(reloaded.resolveIncident(incidentId, "admin"))
+        assertEquals(snapshot, archived.getCompound("listing"))
+    }
+
+    @Test fun `resolving an incident does not clear other blocking data`() {
+        val invalid = CompoundTag().apply { putString("unknown-format", "do not lose this Pokemon") }
+        val root = CompoundTag().apply { put("listings", ListTag().apply { add(invalid) }) }
+        val data = ListingsData.load(root, registries)
+        data.quarantineTransfer("buy", seller, CompoundTag())
+        val incidentId = data.transferIncidents().single().getUUID("incidentId")
+        assertTrue(data.resolveIncident(incidentId, "admin"))
+        assertTrue(data.hasUnreadableData())
+        assertEquals(invalid, data.save(CompoundTag(), registries).getList("listings", 10).getCompound(0))
+    }
+
+    @Test fun `resolving one incident retains the block from another`() {
+        val data = ListingsData(registries)
+        data.quarantineTransfer("buy_credit", seller, CompoundTag())
+        data.quarantineTransfer("buy_history", seller, CompoundTag())
+        assertTrue(data.resolveIncident(data.transferIncidents().first().getUUID("incidentId"), "admin"))
+        val reloaded = ListingsData.load(data.save(CompoundTag(), registries), registries)
+        assertTrue(reloaded.hasUnreadableData())
+        assertEquals(1, reloaded.transferIncidents().size)
+        assertEquals(1, reloaded.resolvedIncidents().size)
+    }
+
+    @Test fun `post delivery incidents preserve complete transaction for reconciliation`() {
+        val record = TransactionRecord(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "buyer",
+            seller, "seller", 5L, "avecoins:coppercoin", "{pokemon:snapshot}", java.time.Instant.ofEpochMilli(1234))
+        for (operation in listOf("buy_credit", "buy_history")) {
+            val data = ListingsData(registries)
+            data.quarantineTransfer(operation, record.buyerId, CompoundTag().apply { put("transaction", record.toNbt()) })
+            val reloaded = ListingsData.load(data.save(CompoundTag(), registries), registries)
+            val incident = reloaded.transferIncidents().single()
+            assertTrue(reloaded.hasUnreadableData())
+            assertEquals(record.toNbt(), incident.getCompound("listing").getCompound("transaction"))
+            assertEquals(record.transactionId, incident.getCompound("listing").getCompound("transaction").getUUID("transactionId"))
+            assertEquals(record.buyerId, incident.getUUID("actor"))
+        }
+    }
+
     @Test fun `uncertain transfer snapshots survive restart and block trading`() {
         val snapshot = CompoundTag().apply { putString("pokemon", "retained snapshot") }
         val data = ListingsData(registries)
