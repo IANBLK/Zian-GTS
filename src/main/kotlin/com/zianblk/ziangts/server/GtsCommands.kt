@@ -55,7 +55,7 @@ object GtsCommands {
                     val ids = ListingsData.get(player.serverLevel()).all().asSequence()
                         .filter { it.sellerId == player.uuid }
                         .map { it.id.toString() }
-                    SharedSuggestionProvider.suggest(ids, builder)
+                    SharedSuggestionProvider.suggest(ids.asIterable(), builder)
                 }
                 .executes { ctx -> run(ctx.source) {
                 GtsService.cancel(ctx.source.playerOrException, uuid(StringArgumentType.getString(ctx, "listing")))
