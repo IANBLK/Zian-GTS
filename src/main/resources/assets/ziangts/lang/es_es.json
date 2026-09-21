@@ -83,5 +83,9 @@
   "command.ziangts.recovery.confirm_resolve": "Para marcar el incidente como resuelto usa: %s. No reembolsa dinero ni devuelve Pokémon. Otros incidentes o datos dañados pueden mantener el mercado bloqueado.",
   "command.ziangts.recovery.resolved": "Incidente %s marcado como resuelto. Se conserva una copia de auditoría.",
   "command.ziangts.journal_blocked": "El GTS está bloqueado por cierre o recuperación del diario. Un administrador debe revisar /gts recovery.",
-  "command.ziangts.journal_status": "Diario GTS: %s · operaciones retenidas: %s"
+  "command.ziangts.journal_status": "Diario GTS: %s · operaciones retenidas: %s",
+  "command.ziangts.mylistings.header": "§6Mis anuncios §7(%s)",
+  "command.ziangts.mylistings.empty": "§7No tienes anuncios activos ni pendientes.",
+  "command.ziangts.mylistings.remaining": "§eQuedan %s d %s h %s min",
+  "command.ziangts.mylistings.expired": "§cVencido, retíralo para recuperar tu Pokémon"
 }
