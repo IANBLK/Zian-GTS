@@ -49,10 +49,19 @@ object GtsCommands {
                     GtsService.buy(ctx.source.playerOrException, uuid(StringArgumentType.getString(ctx, "listing")))
                     ctx.source.sendSuccess({ Component.translatable("command.ziangts.purchase.success") }, false)
                 } })))
-            .then(literal("cancel").requires { GtsPermissions.allowed(it, "ziangts.cancel") }.then(argument("listing", StringArgumentType.word()).executes { ctx -> run(ctx.source) {
+            .then(literal("cancel").requires { GtsPermissions.allowed(it, "ziangts.cancel") }.then(argument("listing", StringArgumentType.word())
+                .suggests { ctx, builder ->
+                    val player = ctx.source.playerOrException
+                    val ids = ListingsData.get(player.serverLevel()).all().asSequence()
+                        .filter { it.sellerId == player.uuid }
+                        .map { it.id.toString() }
+                    SharedSuggestionProvider.suggest(ids, builder)
+                }
+                .executes { ctx -> run(ctx.source) {
                 GtsService.cancel(ctx.source.playerOrException, uuid(StringArgumentType.getString(ctx, "listing")))
                 ctx.source.sendSuccess({ Component.translatable("command.ziangts.cancel.success") }, false)
             } }))
+            .then(literal("mylistings").requires { GtsPermissions.allowed(it, "ziangts.mine") }.executes { ctx -> run(ctx.source) { showMine(ctx.source) } })
             .then(literal("mine").requires { GtsPermissions.allowed(it, "ziangts.mine") }.executes { ctx -> run(ctx.source) {
                 val player = ctx.source.playerOrException
                 ListingsData.get(player.serverLevel()).all().filter { it.sellerId == player.uuid }.forEach {
@@ -122,6 +131,29 @@ object GtsCommands {
         if (offset >= items.size) return
         items.drop(offset.toInt()).take(10).forEach {
             source.sendSuccess({ Component.literal("${it.id} | ${it.pokemon.species.name} | ${it.sellerName} | ${it.price} ${it.currency}") }, false)
+        }
+    }
+
+    private fun showMine(source: CommandSourceStack) {
+        val player = source.playerOrException
+        val now = System.currentTimeMillis()
+        val items = ListingsData.get(player.serverLevel()).all()
+            .filter { it.sellerId == player.uuid }
+            .sortedByDescending { it.createdAt }
+        source.sendSuccess({ Component.translatable("command.ziangts.mylistings.header", items.size) }, false)
+        if (items.isEmpty()) {
+            source.sendSuccess({ Component.translatable("command.ziangts.mylistings.empty") }, false)
+            return
+        }
+        items.forEach {
+            val remaining = if (it.isExpired(now)) 0L else maxOf(0L, it.expiresAt - now)
+            val minutes = remaining / 60_000L
+            val status = if (it.isExpired(now)) "expired" else "active"
+            source.sendSuccess({
+                Component.literal("${it.pokemon.species.name} | ${it.price} ${it.currency} | ")
+                    .append(Component.translatable("command.ziangts.status.$status"))
+                    .append(Component.literal(" | ${minutes}m | /gts cancel ${it.id}"))
+            }, false)
         }
     }
 
