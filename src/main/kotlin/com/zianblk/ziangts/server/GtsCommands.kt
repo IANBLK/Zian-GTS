@@ -70,6 +70,7 @@ object GtsCommands {
                 GtsService.cancel(ctx.source.playerOrException, uuid(StringArgumentType.getString(ctx, "listing")))
                 ctx.source.sendSuccess({ Component.translatable("command.ziangts.cancel.success") }, false)
             } }))
+            .then(literal("mylistings").requires { GtsPermissions.allowed(it, "ziangts.mine") }.executes { ctx -> run(ctx.source) { showMine(ctx.source) } })
             .then(literal("mine").requires { GtsPermissions.allowed(it, "ziangts.mine") }.executes { ctx -> run(ctx.source) {
                 val player = ctx.source.playerOrException
                 ListingsData.get(player.serverLevel()).all().filter { it.sellerId == player.uuid }.forEach {
@@ -163,6 +164,39 @@ object GtsCommands {
         if (offset >= items.size) return
         items.drop(offset.toInt()).take(10).forEach {
             source.sendSuccess({ Component.literal("${it.id} | ${it.pokemon.species.name} | ${it.sellerName} | ${it.price} ${it.currency}") }, false)
+        }
+    }
+
+    private fun showMine(source: CommandSourceStack) {
+        val player = source.playerOrException
+        val now = System.currentTimeMillis()
+        val items = ListingsData.get(player.serverLevel()).all()
+            .filter { it.sellerId == player.uuid }
+            .sortedByDescending { it.createdAt }
+        source.sendSuccess({ Component.translatable("command.ziangts.mylistings.header", items.size) }, false)
+        if (items.isEmpty()) {
+            source.sendSuccess({ Component.translatable("command.ziangts.mylistings.empty") }, false)
+            return
+        }
+        items.forEach {
+            val remaining = if (it.isExpired(now)) 0L else maxOf(0L, it.expiresAt - now)
+            val totalMinutes = remaining / 60_000L
+            val days = totalMinutes / 1_440L
+            val hours = (totalMinutes % 1_440L) / 60L
+            val minutes = totalMinutes % 60L
+            val status = if (it.isExpired(now)) "expired" else "active"
+            val time = if (it.isExpired(now)) {
+                Component.translatable("command.ziangts.mylistings.expired")
+            } else {
+                Component.translatable("command.ziangts.mylistings.remaining", days, hours, minutes)
+            }
+            source.sendSuccess({
+                Component.literal("${it.pokemon.species.name} | ${it.price} ${it.currency} | ")
+                    .append(Component.translatable("command.ziangts.status.$status"))
+                    .append(Component.literal(" | "))
+                    .append(time)
+                    .append(Component.literal(" | /gts cancel ${it.id}"))
+            }, false)
         }
     }
 
