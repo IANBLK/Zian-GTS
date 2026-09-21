@@ -30,9 +30,18 @@ internal object GtsJournal {
         try {
             journal = TransactionJournal(event.server.getWorldPath(LevelResource.ROOT)
                 .resolve("ziangts-journal").resolve("transactions.wal"))
+            val currentCheckpoint = checkpointTag(event.server)
             journal!!.orderlyCheckpoint?.let {
-                if (net.minecraft.nbt.TagParser.parseTag(it) != checkpointTag(event.server))
+                if (net.minecraft.nbt.TagParser.parseTag(it) != currentCheckpoint)
                     startupError = "GTS SavedData differs from orderly shutdown checkpoint; inspect journal before trading"
+            }
+            if (startupError == null && journal!!.blocksTrading() && journal!!.fault == null &&
+                journal!!.entries().isNotEmpty() && journal!!.entries().all { it.runtimeComplete }) {
+                val durable = journal!!.latestCheckpoint?.let {
+                    net.minecraft.nbt.TagParser.parseTag(it) == currentCheckpoint
+                } == true
+                if (durable && journal!!.reconcileCompleted(currentCheckpoint.toString()))
+                    ZianGts.LOGGER.info("GTS journal auto-reconciled completed operations from persisted SavedData")
             }
             if (journal!!.blocksTrading()) ZianGts.LOGGER.error(
                 "GTS journal requires recovery: {} entries; error={}", journal!!.entries().size, journal!!.fault)
