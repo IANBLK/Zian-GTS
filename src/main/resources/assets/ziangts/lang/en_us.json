@@ -81,5 +81,7 @@
   "command.ziangts.wallet_price_limit": "The AVECOINS wallet holds at most 1728 units of one currency per purchase.",
   "command.ziangts.recovery.summary": "GTS: storage blocked: %s · incidents: %s",
   "command.ziangts.recovery.confirm_resolve": "To mark the incident as resolved use: %s. This does not refund money or return Pokémon. Other incidents or damaged data may keep trading blocked.",
-  "command.ziangts.recovery.resolved": "Incident %s marked as resolved. An audit copy is kept."
+  "command.ziangts.recovery.resolved": "Incident %s marked as resolved. An audit copy is kept.",
+  "command.ziangts.mylistings.header": "§6My listings §7(%s)",
+  "command.ziangts.mylistings.empty": "§7You have no active or pending listings."
 }
