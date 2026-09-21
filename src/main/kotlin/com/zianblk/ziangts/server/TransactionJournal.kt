@@ -67,6 +67,12 @@ internal class TransactionJournal(private val path: Path) : AutoCloseable {
         append("finish", JsonObject().apply { addProperty("id", id.toString()); addProperty("checkpoint", checkpoint) })
     }
 
+    fun reconcileCompleted(checkpoint: String): Boolean {
+        if (fault != null || pending.isEmpty() || pending.values.any { !it.runtimeComplete }) return false
+        append("orderly_shutdown", JsonObject().apply { addProperty("checkpoint", checkpoint) })
+        return true
+    }
+
     fun resolve(id: UUID, administrator: String, administratorId: UUID?): Boolean {
         if (!pending.containsKey(id)) return false
         append("resolve", JsonObject().apply {
