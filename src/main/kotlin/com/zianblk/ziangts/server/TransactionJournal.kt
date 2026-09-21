@@ -32,14 +32,14 @@ internal class TransactionJournal(private val path: Path) : AutoCloseable {
         try {
             val directory = path.toAbsolutePath().parent
             Files.createDirectories(directory)
-            FileChannel.open(directory.parent, READ).use { it.force(true) }
+            syncDirectory(directory.parent)
             channel = FileChannel.open(path, CREATE, READ, WRITE)
             lock = channel!!.tryLock() ?: error("Journal is already in use")
-            FileChannel.open(directory, READ).use { it.force(true) }
+            syncDirectory(directory)
             replay()
             inherited.addAll(pending.keys)
         } catch (error: Exception) {
-            fault = error.message ?: error.javaClass.simpleName
+            fault = describe(error)
         }
     }
 
@@ -97,12 +97,12 @@ internal class TransactionJournal(private val path: Path) : AutoCloseable {
             val file = checkNotNull(channel)
             file.position(file.size())
             while (frame.hasRemaining()) file.write(frame)
-            file.force(true) // No external mutation is allowed until this returns.
+            file.force(true)
             apply(event)
             sequence++
             hash = digest
         } catch (error: Exception) {
-            fault = error.message ?: error.javaClass.simpleName
+            fault = describe(error)
             throw error
         }
     }
@@ -171,6 +171,15 @@ internal class TransactionJournal(private val path: Path) : AutoCloseable {
 
     companion object {
         private const val MAX_FRAME = 32 * 1024 * 1024
+        private val windows = System.getProperty("os.name", "").lowercase().startsWith("windows")
+
+        private fun syncDirectory(directory: Path) {
+            if (windows) return
+            FileChannel.open(directory, READ).use { it.force(true) }
+        }
+
+        private fun describe(error: Exception): String =
+            error.javaClass.simpleName + (error.message?.let { ": $it" } ?: "")
         private fun digest(previous: ByteArray, bytes: ByteArray): ByteArray =
             MessageDigest.getInstance("SHA-256").run { update(previous); digest(bytes) }
         private fun readFully(file: FileChannel, buffer: ByteBuffer) {
