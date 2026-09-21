@@ -49,7 +49,24 @@ object GtsCommands {
                     GtsService.buy(ctx.source.playerOrException, uuid(StringArgumentType.getString(ctx, "listing")))
                     ctx.source.sendSuccess({ Component.translatable("command.ziangts.purchase.success") }, false)
                 } })))
-            .then(literal("cancel").requires { GtsPermissions.allowed(it, "ziangts.cancel") }.then(argument("listing", StringArgumentType.word()).executes { ctx -> run(ctx.source) {
+            .then(literal("cancel").requires { GtsPermissions.allowed(it, "ziangts.cancel") }.then(argument("listing", StringArgumentType.word())
+                .suggests { ctx, builder ->
+                    val player = ctx.source.entity as? net.minecraft.server.level.ServerPlayer
+                    if (player != null && GtsPermissions.allowed(ctx.source, "ziangts.use") &&
+                        GtsPermissions.allowed(ctx.source, "ziangts.cancel")) {
+                        val prefix = builder.remaining.lowercase(java.util.Locale.ROOT)
+                        ListingsData.get(player.serverLevel()).all()
+                            .filter { it.sellerId == player.uuid }
+                            .forEach { listing ->
+                                val id = listing.id.toString()
+                                if (id.startsWith(prefix)) builder.suggest(id, Component.literal(listing.pokemon.species.name)
+                                    .append(Component.translatable(if (listing.isExpired())
+                                        "command.ziangts.status.expired" else "command.ziangts.status.active")))
+                            }
+                    }
+                    builder.buildFuture()
+                }
+                .executes { ctx -> run(ctx.source) {
                 GtsService.cancel(ctx.source.playerOrException, uuid(StringArgumentType.getString(ctx, "listing")))
                 ctx.source.sendSuccess({ Component.translatable("command.ziangts.cancel.success") }, false)
             } }))
