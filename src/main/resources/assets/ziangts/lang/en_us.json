@@ -83,5 +83,9 @@
   "command.ziangts.recovery.confirm_resolve": "To mark the incident as resolved use: %s. This does not refund money or return Pokémon. Other incidents or damaged data may keep trading blocked.",
   "command.ziangts.recovery.resolved": "Incident %s marked as resolved. An audit copy is kept.",
   "command.ziangts.journal_blocked": "GTS is blocked for shutdown or journal recovery. An administrator must check /gts recovery.",
-  "command.ziangts.journal_status": "GTS journal: %s · retained operations: %s"
+  "command.ziangts.journal_status": "GTS journal: %s · retained operations: %s",
+  "command.ziangts.mylistings.header": "§6My listings §7(%s)",
+  "command.ziangts.mylistings.empty": "§7You have no active or pending listings.",
+  "command.ziangts.mylistings.remaining": "§e%s d %s h %s min remaining",
+  "command.ziangts.mylistings.expired": "§cExpired, withdraw it to recover your Pokémon"
 }
