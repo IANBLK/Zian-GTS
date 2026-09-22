@@ -85,4 +85,54 @@ class DurableTradeJournalTest {
         }
         DurableTradeJournal(path).use { assertFalse(it.blocksTrading()) }
     }
+    @Test fun runtimeCompleteCanBeReconciledDurablyAfterReopen() {
+        val path = dir.resolve("transactions-v2.wal")
+        val id: UUID
+        DurableTradeJournal(path).use { j ->
+            val t = j.begin(TradeOperation.PURCHASE, UUID.randomUUID())
+            id = t.operationId
+            j.stage(t, TradeStage.PAYMENT_APPLIED)
+            j.stage(t, TradeStage.POKEMON_DELIVERED)
+            j.stage(t, TradeStage.PROCEEDS_CREDITED)
+            j.stage(t, TradeStage.RUNTIME_COMPLETE)
+        }
+
+        DurableTradeJournal(path).use { j ->
+            assertTrue(j.blocksTrading())
+            assertEquals(id, j.unresolved().single().ticket.operationId)
+            assertEquals(listOf(id), j.reconcileRuntimeComplete())
+            assertFalse(j.blocksTrading())
+        }
+
+        DurableTradeJournal(path).use { j ->
+            assertFalse(j.blocksTrading())
+            assertTrue(j.unresolved().isEmpty())
+        }
+    }
+
+    @Test fun reconciliationNeverClosesIncompleteOrQuarantinedTickets() {
+        val incompletePath = dir.resolve("incomplete-v2.wal")
+        DurableTradeJournal(incompletePath).use { j ->
+            val t = j.begin(TradeOperation.PURCHASE, UUID.randomUUID())
+            j.stage(t, TradeStage.PAYMENT_APPLIED)
+        }
+        DurableTradeJournal(incompletePath).use { j ->
+            assertTrue(j.reconcileRuntimeComplete().isEmpty())
+            assertTrue(j.blocksTrading())
+            assertEquals(TradeStage.PAYMENT_APPLIED, j.unresolved().single().stage)
+        }
+
+        val quarantinedPath = dir.resolve("quarantined-v2.wal")
+        DurableTradeJournal(quarantinedPath).use { j ->
+            val t = j.begin(TradeOperation.PURCHASE, UUID.randomUUID())
+            j.stage(t, TradeStage.RUNTIME_COMPLETE)
+            j.quarantine(t, "terminal journal state requires admin review")
+        }
+        DurableTradeJournal(quarantinedPath).use { j ->
+            assertTrue(j.reconcileRuntimeComplete().isEmpty())
+            assertTrue(j.blocksTrading())
+            assertTrue(j.unresolved().single().quarantined)
+        }
+    }
+
 }
