@@ -8,6 +8,8 @@ import com.zianblk.ziangts.v2.persistence.DurableTradeJournal
 import com.zianblk.ziangts.v2.domain.MarketQuery
 import com.zianblk.ziangts.v2.domain.MarketView
 import com.zianblk.ziangts.v2.domain.query
+import com.zianblk.ziangts.v2.port.TradeHistoryRecord
+import com.zianblk.ziangts.v2.domain.ProceedsKey
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.storage.LevelResource
 import java.time.Clock
@@ -93,6 +95,21 @@ object ZianGtsV2Runtime {
      * Returning null instead of opening storage separately preserves the single runtime owner.
      */
     fun marketView(query: MarketQuery): MarketView? = context?.market?.query(query)
+
+    /** Completed trades involving this player, newest first. */
+    fun historyFor(playerId: java.util.UUID, limit: Int = 50): List<TradeHistoryRecord>? {
+        require(limit in 1..500) { "history limit must be between 1 and 500" }
+        val history = context?.history ?: return null
+        return history.all().asSequence()
+            .filter { it.sellerId == playerId || it.buyerId == playerId }
+            .sortedByDescending { it.completedAt }
+            .take(limit)
+            .toList()
+    }
+
+    /** Read-only pending seller proceeds for UI/commands. */
+    fun proceedsFor(playerId: java.util.UUID): Map<ProceedsKey, Long>? =
+        context?.market?.balances(playerId)
     fun unresolvedTransactions(): List<DurableTradeJournal.Pending> =
         (context?.journal ?: blockedJournal)?.unresolved() ?: emptyList()
 
