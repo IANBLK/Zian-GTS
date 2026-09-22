@@ -32,11 +32,15 @@ class CobblemonPokemonPort(
         val player = online(ownerId) ?: return PokemonMutation.Rejected("player_offline")
         requireServerThread()
         val party = Cobblemon.storage.getParty(player)
-        val pokemon = party[pokemonId] ?: return PokemonMutation.Rejected("pokemon_not_in_party")
+        val pc = Cobblemon.storage.getPC(player)
+        val partyPokemon = party[pokemonId]
+        val pcPokemon = pc[pokemonId]
+        val pokemon = partyPokemon ?: pcPokemon ?: return PokemonMutation.Rejected("pokemon_not_owned")
         if (!pokemon.tradeable) return PokemonMutation.Rejected("pokemon_not_tradeable")
         if (pokemon.state !is InactivePokemonState) return PokemonMutation.Rejected("pokemon_not_recalled")
         return try {
-            if (party.remove(pokemon)) PokemonMutation.Applied
+            val removed = if (partyPokemon != null) party.remove(pokemon) else pc.remove(pokemon)
+            if (removed) PokemonMutation.Applied
             else PokemonMutation.Rejected("pokemon_remove_rejected")
         } catch (error: Exception) {
             PokemonMutation.Uncertain("Cobblemon remove threw ${error.javaClass.simpleName}")
