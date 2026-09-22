@@ -59,6 +59,33 @@ class TradeEngineJournalTerminalFailureTest {
         assertNull(offers.find(offer.id), "uncertain payment must keep offer unavailable")
     }
 
+
+    @Test fun claimAbortFailurePropagatesAfterSafeProceedsRestore() {
+        val owner = UUID.randomUUID()
+        val key = ProceedsKey(payment.adapter, payment.currency)
+        val proceeds = InMemoryProceedsStore().apply { credit(owner, key, 8) }
+        val journal = TerminalFailJournal(failAbort = true)
+        val engine = TradeEngine(InMemoryOfferBook(), AppliedPokemon(), RejectingDepositEconomy(),
+            proceeds, journal, clock)
+
+        assertThrows(IllegalStateException::class.java) { engine.claim(owner, key) }
+
+        assertEquals(8, proceeds.balance(owner, key), "proceeds were safely restored before abort persistence failed")
+    }
+
+    @Test fun withdrawAbortFailurePropagatesAfterSafeOfferRestore() {
+        val seller = UUID.randomUUID()
+        val offer = offer(seller)
+        val offers = InMemoryOfferBook().apply { add(offer) }
+        val journal = TerminalFailJournal(failAbort = true)
+        val engine = TradeEngine(offers, RejectingDeliveryPokemon(), AppliedEconomy(),
+            InMemoryProceedsStore(), journal, clock)
+
+        assertThrows(IllegalStateException::class.java) { engine.withdraw(seller, offer.id) }
+
+        assertNotNull(offers.find(offer.id), "offer was safely restored before abort persistence failed")
+    }
+
     private fun offer(seller: UUID) = TradeOffer(
         OfferId(UUID.randomUUID()), OfferOwner(seller, "Seller"), payment,
         PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}"),
@@ -103,6 +130,20 @@ class TradeEngineJournalTerminalFailureTest {
             withdrawCalls++
             return EconomyResult.Rejected("wallet rejected")
         }
+    }
+
+
+    private class RejectingDepositEconomy : AppliedEconomy() {
+        override fun deposit(operationId: UUID, playerId: UUID, currency: String, amount: Long): EconomyResult =
+            EconomyResult.Rejected("wallet rejected deposit")
+    }
+
+    private class RejectingDeliveryPokemon : PokemonPort {
+        override fun inspectOwned(playerId: UUID, pokemonId: UUID): PokemonEnvelope? = null
+        override fun removeOwned(operationId: UUID, playerId: UUID, pokemonId: UUID): PokemonMutation = PokemonMutation.Applied
+        override fun deliver(operationId: UUID, playerId: UUID, pokemon: PokemonEnvelope): PokemonMutation =
+            PokemonMutation.Rejected("storage full")
+        override fun owns(playerId: UUID, pokemonId: UUID) = false
     }
 
     private class ThrowingWithdrawEconomy : AppliedEconomy() {
