@@ -66,6 +66,7 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
 
     fun resolve(operationId: UUID, note: String) {
         check(operationId in pending)
+        require(note.isNotBlank()) { "recovery note must not be blank" }
         append("resolve", JsonObject().apply {
             addProperty("id", operationId.toString()); addProperty("note", note)
         })
