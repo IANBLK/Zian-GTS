@@ -30,7 +30,9 @@ object V2MarketNetwork {
         registrar.playToClient(
             MarketPageResponsePayload.TYPE,
             MarketPayloadCodecs.RESPONSE_PAYLOAD
-        )
+        ) { _, _ ->
+            // Client state/GUI consumption is wired in the next networking slice.
+        }
     }
 
     private fun handlePageRequest(player: ServerPlayer, request: MarketPageRequest) {
