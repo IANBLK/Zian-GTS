@@ -33,6 +33,23 @@ class TradeEngineTest {
         assertTrue(journal.events.any { it.value == "complete" })
     }
 
+    @Test fun rejectedPublishRemovalAbortsWithoutQuarantine() {
+        val seller = UUID.randomUUID()
+        val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
+        val journal = RecordingTradeJournal()
+        val pokemon = RejectingRemovalPokemonPort(seller, p)
+        val offers = InMemoryOfferBook()
+        val engine = TradeEngine(offers, pokemon, TestEconomy(), InMemoryProceedsStore(), journal, Clock.fixed(now, ZoneOffset.UTC))
+
+        val result = engine.publish(seller, "Seller", p.pokemonId, payment)
+
+        assertTrue(result is TradeResult.Rejected)
+        assertTrue(offers.all().isEmpty())
+        assertTrue(pokemon.owns(seller, p.pokemonId))
+        assertTrue(journal.events.any { it.value.startsWith("abort:") })
+        assertTrue(journal.quarantined.isEmpty())
+    }
+
     @Test fun withdrawReturnsPokemonAndRemovesOffer() {
         val seller = UUID.randomUUID()
         val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
@@ -135,6 +152,20 @@ class TradeEngineTest {
         assertTrue(engine.purchase(seller, offer.id) is TradeResult.Rejected)
         assertEquals(20, economy.balances[seller])
         assertNotNull(offers.find(offer.id))
+    }
+
+    private class RejectingRemovalPokemonPort(
+        private val owner: UUID,
+        private val envelope: PokemonEnvelope
+    ) : PokemonPort {
+        override fun inspectOwned(playerId: UUID, pokemonId: UUID): PokemonEnvelope? =
+            if (playerId == owner && pokemonId == envelope.pokemonId) envelope else null
+        override fun removeOwned(operationId: UUID, playerId: UUID, pokemonId: UUID): PokemonMutation =
+            PokemonMutation.Rejected("removal rejected")
+        override fun deliver(operationId: UUID, playerId: UUID, pokemon: PokemonEnvelope): PokemonMutation =
+            PokemonMutation.Rejected("not used")
+        override fun owns(playerId: UUID, pokemonId: UUID): Boolean =
+            playerId == owner && pokemonId == envelope.pokemonId
     }
 
     private class RejectingDeliveryPokemonPort : PokemonPort {
