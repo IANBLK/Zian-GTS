@@ -5,6 +5,9 @@ import com.zianblk.ziangts.v2.application.TradeEngine
 import com.zianblk.ziangts.v2.persistence.DurableMarketStore
 import com.zianblk.ziangts.v2.persistence.DurableHistoryStore
 import com.zianblk.ziangts.v2.persistence.DurableTradeJournal
+import com.zianblk.ziangts.v2.domain.MarketQuery
+import com.zianblk.ziangts.v2.domain.MarketView
+import com.zianblk.ziangts.v2.domain.query
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.storage.LevelResource
 import java.time.Clock
@@ -84,6 +87,12 @@ object ZianGtsV2Runtime {
     }
 
     fun engineOrNull(): TradeEngine? = context?.engine
+
+    /**
+     * Read-only market projection for commands/network/UI.
+     * Returning null instead of opening storage separately preserves the single runtime owner.
+     */
+    fun marketView(query: MarketQuery): MarketView? = context?.market?.query(query)
     fun unresolvedTransactions(): List<DurableTradeJournal.Pending> =
         (context?.journal ?: blockedJournal)?.unresolved() ?: emptyList()
 
