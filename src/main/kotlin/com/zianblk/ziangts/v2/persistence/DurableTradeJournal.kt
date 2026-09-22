@@ -57,6 +57,25 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
         append("complete", JsonObject().apply { addProperty("id", ticket.operationId.toString()) })
     }
 
+    /**
+     * A RUNTIME_COMPLETE record means all business mutations are already durable.
+     * If a process dies after that stage but before the terminal complete frame,
+     * replay may safely close that ticket instead of blocking trading forever.
+     */
+    fun reconcileRuntimeComplete(): List<UUID> {
+        val completed = pending.values
+            .filter { !it.quarantined && it.stage == TradeStage.RUNTIME_COMPLETE }
+            .map { it.ticket.operationId }
+        completed.forEach { id ->
+            val ticket = pending.getValue(id).ticket
+            append("complete", JsonObject().apply {
+                addProperty("id", ticket.operationId.toString())
+                addProperty("reconciled", true)
+            })
+        }
+        return completed
+    }
+
     override fun abort(ticket: JournalTicket, reason: String) {
         check(ticket.operationId in pending)
         require(reason.isNotBlank()) { "abort reason must not be blank" }
