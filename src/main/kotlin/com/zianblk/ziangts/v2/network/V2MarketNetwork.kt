@@ -35,6 +35,15 @@ object V2MarketNetwork {
                 V2MarketClientState.accept(payload.response)
             }
         }
+
+        registrar.playToClient(
+            OpenMarketScreenPayload.TYPE,
+            MarketPayloadCodecs.OPEN_SCREEN_PAYLOAD
+        ) { _, context ->
+            context.enqueueWork {
+                V2MarketClientHandlers.openMarketScreen()
+            }
+        }
     }
 
     private fun handlePageRequest(player: ServerPlayer, request: MarketPageRequest) {
