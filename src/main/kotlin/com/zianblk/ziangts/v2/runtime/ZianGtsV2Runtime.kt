@@ -24,6 +24,7 @@ object ZianGtsV2Runtime {
     )
 
     @Volatile private var context: Context? = null
+    @Volatile private var blockedJournal: DurableTradeJournal? = null
     @Volatile private var blockedReason: String? = "V2 runtime not started"
 
     @Synchronized
@@ -35,8 +36,8 @@ object ZianGtsV2Runtime {
             val market = DurableMarketStore(root.resolve("market-v2.state"))
             val journal = DurableTradeJournal(root.resolve("transactions-v2.wal"))
             if (journal.blocksTrading()) {
+                blockedJournal = journal
                 blockedReason = "unresolved transaction journal"
-                journal.close()
                 ZianGts.LOGGER.error(
                     "Zian GTS V2 trading blocked: {} unresolved transaction(s). Inspect recovery evidence before resolving.",
                     journal.unresolved().size
@@ -48,6 +49,7 @@ object ZianGtsV2Runtime {
             val history = DurableHistoryStore(root.resolve("history-v2.wal"))
             val engine = TradeEngine(market, pokemon, economy, market, journal, Clock.systemUTC(), history)
             context = Context(market, journal, engine, history)
+            blockedJournal = null
             blockedReason = null
             ZianGts.LOGGER.info("Zian GTS V2 runtime ready at {}", root)
         } catch (error: Exception) {
@@ -61,7 +63,9 @@ object ZianGtsV2Runtime {
     fun stop(server: MinecraftServer) {
         check(server.isSameThread) { "Zian GTS V2 runtime must stop on the server thread" }
         val current = context
+        val blocked = blockedJournal
         context = null
+        blockedJournal = null
         blockedReason = "V2 runtime stopped"
         if (current != null) {
             try {
@@ -72,9 +76,16 @@ object ZianGtsV2Runtime {
                 ZianGts.LOGGER.error("Zian GTS V2 journal close failed", error)
             }
         }
+        if (blocked != null) {
+            try { blocked.close() } catch (error: Exception) {
+                ZianGts.LOGGER.error("Zian GTS V2 blocked journal close failed", error)
+            }
+        }
     }
 
     fun engineOrNull(): TradeEngine? = context?.engine
+    fun unresolvedTransactions(): List<DurableTradeJournal.Pending> =
+        (context?.journal ?: blockedJournal)?.unresolved() ?: emptyList()
     fun isReady(): Boolean = context != null
     fun blockedReason(): String? = blockedReason
 }
