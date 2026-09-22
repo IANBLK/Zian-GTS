@@ -168,13 +168,35 @@ object V2TestCommands {
                                 report(ctx.source, result)
                             }))))
             .then(Commands.literal("buy")
-                .then(Commands.argument("offer", StringArgumentType.word()).executes { ctx ->
+                .then(Commands.argument("offer", StringArgumentType.word())
+                    .suggests { ctx, builder ->
+                        val player = ctx.source.player
+                        val view = player?.let {
+                            ZianGtsV2Runtime.marketView(
+                                MarketQuery(it.uuid, page = 1, pageSize = 50, filter = OfferFilter.ALL, sort = OfferSort.NEWEST)
+                            )
+                        }
+                        view?.offers?.forEach { builder.suggest(it.id.value.toString()) }
+                        builder.buildFuture()
+                    }
+                    .executes { ctx ->
                     val player = ctx.source.playerOrException
                     val engine = engine(ctx.source) ?: return@executes 0
                     report(ctx.source, engine.purchase(player.uuid, OfferId(java.util.UUID.fromString(StringArgumentType.getString(ctx, "offer")))))
                 }))
             .then(Commands.literal("withdraw")
-                .then(Commands.argument("offer", StringArgumentType.word()).executes { ctx ->
+                .then(Commands.argument("offer", StringArgumentType.word())
+                    .suggests { ctx, builder ->
+                        val player = ctx.source.player
+                        val view = player?.let {
+                            ZianGtsV2Runtime.marketView(
+                                MarketQuery(it.uuid, page = 1, pageSize = 50, filter = OfferFilter.OWN, sort = OfferSort.NEWEST)
+                            )
+                        }
+                        view?.offers?.forEach { builder.suggest(it.id.value.toString()) }
+                        builder.buildFuture()
+                    }
+                    .executes { ctx ->
                     val player = ctx.source.playerOrException
                     val engine = engine(ctx.source) ?: return@executes 0
                     report(ctx.source, engine.withdraw(player.uuid, OfferId(java.util.UUID.fromString(StringArgumentType.getString(ctx, "offer")))))
