@@ -40,6 +40,44 @@ object V2TestCommands {
                     }
                     1
                 })
+                .then(Commands.literal("resolve")
+                    .then(Commands.argument("operation", StringArgumentType.word())
+                        .executes { ctx ->
+                            val idText = StringArgumentType.getString(ctx, "operation")
+                            val id = try { java.util.UUID.fromString(idText) } catch (_: IllegalArgumentException) {
+                                ctx.source.sendFailure(Component.literal("Invalid operation UUID: $idText"))
+                                return@executes 0
+                            }
+                            ctx.source.sendFailure(Component.literal(
+                                "Recovery is destructive. Verify AVECOINS, Pokemon storage and GTS state first. " +
+                                    "To confirm: /gtsv2 recovery resolve $id confirm"
+                            ))
+                            1
+                        }
+                        .then(Commands.literal("confirm").executes { ctx ->
+                            val idText = StringArgumentType.getString(ctx, "operation")
+                            val id = try { java.util.UUID.fromString(idText) } catch (_: IllegalArgumentException) {
+                                ctx.source.sendFailure(Component.literal("Invalid operation UUID: $idText"))
+                                return@executes 0
+                            }
+                            val actor = ctx.source.entity?.uuid?.toString() ?: "console"
+                            val note = "manual reconciliation confirmed by $actor"
+                            val resolved = try {
+                                ZianGtsV2Runtime.resolveBlockedTransaction(id, note)
+                            } catch (error: Exception) {
+                                ctx.source.sendFailure(Component.literal("Recovery resolution failed: ${error.message}"))
+                                return@executes 0
+                            }
+                            if (!resolved) {
+                                ctx.source.sendFailure(Component.literal("Unknown unresolved operation: $id"))
+                                0
+                            } else {
+                                ctx.source.sendSuccess({ Component.literal(
+                                    "Resolved $id after manual reconciliation. Restart the server before V2 trading resumes."
+                                ) }, true)
+                                1
+                            }
+                        }))))
             .then(Commands.literal("publish")
                 .then(Commands.argument("pokemon", StringArgumentType.word())
                     .then(Commands.argument("amount", IntegerArgumentType.integer(1))
