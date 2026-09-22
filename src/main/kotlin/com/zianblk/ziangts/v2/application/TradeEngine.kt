@@ -29,7 +29,8 @@ class TradeEngine(
     private val history: HistoryPort? = null,
     private val maxOffersPerPlayer: Int = 20,
     private val offerLifetime: Duration = Duration.ofHours(48),
-    private val faultHook: (TradeStage) -> Unit = {}
+    private val faultHook: (TradeStage) -> Unit = {},
+    private val mutationThreadCheck: () -> Boolean = { true }
 ) {
     init {
         require(maxOffersPerPlayer > 0)
@@ -367,12 +368,14 @@ class TradeEngine(
     }
 
     private fun mutateClaim(action: () -> ClaimResult): ClaimResult {
+        check(mutationThreadCheck()) { "TradeEngine mutation attempted outside the authorized server thread" }
         if (mutating) return ClaimResult.Rejected("market mutation already in progress")
         mutating = true
         return try { action() } finally { mutating = false }
     }
 
     private fun mutate(action: () -> TradeResult): TradeResult {
+        check(mutationThreadCheck()) { "TradeEngine mutation attempted outside the authorized server thread" }
         if (mutating) return TradeResult.Rejected("market mutation already in progress")
         mutating = true
         return try { action() } finally { mutating = false }
