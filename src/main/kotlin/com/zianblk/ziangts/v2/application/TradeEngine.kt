@@ -49,12 +49,21 @@ class TradeEngine(
         if (offers.containsPokemon(pokemonId))
             return@mutate TradeResult.Rejected("pokemon already offered")
 
-        val envelope = pokemon.inspectOwned(sellerId, pokemonId)
-            ?: return@mutate TradeResult.Rejected("pokemon is not owned by seller")
+        val envelope = try {
+            pokemon.inspectOwned(sellerId, pokemonId)
+        } catch (error: Exception) {
+            return@mutate TradeResult.Rejected("pokemon ownership check failed")
+        } ?: return@mutate TradeResult.Rejected("pokemon is not owned by seller")
 
         val ticket = journal.begin(TradeOperation.PUBLISH, pokemonId)
         journal.stage(ticket, TradeStage.BEFORE_POKEMON_REMOVE)
-        when (val removed = pokemon.removeOwned(ticket.operationId, sellerId, pokemonId)) {
+        val removed = try {
+            pokemon.removeOwned(ticket.operationId, sellerId, pokemonId)
+        } catch (error: Exception) {
+            journal.quarantine(ticket, "pokemon adapter threw during removal: ${error.javaClass.simpleName}")
+            return@mutate TradeResult.Quarantined(ticket.operationId, "pokemon removal outcome uncertain")
+        }
+        when (removed) {
             PokemonMutation.Applied -> journal.stage(ticket, TradeStage.POKEMON_REMOVED)
             is PokemonMutation.Rejected -> {
                 journal.quarantine(ticket, "pokemon removal rejected after journal begin: ${removed.reason}")
@@ -190,19 +199,32 @@ class TradeEngine(
     }
 
     fun claim(ownerId: UUID, key: ProceedsKey): ClaimResult = mutateClaim {
-        val amount = proceeds.balance(ownerId, key)
+        val amount = try {
+            proceeds.balance(ownerId, key)
+        } catch (error: Exception) {
+            return@mutateClaim ClaimResult.Rejected("proceeds availability check failed")
+        }
         if (amount <= 0) return@mutateClaim ClaimResult.Rejected("no proceeds available")
 
         val ticket = journal.begin(TradeOperation.CLAIM, ownerId)
         // Reserve internally first. A second/reentrant claim can no longer see this balance.
-        proceeds.debit(ownerId, key, amount)
+        try {
+            proceeds.debit(ownerId, key, amount)
+        } catch (error: Exception) {
+            journal.quarantine(ticket, "proceeds reservation failed: ${error.javaClass.simpleName}")
+            return@mutateClaim ClaimResult.Quarantined(ticket.operationId, "proceeds reservation failed")
+        }
         journal.stage(ticket, TradeStage.PROCEEDS_RESERVED)
         faultHook(TradeStage.PROCEEDS_RESERVED)
         journal.stage(ticket, TradeStage.BEFORE_PAYMENT)
 
-        return@mutateClaim when (val deposited = economy.deposit(
-            ticket.operationId, ownerId, key.currency, amount
-        )) {
+        val deposited = try {
+            economy.deposit(ticket.operationId, ownerId, key.currency, amount)
+        } catch (error: Exception) {
+            journal.quarantine(ticket, "claim payment adapter threw after proceeds reservation: ${error.javaClass.simpleName}")
+            return@mutateClaim ClaimResult.Quarantined(ticket.operationId, "claim payment outcome uncertain")
+        }
+        return@mutateClaim when (deposited) {
             EconomyResult.Applied -> {
                 journal.stage(ticket, TradeStage.PAYMENT_APPLIED)
                 faultHook(TradeStage.PAYMENT_APPLIED)
@@ -233,7 +255,13 @@ class TradeEngine(
             ?: return@mutate TradeResult.Rejected("offer disappeared")
 
         journal.stage(ticket, TradeStage.BEFORE_POKEMON_DELIVERY)
-        when (val delivered = pokemon.deliver(ticket.operationId, ownerId, removed.pokemon)) {
+        val delivered = try {
+            pokemon.deliver(ticket.operationId, ownerId, removed.pokemon)
+        } catch (error: Exception) {
+            journal.quarantine(ticket, "pokemon adapter threw during offer return: ${error.javaClass.simpleName}")
+            return@mutate TradeResult.Quarantined(ticket.operationId, "pokemon return outcome uncertain")
+        }
+        when (delivered) {
             PokemonMutation.Applied -> {
                 journal.stage(ticket, TradeStage.POKEMON_DELIVERED)
                 journal.stage(ticket, TradeStage.RUNTIME_COMPLETE)
