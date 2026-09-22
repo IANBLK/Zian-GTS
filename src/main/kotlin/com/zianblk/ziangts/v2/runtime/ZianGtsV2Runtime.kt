@@ -37,12 +37,14 @@ object ZianGtsV2Runtime {
 
     @Synchronized
     fun start(server: MinecraftServer) {
-        if (context != null) return
+        if (context != null || blockedJournal != null) return
         check(server.isSameThread) { "Zian GTS V2 runtime must start on the server thread" }
         val root = server.getWorldPath(LevelResource.ROOT).resolve("ziangts-v2")
+        var journal: DurableTradeJournal? = null
+        var history: DurableHistoryStore? = null
         try {
             val market = DurableMarketStore(root.resolve("market-v2.state"))
-            val journal = DurableTradeJournal(root.resolve("transactions-v2.wal"))
+            journal = DurableTradeJournal(root.resolve("transactions-v2.wal"))
             if (journal.blocksTrading()) {
                 val reconciled = journal.reconcileRuntimeComplete()
                 if (reconciled.isNotEmpty()) {
@@ -63,7 +65,7 @@ object ZianGtsV2Runtime {
             }
             val pokemon = CobblemonPokemonPort(server)
             val economy = AvecoinsEconomyPort()
-            val history = DurableHistoryStore(root.resolve("history-v2.wal"))
+            history = DurableHistoryStore(root.resolve("history-v2.wal"))
             val engine = TradeEngine(
                 market,
                 pokemon,
@@ -80,6 +82,18 @@ object ZianGtsV2Runtime {
             ZianGts.LOGGER.info("Zian GTS V2 runtime ready at {}", root)
         } catch (error: Exception) {
             context = null
+            // Preserve an opened journal for recovery visibility and to retain single ownership
+            // of its file lock. Other partially opened resources are closed independently.
+            if (journal != null) {
+                blockedJournal = journal
+            }
+            if (history != null) {
+                try {
+                    history.close()
+                } catch (closeError: Exception) {
+                    error.addSuppressed(closeError)
+                }
+            }
             blockedReason = "runtime initialization failed: ${error.javaClass.simpleName}"
             ZianGts.LOGGER.error("Zian GTS V2 failed closed during startup; trading remains unavailable.", error)
         }
@@ -94,12 +108,21 @@ object ZianGtsV2Runtime {
         blockedJournal = null
         blockedReason = "V2 runtime stopped"
         if (current != null) {
+            var closeFailure: Exception? = null
             try {
                 current.history.close()
-                current.journal.close()
-                ZianGts.LOGGER.info("Zian GTS V2 runtime closed cleanly")
             } catch (error: Exception) {
-                ZianGts.LOGGER.error("Zian GTS V2 journal close failed", error)
+                closeFailure = error
+            }
+            try {
+                current.journal.close()
+            } catch (error: Exception) {
+                if (closeFailure == null) closeFailure = error else closeFailure.addSuppressed(error)
+            }
+            if (closeFailure == null) {
+                ZianGts.LOGGER.info("Zian GTS V2 runtime closed cleanly")
+            } else {
+                ZianGts.LOGGER.error("Zian GTS V2 runtime resource close failed", closeFailure)
             }
         }
         if (blocked != null) {
