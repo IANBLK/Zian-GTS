@@ -95,13 +95,31 @@ class TradeEngine(
         )
         try {
             offers.add(offer)
-            journal.stage(ticket, TradeStage.RUNTIME_COMPLETE)
-            journal.complete(ticket)
-            TradeResult.Success(offer)
         } catch (error: Exception) {
             journal.quarantine(ticket, "offer persistence failed after pokemon removal: ${error.javaClass.simpleName}")
-            TradeResult.Quarantined(ticket.operationId, "offer persistence failed")
+            return@mutate TradeResult.Quarantined(ticket.operationId, "offer persistence failed")
         }
+
+        // The offer is already durable here. Journal failures must not be mislabeled as market persistence failures.
+        try {
+            journal.stage(ticket, TradeStage.RUNTIME_COMPLETE)
+        } catch (error: Exception) {
+            try {
+                journal.quarantine(ticket, "journal runtime-complete stage failed after offer persistence: ${error.javaClass.simpleName}")
+            } catch (quarantineError: Exception) {
+                error.addSuppressed(quarantineError)
+                throw error
+            }
+            return@mutate TradeResult.Quarantined(ticket.operationId, "journal persistence failed after offer creation")
+        }
+
+        try {
+            journal.complete(ticket)
+        } catch (error: Exception) {
+            // Do not try to roll back the durable offer or disguise this as an OfferBook failure.
+            throw error
+        }
+        TradeResult.Success(offer)
     }
 
     fun purchase(buyerId: UUID, offerId: OfferId): TradeResult = mutate {
