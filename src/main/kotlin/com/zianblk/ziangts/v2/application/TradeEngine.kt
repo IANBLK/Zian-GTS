@@ -25,8 +25,8 @@ class TradeEngine(
     private val economy: EconomyPort,
     private val proceeds: ProceedsStore,
     private val journal: TradeJournalPort,
-    private val history: HistoryPort? = null,
     private val clock: Clock,
+    private val history: HistoryPort? = null,
     private val maxOffersPerPlayer: Int = 20,
     private val offerLifetime: Duration = Duration.ofHours(48),
     private val faultHook: (TradeStage) -> Unit = {}
