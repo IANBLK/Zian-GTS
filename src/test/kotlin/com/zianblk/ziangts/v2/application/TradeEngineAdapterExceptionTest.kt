@@ -101,8 +101,8 @@ class TradeEngineAdapterExceptionTest {
     private open class NoopPokemon : PokemonPort {
         override fun inspectOwned(playerId: UUID, pokemonId: UUID) =
             PokemonEnvelope(pokemonId, "cobblemon:gimmighoul", 17, false, false, "{test:true}")
-        override fun removeOwned(operationId: UUID, playerId: UUID, pokemonId: UUID) = PokemonMutation.Applied
-        override fun deliver(operationId: UUID, playerId: UUID, pokemon: PokemonEnvelope) = PokemonMutation.Applied
+        override fun removeOwned(operationId: UUID, playerId: UUID, pokemonId: UUID): PokemonMutation = PokemonMutation.Applied
+        override fun deliver(operationId: UUID, playerId: UUID, pokemon: PokemonEnvelope): PokemonMutation = PokemonMutation.Applied
         override fun owns(playerId: UUID, pokemonId: UUID) = false
     }
 
@@ -122,8 +122,8 @@ class TradeEngineAdapterExceptionTest {
 
     private open class AppliedEconomy : EconomyPort {
         override fun canWithdraw(playerId: UUID, currency: String, amount: Long) = true
-        override fun withdraw(operationId: UUID, playerId: UUID, currency: String, amount: Long) = EconomyResult.Applied
-        override fun deposit(operationId: UUID, playerId: UUID, currency: String, amount: Long) = EconomyResult.Applied
+        override fun withdraw(operationId: UUID, playerId: UUID, currency: String, amount: Long): EconomyResult = EconomyResult.Applied
+        override fun deposit(operationId: UUID, playerId: UUID, currency: String, amount: Long): EconomyResult = EconomyResult.Applied
     }
 
     private class ThrowingEconomy(
