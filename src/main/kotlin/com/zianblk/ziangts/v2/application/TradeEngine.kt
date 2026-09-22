@@ -159,6 +159,8 @@ class TradeEngine(
         val ticket = journal.begin(TradeOperation.CLAIM, ownerId)
         // Reserve internally first. A second/reentrant claim can no longer see this balance.
         proceeds.debit(ownerId, key, amount)
+        journal.stage(ticket, TradeStage.PROCEEDS_RESERVED)
+        faultHook(TradeStage.PROCEEDS_RESERVED)
         journal.stage(ticket, TradeStage.BEFORE_PAYMENT)
 
         return@mutateClaim when (val deposited = economy.deposit(
