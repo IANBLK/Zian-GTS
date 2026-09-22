@@ -85,6 +85,26 @@ class TradeEngineTest {
         assertTrue(journal.events.any { it.value == "stage:PROCEEDS_CREDITED" })
     }
 
+    @Test fun rejectedPurchaseRestoresOfferAndAbortsWithoutQuarantine() {
+        val seller = UUID.randomUUID()
+        val buyer = UUID.randomUUID()
+        val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
+        val offers = InMemoryOfferBook()
+        val offer = TradeOffer(OfferId(UUID.randomUUID()), OfferOwner(seller, "Seller"), payment, p, now, now.plusSeconds(3600))
+        offers.add(offer)
+        val economy = RejectingWithdrawEconomy()
+        val journal = RecordingTradeJournal()
+        val engine = TradeEngine(offers, DurableFilePokemonPort(dir.resolve("rejected-purchase.state")),
+            economy, InMemoryProceedsStore(), journal, Clock.fixed(now, ZoneOffset.UTC))
+
+        val result = engine.purchase(buyer, offer.id)
+
+        assertTrue(result is TradeResult.Rejected)
+        assertNotNull(offers.find(offer.id))
+        assertTrue(journal.events.any { it.value.startsWith("abort:") })
+        assertTrue(journal.quarantined.isEmpty())
+    }
+
     @Test fun purchaseRejectsOwnOfferWithoutMutation() {
         val seller = UUID.randomUUID()
         val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
@@ -97,6 +117,14 @@ class TradeEngineTest {
         assertTrue(engine.purchase(seller, offer.id) is TradeResult.Rejected)
         assertEquals(20, economy.balances[seller])
         assertNotNull(offers.find(offer.id))
+    }
+
+    private class RejectingWithdrawEconomy : EconomyPort {
+        override fun canWithdraw(playerId: UUID, currency: String, amount: Long) = true
+        override fun withdraw(operationId: UUID, playerId: UUID, currency: String, amount: Long): EconomyResult =
+            EconomyResult.Rejected("wallet rejected")
+        override fun deposit(operationId: UUID, playerId: UUID, currency: String, amount: Long): EconomyResult =
+            EconomyResult.Applied
     }
 
     private class TestEconomy : EconomyPort {
