@@ -9,6 +9,9 @@ import com.zianblk.ziangts.v2.application.TradeResult
 import com.zianblk.ziangts.v2.domain.OfferId
 import com.zianblk.ziangts.v2.domain.PaymentSpec
 import com.zianblk.ziangts.v2.domain.ProceedsKey
+import com.zianblk.ziangts.v2.domain.MarketQuery
+import com.zianblk.ziangts.v2.domain.OfferFilter
+import com.zianblk.ziangts.v2.domain.OfferSort
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.network.chat.Component
@@ -78,6 +81,76 @@ object V2TestCommands {
                                 1
                             }
                         })))
+            .then(Commands.literal("market").executes { ctx ->
+                val player = ctx.source.playerOrException
+                val view = ZianGtsV2Runtime.marketView(
+                    MarketQuery(player.uuid, page = 1, pageSize = 10, filter = OfferFilter.ALL, sort = OfferSort.NEWEST)
+                )
+                if (view == null) {
+                    ctx.source.sendFailure(Component.literal("Zian GTS V2 market unavailable: ${ZianGtsV2Runtime.blockedReason()}"))
+                    0
+                } else {
+                    ctx.source.sendSuccess({ Component.literal("Zian GTS V2 market: ${view.total} active offer(s)") }, false)
+                    view.offers.forEach { offer ->
+                        ctx.source.sendSuccess({ Component.literal(
+                            "id=${offer.id.value} pokemon=${offer.pokemon.species} lvl=${offer.pokemon.level} price=${offer.payment.amount} ${offer.payment.currency} seller=${offer.owner.displayName}"
+                        ) }, false)
+                    }
+                    1
+                }
+            })
+            .then(Commands.literal("mine").executes { ctx ->
+                val player = ctx.source.playerOrException
+                val view = ZianGtsV2Runtime.marketView(
+                    MarketQuery(player.uuid, page = 1, pageSize = 10, filter = OfferFilter.OWN, sort = OfferSort.NEWEST)
+                )
+                if (view == null) {
+                    ctx.source.sendFailure(Component.literal("Zian GTS V2 listings unavailable: ${ZianGtsV2Runtime.blockedReason()}"))
+                    0
+                } else {
+                    ctx.source.sendSuccess({ Component.literal("My Zian GTS V2 offers: ${view.total}") }, false)
+                    view.offers.forEach { offer ->
+                        ctx.source.sendSuccess({ Component.literal(
+                            "id=${offer.id.value} pokemon=${offer.pokemon.species} state=${offer.stateAt(java.time.Instant.now())} price=${offer.payment.amount} ${offer.payment.currency}"
+                        ) }, false)
+                    }
+                    1
+                }
+            })
+            .then(Commands.literal("history").executes { ctx ->
+                val player = ctx.source.playerOrException
+                val records = ZianGtsV2Runtime.historyFor(player.uuid, 20)
+                if (records == null) {
+                    ctx.source.sendFailure(Component.literal("Zian GTS V2 history unavailable: ${ZianGtsV2Runtime.blockedReason()}"))
+                    0
+                } else {
+                    ctx.source.sendSuccess({ Component.literal("Zian GTS V2 history: ${records.size} recent trade(s)") }, false)
+                    records.forEach { record ->
+                        val role = if (record.sellerId == player.uuid) "sold" else "bought"
+                        ctx.source.sendSuccess({ Component.literal(
+                            "$role ${record.species} for ${record.payment.amount} ${record.payment.currency} at ${record.completedAt}"
+                        ) }, false)
+                    }
+                    1
+                }
+            })
+            .then(Commands.literal("proceeds").executes { ctx ->
+                val player = ctx.source.playerOrException
+                val balances = ZianGtsV2Runtime.proceedsFor(player.uuid)
+                if (balances == null) {
+                    ctx.source.sendFailure(Component.literal("Zian GTS V2 proceeds unavailable: ${ZianGtsV2Runtime.blockedReason()}"))
+                    0
+                } else {
+                    if (balances.isEmpty()) {
+                        ctx.source.sendSuccess({ Component.literal("Zian GTS V2: no pending proceeds") }, false)
+                    } else {
+                        balances.forEach { (key, amount) ->
+                            ctx.source.sendSuccess({ Component.literal("pending=$amount ${key.currency}") }, false)
+                        }
+                    }
+                    1
+                }
+            })
             .then(Commands.literal("publish")
                 .then(Commands.argument("pokemon", StringArgumentType.word())
                     .then(Commands.argument("amount", IntegerArgumentType.integer(1))
