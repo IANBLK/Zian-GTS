@@ -5,13 +5,8 @@ import com.zianblk.ziangts.v2.domain.OfferFilter
 import com.zianblk.ziangts.v2.domain.OfferSort
 import com.zianblk.ziangts.v2.network.MARKET_PROTOCOL_VERSION
 import com.zianblk.ziangts.v2.network.MarketPageResponse
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertFailsWith
-import kotlin.test.assertNull
-import kotlin.test.assertSame
-import kotlin.test.assertTrue
+import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Test
 
 class MarketUiStateTest {
     @Test
@@ -44,10 +39,10 @@ class MarketUiStateTest {
 
     @Test
     fun marketCannotUseLegacyOwnFilter() {
-        assertFailsWith<IllegalArgumentException> {
+        assertThrows(IllegalArgumentException::class.java) {
             MarketUiState(tab = MarketTab.MARKET, filter = OfferFilter.OWN)
         }
-        assertFailsWith<IllegalArgumentException> {
+        assertThrows(IllegalArgumentException::class.java) {
             MarketUiState().withFilter(OfferFilter.OWN)
         }
     }
@@ -75,7 +70,7 @@ class MarketUiStateTest {
         val accepted = loading.accept(response(page = 1, totalPages = 1))
         assertFalse(accepted.loading)
 
-        assertFailsWith<IllegalArgumentException> {
+        assertThrows(IllegalArgumentException::class.java) {
             MarketUiState(tab = MarketTab.MY_OFFERS, filter = OfferFilter.OWN)
                 .accept(response(page = 1, totalPages = 1))
         }
