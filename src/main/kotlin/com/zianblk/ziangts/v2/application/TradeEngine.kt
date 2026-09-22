@@ -91,8 +91,12 @@ class TradeEngine(
         val now = Instant.now(clock)
         if (!offer.purchasableBy(buyerId, now))
             return@mutate TradeResult.Rejected("offer is not purchasable")
-        if (!economy.canWithdraw(buyerId, offer.payment.currency, offer.payment.amount))
-            return@mutate TradeResult.Rejected("insufficient funds")
+        val canWithdraw = try {
+            economy.canWithdraw(buyerId, offer.payment.currency, offer.payment.amount)
+        } catch (error: Exception) {
+            return@mutate TradeResult.Rejected("economy availability check failed")
+        }
+        if (!canWithdraw) return@mutate TradeResult.Rejected("insufficient funds")
 
         val ticket = journal.begin(TradeOperation.PURCHASE, offerId.value)
 
@@ -101,9 +105,13 @@ class TradeEngine(
             ?: return@mutate TradeResult.Rejected("offer disappeared")
 
         journal.stage(ticket, TradeStage.BEFORE_PAYMENT)
-        when (val charged = economy.withdraw(
-            ticket.operationId, buyerId, reserved.payment.currency, reserved.payment.amount
-        )) {
+        val charged = try {
+            economy.withdraw(ticket.operationId, buyerId, reserved.payment.currency, reserved.payment.amount)
+        } catch (error: Exception) {
+            journal.quarantine(ticket, "payment adapter threw after reservation: ${error.javaClass.simpleName}")
+            return@mutate TradeResult.Quarantined(ticket.operationId, "payment outcome uncertain")
+        }
+        when (charged) {
             EconomyResult.Applied -> {
                 journal.stage(ticket, TradeStage.PAYMENT_APPLIED)
                 faultHook(TradeStage.PAYMENT_APPLIED)
@@ -121,7 +129,13 @@ class TradeEngine(
         }
 
         journal.stage(ticket, TradeStage.BEFORE_POKEMON_DELIVERY)
-        when (val delivered = pokemon.deliver(ticket.operationId, buyerId, reserved.pokemon)) {
+        val delivered = try {
+            pokemon.deliver(ticket.operationId, buyerId, reserved.pokemon)
+        } catch (error: Exception) {
+            journal.quarantine(ticket, "pokemon adapter threw after payment: ${error.javaClass.simpleName}")
+            return@mutate TradeResult.Quarantined(ticket.operationId, "pokemon delivery outcome uncertain")
+        }
+        when (delivered) {
             PokemonMutation.Applied -> {
                 journal.stage(ticket, TradeStage.POKEMON_DELIVERED)
                 faultHook(TradeStage.POKEMON_DELIVERED)
