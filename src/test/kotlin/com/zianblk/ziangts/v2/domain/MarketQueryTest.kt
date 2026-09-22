@@ -35,6 +35,30 @@ class MarketQueryTest {
         assertEquals(setOf(legendaryShiny.id), ids(book, OfferFilter.LEGENDARY_SHINY))
     }
 
+
+    @Test fun ownershipProjectionComposesWithPokemonFilters() {
+        val ownShiny = offer(viewer, "cobblemon:gimmighoul", 20, 10, shiny = true)
+        val otherShiny = offer(other, "cobblemon:rayquaza", 80, 40, shiny = true)
+        val otherNormal = offer(other, "cobblemon:charizard", 50, 20)
+        val book = InMemoryOfferBook().apply { listOf(ownShiny, otherShiny, otherNormal).forEach(::add) }
+
+        val mine = book.query(MarketQuery(viewer, filter = OfferFilter.SHINY, ownership = OfferOwnership.MINE, now = now))
+        val others = book.query(MarketQuery(viewer, filter = OfferFilter.SHINY, ownership = OfferOwnership.OTHERS, now = now))
+
+        assertEquals(listOf(ownShiny.id), mine.offers.map { it.id })
+        assertEquals(listOf(otherShiny.id), others.offers.map { it.id })
+    }
+
+    @Test fun ownershipOthersNeverLeaksExpiredOffers() {
+        val currentOther = offer(other, "cobblemon:gimmighoul", 20, 10)
+        val expiredOther = offer(other, "cobblemon:mewtwo", 70, 100, expires = now.minusSeconds(1))
+        val book = InMemoryOfferBook().apply { add(currentOther); add(expiredOther) }
+
+        val result = book.query(MarketQuery(viewer, ownership = OfferOwnership.OTHERS, now = now))
+
+        assertEquals(listOf(currentOther.id), result.offers.map { it.id })
+    }
+
     @Test fun sortingAndPaginationAreStable() {
         val a = offer(other, "cobblemon:a", 10, 30, published = now.minusSeconds(30))
         val b = offer(other, "cobblemon:b", 30, 10, published = now.minusSeconds(20))
