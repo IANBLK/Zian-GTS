@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory
 class ZianGts(container: ModContainer, bus: net.neoforged.bus.api.IEventBus) {
     init {
         bus.addListener(com.zianblk.ziangts.network.GtsNetwork::register)
+        bus.addListener(com.zianblk.ziangts.v2.network.V2MarketNetwork::register)
         container.registerConfig(ModConfig.Type.SERVER, GtsSettings.spec)
         NeoForge.EVENT_BUS.addListener { event: RegisterCommandsEvent ->
             GtsCommands.register(event.dispatcher)
