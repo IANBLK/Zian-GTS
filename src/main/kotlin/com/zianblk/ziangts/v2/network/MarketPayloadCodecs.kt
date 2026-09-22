@@ -26,6 +26,18 @@ object MarketPayloadCodecs {
             { buf -> decodeResponse(buf) }
         )
 
+    val REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, MarketPageRequestPayload> =
+        StreamCodec.of(
+            { buf, value -> PAGE_REQUEST.encode(buf, value.request) },
+            { buf -> MarketPageRequestPayload(PAGE_REQUEST.decode(buf)) }
+        )
+
+    val RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, MarketPageResponsePayload> =
+        StreamCodec.of(
+            { buf, value -> PAGE_RESPONSE.encode(buf, value.response) },
+            { buf -> MarketPageResponsePayload(PAGE_RESPONSE.decode(buf)) }
+        )
+
     private fun encodeRequest(buf: RegistryFriendlyByteBuf, value: MarketPageRequest) {
         buf.writeVarInt(value.protocolVersion)
         buf.writeEnum(value.tab)
