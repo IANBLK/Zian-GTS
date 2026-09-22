@@ -295,8 +295,10 @@ class TradeEngine(
                 TradeResult.Success(removed)
             }
             is PokemonMutation.Rejected -> {
-                journal.quarantine(ticket, "pokemon return rejected after offer reservation: ${delivered.reason}")
-                TradeResult.Quarantined(ticket.operationId, delivered.reason)
+                // Delivery is known not to have happened, so restoring the offer is safe.
+                offers.add(removed)
+                journal.abort(ticket, "pokemon return rejected and offer reservation restored: ${delivered.reason}")
+                TradeResult.Rejected(delivered.reason)
             }
             is PokemonMutation.Uncertain -> {
                 journal.quarantine(ticket, "pokemon return uncertain: ${delivered.reason}")
