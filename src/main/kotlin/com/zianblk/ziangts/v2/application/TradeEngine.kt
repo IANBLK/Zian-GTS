@@ -16,6 +16,8 @@ sealed interface TradeResult {
 class TradeEngine(
     private val offers: OfferBook,
     private val pokemon: PokemonPort,
+    private val economy: EconomyPort,
+    private val proceeds: ProceedsStore,
     private val journal: TradeJournalPort,
     private val clock: Clock,
     private val maxOffersPerPlayer: Int = 20,
@@ -73,6 +75,66 @@ class TradeEngine(
         } catch (error: Exception) {
             journal.quarantine(ticket, "offer persistence failed after pokemon removal: ${error.javaClass.simpleName}")
             TradeResult.Quarantined(ticket.operationId, "offer persistence failed")
+        }
+    }
+
+    fun purchase(buyerId: UUID, offerId: OfferId): TradeResult = mutate {
+        val offer = offers.find(offerId) ?: return@mutate TradeResult.Rejected("offer not found")
+        val now = Instant.now(clock)
+        if (!offer.purchasableBy(buyerId, now))
+            return@mutate TradeResult.Rejected("offer is not purchasable")
+        if (!economy.canWithdraw(buyerId, offer.payment.currency, offer.payment.amount))
+            return@mutate TradeResult.Rejected("insufficient funds")
+
+        val ticket = journal.begin(TradeOperation.PURCHASE, offerId.value)
+
+        // Reserve first so a reentrant/double purchase cannot observe the offer as available.
+        val reserved = offers.remove(offerId)
+            ?: return@mutate TradeResult.Rejected("offer disappeared")
+
+        journal.stage(ticket, TradeStage.BEFORE_PAYMENT)
+        when (val charged = economy.withdraw(
+            ticket.operationId, buyerId, reserved.payment.currency, reserved.payment.amount
+        )) {
+            EconomyResult.Applied -> journal.stage(ticket, TradeStage.PAYMENT_APPLIED)
+            is EconomyResult.Rejected -> {
+                // Payment is known not to have happened, so restoring the reservation is safe.
+                offers.add(reserved)
+                journal.quarantine(ticket, "payment rejected after reservation: ${charged.reason}")
+                return@mutate TradeResult.Quarantined(ticket.operationId, charged.reason)
+            }
+            is EconomyResult.Uncertain -> {
+                journal.quarantine(ticket, "payment outcome uncertain: ${charged.reason}")
+                return@mutate TradeResult.Quarantined(ticket.operationId, charged.reason)
+            }
+        }
+
+        journal.stage(ticket, TradeStage.BEFORE_POKEMON_DELIVERY)
+        when (val delivered = pokemon.deliver(ticket.operationId, buyerId, reserved.pokemon)) {
+            PokemonMutation.Applied -> journal.stage(ticket, TradeStage.POKEMON_DELIVERED)
+            is PokemonMutation.Rejected -> {
+                journal.quarantine(ticket, "pokemon delivery rejected after payment: ${delivered.reason}")
+                return@mutate TradeResult.Quarantined(ticket.operationId, delivered.reason)
+            }
+            is PokemonMutation.Uncertain -> {
+                journal.quarantine(ticket, "pokemon delivery uncertain after payment: ${delivered.reason}")
+                return@mutate TradeResult.Quarantined(ticket.operationId, delivered.reason)
+            }
+        }
+
+        try {
+            proceeds.credit(
+                reserved.owner.playerId,
+                ProceedsKey(reserved.payment.adapter, reserved.payment.currency),
+                reserved.payment.amount
+            )
+            journal.stage(ticket, TradeStage.PROCEEDS_CREDITED)
+            journal.stage(ticket, TradeStage.RUNTIME_COMPLETE)
+            journal.complete(ticket)
+            TradeResult.Success(reserved)
+        } catch (error: Exception) {
+            journal.quarantine(ticket, "seller proceeds failed after delivery: ${error.javaClass.simpleName}")
+            TradeResult.Quarantined(ticket.operationId, "seller proceeds failed")
         }
     }
 
