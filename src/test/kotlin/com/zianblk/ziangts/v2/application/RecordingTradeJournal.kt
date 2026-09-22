@@ -19,6 +19,9 @@ class RecordingTradeJournal : TradeJournalPort {
     override fun complete(ticket: JournalTicket) {
         events += Event(ticket.operationId, "complete")
     }
+    override fun abort(ticket: JournalTicket, reason: String) {
+        events += Event(ticket.operationId, "abort:$reason")
+    }
     override fun quarantine(ticket: JournalTicket, reason: String) {
         quarantined += ticket.operationId
         events += Event(ticket.operationId, "quarantine:$reason")
