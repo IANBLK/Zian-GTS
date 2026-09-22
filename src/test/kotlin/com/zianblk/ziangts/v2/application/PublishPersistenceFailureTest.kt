@@ -47,6 +47,22 @@ class PublishPersistenceFailureTest {
         assertNull(journal.quarantineReason, "complete failure must not be mislabeled as OfferBook persistence failure")
     }
 
+
+    @Test fun runtimeCompleteAndQuarantineFailurePropagatesPrimaryWithSuppressedEvidence() {
+        val fixture = Fixture()
+        val offers = InMemoryOfferBook()
+        val journal = ControlledJournal(failRuntimeComplete = true, failQuarantine = true)
+
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            fixture.engine(offers, journal).publish(fixture.seller, "Seller", fixture.pokemon.pokemonId, payment)
+        }
+
+        assertEquals("simulated runtime-complete failure", thrown.message)
+        assertEquals(1, thrown.suppressed.size)
+        assertEquals("simulated quarantine failure", thrown.suppressed.single().message)
+        assertEquals(1, offers.all().size, "durable offer must not be rolled back when journal recovery also fails")
+    }
+
     private inner class Fixture {
         val seller = UUID.randomUUID()
         val pokemon = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
@@ -65,7 +81,8 @@ class PublishPersistenceFailureTest {
 
     private class ControlledJournal(
         private val failRuntimeComplete: Boolean = false,
-        private val failComplete: Boolean = false
+        private val failComplete: Boolean = false,
+        private val failQuarantine: Boolean = false
     ) : TradeJournalPort {
         var quarantineReason: String? = null
         override fun begin(operation: TradeOperation, subjectId: UUID) = JournalTicket(UUID.randomUUID(), operation)
@@ -76,7 +93,10 @@ class PublishPersistenceFailureTest {
             if (failComplete) error("simulated complete failure")
         }
         override fun abort(ticket: JournalTicket, reason: String) = Unit
-        override fun quarantine(ticket: JournalTicket, reason: String) { quarantineReason = reason }
+        override fun quarantine(ticket: JournalTicket, reason: String) {
+            if (failQuarantine) error("simulated quarantine failure")
+            quarantineReason = reason
+        }
     }
 
     private class OwnedPokemon(private val owner: UUID, private val envelope: PokemonEnvelope) : PokemonPort {
