@@ -189,8 +189,33 @@ class TradeEngine(
                 faultHook(TradeStage.POKEMON_DELIVERED)
             }
             is PokemonMutation.Rejected -> {
-                journal.quarantine(ticket, "pokemon delivery rejected after payment: ${delivered.reason}")
-                return@mutate TradeResult.Quarantined(ticket.operationId, delivered.reason)
+                // Delivery is known not to have happened. Compensate the already-applied payment,
+                // then restore the reserved offer. Any uncertain/failed compensation must quarantine.
+                val refunded = try {
+                    economy.deposit(ticket.operationId, buyerId, reserved.payment.currency, reserved.payment.amount)
+                } catch (error: Exception) {
+                    journal.quarantine(ticket, "pokemon delivery rejected but refund adapter threw: ${error.javaClass.simpleName}")
+                    return@mutate TradeResult.Quarantined(ticket.operationId, "buyer refund outcome uncertain")
+                }
+                when (refunded) {
+                    EconomyResult.Applied -> Unit
+                    is EconomyResult.Rejected -> {
+                        journal.quarantine(ticket, "pokemon delivery rejected but buyer refund was rejected: ${refunded.reason}")
+                        return@mutate TradeResult.Quarantined(ticket.operationId, "buyer refund rejected")
+                    }
+                    is EconomyResult.Uncertain -> {
+                        journal.quarantine(ticket, "pokemon delivery rejected but buyer refund is uncertain: ${refunded.reason}")
+                        return@mutate TradeResult.Quarantined(ticket.operationId, "buyer refund outcome uncertain")
+                    }
+                }
+                try {
+                    offers.add(reserved)
+                } catch (error: Exception) {
+                    journal.quarantine(ticket, "buyer refunded after delivery rejection but offer restoration failed: ${error.javaClass.simpleName}")
+                    return@mutate TradeResult.Quarantined(ticket.operationId, "offer restoration failed after buyer refund")
+                }
+                journal.abort(ticket, "pokemon delivery rejected; buyer refunded and offer restored: ${delivered.reason}")
+                return@mutate TradeResult.Rejected(delivered.reason)
             }
             is PokemonMutation.Uncertain -> {
                 journal.quarantine(ticket, "pokemon delivery uncertain after payment: ${delivered.reason}")
