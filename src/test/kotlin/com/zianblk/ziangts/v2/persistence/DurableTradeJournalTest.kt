@@ -37,6 +37,21 @@ class DurableTradeJournalTest {
         }
     }
 
+    @Test fun safeAbortClosesTicketAndSurvivesReopen() {
+        val path = dir.resolve("transactions-v2.wal")
+        DurableTradeJournal(path).use { j ->
+            val t = j.begin(TradeOperation.PURCHASE, UUID.randomUUID())
+            j.stage(t, TradeStage.BEFORE_PAYMENT)
+            j.abort(t, "payment rejected and reservation restored")
+            assertFalse(j.blocksTrading())
+            assertTrue(j.unresolved().isEmpty())
+        }
+        DurableTradeJournal(path).use {
+            assertFalse(it.blocksTrading())
+            assertTrue(it.unresolved().isEmpty())
+        }
+    }
+
     @Test fun resolutionRequiresAuditNoteAndSurvivesReopen() {
         val path = dir.resolve("transactions-v2.wal")
         val id: UUID
