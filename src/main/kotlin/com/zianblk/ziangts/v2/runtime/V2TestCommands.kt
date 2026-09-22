@@ -3,7 +3,6 @@ package com.zianblk.ziangts.v2.runtime
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
-import com.mojang.brigadier.arguments.UuidArgument
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.zianblk.ziangts.v2.application.ClaimResult
 import com.zianblk.ziangts.v2.application.TradeResult
@@ -27,7 +26,7 @@ object V2TestCommands {
                 1
             })
             .then(Commands.literal("publish")
-                .then(Commands.argument("pokemon", UuidArgument.uuid())
+                .then(Commands.argument("pokemon", StringArgumentType.word())
                     .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                         .then(Commands.argument("currency", StringArgumentType.word())
                             .executes { ctx ->
@@ -36,23 +35,23 @@ object V2TestCommands {
                                 val result = engine.publish(
                                     player.uuid,
                                     player.gameProfile.name,
-                                    UuidArgument.getUuid(ctx, "pokemon"),
+                                    java.util.UUID.fromString(StringArgumentType.getString(ctx, "pokemon")),
                                     PaymentSpec(ADAPTER, StringArgumentType.getString(ctx, "currency"),
                                         IntegerArgumentType.getInteger(ctx, "amount").toLong())
                                 )
                                 report(ctx.source, result)
                             }))))
             .then(Commands.literal("buy")
-                .then(Commands.argument("offer", UuidArgument.uuid()).executes { ctx ->
+                .then(Commands.argument("offer", StringArgumentType.word()).executes { ctx ->
                     val player = ctx.source.playerOrException
                     val engine = engine(ctx.source) ?: return@executes 0
-                    report(ctx.source, engine.purchase(player.uuid, OfferId(UuidArgument.getUuid(ctx, "offer"))))
+                    report(ctx.source, engine.purchase(player.uuid, OfferId(java.util.UUID.fromString(StringArgumentType.getString(ctx, "offer")))))
                 }))
             .then(Commands.literal("withdraw")
-                .then(Commands.argument("offer", UuidArgument.uuid()).executes { ctx ->
+                .then(Commands.argument("offer", StringArgumentType.word()).executes { ctx ->
                     val player = ctx.source.playerOrException
                     val engine = engine(ctx.source) ?: return@executes 0
-                    report(ctx.source, engine.withdraw(player.uuid, OfferId(UuidArgument.getUuid(ctx, "offer"))))
+                    report(ctx.source, engine.withdraw(player.uuid, OfferId(java.util.UUID.fromString(StringArgumentType.getString(ctx, "offer")))))
                 }))
             .then(Commands.literal("claim")
                 .then(Commands.argument("currency", StringArgumentType.word()).executes { ctx ->
