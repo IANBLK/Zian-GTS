@@ -49,6 +49,24 @@ class TradeEngineTest {
         assertNull(offers.find(offer.id))
     }
 
+    @Test fun rejectedWithdrawRestoresOfferAndAbortsWithoutQuarantine() {
+        val seller = UUID.randomUUID()
+        val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
+        val offers = InMemoryOfferBook()
+        val offer = TradeOffer(OfferId(UUID.randomUUID()), OfferOwner(seller, "Seller"), payment, p, now, now.plusSeconds(3600))
+        offers.add(offer)
+        val journal = RecordingTradeJournal()
+        val pokemon = RejectingDeliveryPokemonPort()
+        val engine = TradeEngine(offers, pokemon, TestEconomy(), InMemoryProceedsStore(), journal, Clock.fixed(now, ZoneOffset.UTC))
+
+        val result = engine.withdraw(seller, offer.id)
+
+        assertTrue(result is TradeResult.Rejected)
+        assertNotNull(offers.find(offer.id))
+        assertTrue(journal.events.any { it.value.startsWith("abort:") })
+        assertTrue(journal.quarantined.isEmpty())
+    }
+
     @Test fun otherPlayerCannotWithdrawOffer() {
         val seller = UUID.randomUUID()
         val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
@@ -117,6 +135,14 @@ class TradeEngineTest {
         assertTrue(engine.purchase(seller, offer.id) is TradeResult.Rejected)
         assertEquals(20, economy.balances[seller])
         assertNotNull(offers.find(offer.id))
+    }
+
+    private class RejectingDeliveryPokemonPort : PokemonPort {
+        override fun inspectOwned(ownerId: UUID, pokemonId: UUID): PokemonEnvelope? = null
+        override fun removeOwned(operationId: UUID, ownerId: UUID, pokemonId: UUID): PokemonMutation =
+            PokemonMutation.Rejected("not used")
+        override fun deliver(operationId: UUID, ownerId: UUID, pokemon: PokemonEnvelope): PokemonMutation =
+            PokemonMutation.Rejected("storage full")
     }
 
     private class RejectingWithdrawEconomy : EconomyPort {
