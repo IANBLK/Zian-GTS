@@ -21,7 +21,8 @@ class TradeEngine(
     private val journal: TradeJournalPort,
     private val clock: Clock,
     private val maxOffersPerPlayer: Int = 20,
-    private val offerLifetime: Duration = Duration.ofHours(48)
+    private val offerLifetime: Duration = Duration.ofHours(48),
+    private val faultHook: (TradeStage) -> Unit = {}
 ) {
     init {
         require(maxOffersPerPlayer > 0)
@@ -96,7 +97,10 @@ class TradeEngine(
         when (val charged = economy.withdraw(
             ticket.operationId, buyerId, reserved.payment.currency, reserved.payment.amount
         )) {
-            EconomyResult.Applied -> journal.stage(ticket, TradeStage.PAYMENT_APPLIED)
+            EconomyResult.Applied -> {
+                journal.stage(ticket, TradeStage.PAYMENT_APPLIED)
+                faultHook(TradeStage.PAYMENT_APPLIED)
+            }
             is EconomyResult.Rejected -> {
                 // Payment is known not to have happened, so restoring the reservation is safe.
                 offers.add(reserved)
@@ -111,7 +115,10 @@ class TradeEngine(
 
         journal.stage(ticket, TradeStage.BEFORE_POKEMON_DELIVERY)
         when (val delivered = pokemon.deliver(ticket.operationId, buyerId, reserved.pokemon)) {
-            PokemonMutation.Applied -> journal.stage(ticket, TradeStage.POKEMON_DELIVERED)
+            PokemonMutation.Applied -> {
+                journal.stage(ticket, TradeStage.POKEMON_DELIVERED)
+                faultHook(TradeStage.POKEMON_DELIVERED)
+            }
             is PokemonMutation.Rejected -> {
                 journal.quarantine(ticket, "pokemon delivery rejected after payment: ${delivered.reason}")
                 return@mutate TradeResult.Quarantined(ticket.operationId, delivered.reason)
