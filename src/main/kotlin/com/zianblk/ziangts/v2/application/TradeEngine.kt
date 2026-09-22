@@ -142,8 +142,15 @@ class TradeEngine(
                 ProceedsKey(reserved.payment.adapter, reserved.payment.currency),
                 reserved.payment.amount
             )
-            journal.stage(ticket, TradeStage.PROCEEDS_CREDITED)
-            faultHook(TradeStage.PROCEEDS_CREDITED)
+        } catch (error: Exception) {
+            journal.quarantine(ticket, "seller proceeds persistence failed after delivery: ${error.javaClass.simpleName}")
+            return@mutate TradeResult.Quarantined(ticket.operationId, "seller proceeds persistence failed")
+        }
+
+        journal.stage(ticket, TradeStage.PROCEEDS_CREDITED)
+        faultHook(TradeStage.PROCEEDS_CREDITED)
+
+        try {
             history?.append(
                 TradeHistoryRecord(
                     ticket.operationId,
@@ -156,15 +163,16 @@ class TradeEngine(
                     Instant.now(clock)
                 )
             )
-            journal.stage(ticket, TradeStage.HISTORY_APPENDED)
-            faultHook(TradeStage.HISTORY_APPENDED)
-            journal.stage(ticket, TradeStage.RUNTIME_COMPLETE)
-            journal.complete(ticket)
-            TradeResult.Success(reserved)
         } catch (error: Exception) {
-            journal.quarantine(ticket, "seller proceeds failed after delivery: ${error.javaClass.simpleName}")
-            TradeResult.Quarantined(ticket.operationId, "seller proceeds failed")
+            journal.quarantine(ticket, "history persistence failed after proceeds credit: ${error.javaClass.simpleName}")
+            return@mutate TradeResult.Quarantined(ticket.operationId, "history persistence failed")
         }
+
+        journal.stage(ticket, TradeStage.HISTORY_APPENDED)
+        faultHook(TradeStage.HISTORY_APPENDED)
+        journal.stage(ticket, TradeStage.RUNTIME_COMPLETE)
+        journal.complete(ticket)
+        TradeResult.Success(reserved)
     }
 
     fun claim(ownerId: UUID, key: ProceedsKey): ClaimResult = mutateClaim {
