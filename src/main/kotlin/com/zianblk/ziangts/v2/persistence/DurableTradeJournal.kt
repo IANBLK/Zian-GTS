@@ -57,6 +57,14 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
         append("complete", JsonObject().apply { addProperty("id", ticket.operationId.toString()) })
     }
 
+    override fun abort(ticket: JournalTicket, reason: String) {
+        check(ticket.operationId in pending)
+        require(reason.isNotBlank()) { "abort reason must not be blank" }
+        append("abort", JsonObject().apply {
+            addProperty("id", ticket.operationId.toString()); addProperty("reason", reason)
+        })
+    }
+
     override fun quarantine(ticket: JournalTicket, reason: String) {
         check(ticket.operationId in pending)
         append("quarantine", JsonObject().apply {
@@ -119,7 +127,7 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
                 val id = UUID.fromString(d["id"].asString); val old = pending.getValue(id)
                 pending[id] = old.copy(quarantined = true, reason = d["reason"].asString)
             }
-            "complete", "resolve" -> require(pending.remove(UUID.fromString(d["id"].asString)) != null)
+            "complete", "abort", "resolve" -> require(pending.remove(UUID.fromString(d["id"].asString)) != null)
             else -> error("unknown V2 journal event")
         }
     }
