@@ -15,6 +15,8 @@ import com.zianblk.ziangts.v2.domain.OfferSort
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.network.chat.Component
+import net.neoforged.neoforge.network.PacketDistributor
+import com.zianblk.ziangts.v2.network.OpenMarketScreenPayload
 
 /** Temporary operator-facing commands for real Youer validation before V2 GUI/network wiring. */
 object V2TestCommands {
@@ -81,6 +83,16 @@ object V2TestCommands {
                                 1
                             }
                         })))
+            .then(Commands.literal("open").executes { ctx ->
+                val player = ctx.source.playerOrException
+                if (!ZianGtsV2Runtime.isReady()) {
+                    ctx.source.sendFailure(Component.literal("Zian GTS V2 market unavailable: ${ZianGtsV2Runtime.blockedReason()}"))
+                    0
+                } else {
+                    PacketDistributor.sendToPlayer(player, OpenMarketScreenPayload)
+                    1
+                }
+            })
             .then(Commands.literal("market").executes { ctx ->
                 val player = ctx.source.playerOrException
                 val view = ZianGtsV2Runtime.marketView(
