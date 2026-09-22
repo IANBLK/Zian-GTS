@@ -30,8 +30,10 @@ object V2MarketNetwork {
         registrar.playToClient(
             MarketPageResponsePayload.TYPE,
             MarketPayloadCodecs.RESPONSE_PAYLOAD
-        ) { _, _ ->
-            // Client state/GUI consumption is wired in the next networking slice.
+        ) { payload, context ->
+            context.enqueueWork {
+                V2MarketClientState.accept(payload.response)
+            }
         }
     }
 
