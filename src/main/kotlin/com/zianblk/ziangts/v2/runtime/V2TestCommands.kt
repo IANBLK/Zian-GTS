@@ -158,14 +158,29 @@ object V2TestCommands {
                             .executes { ctx ->
                                 val player = ctx.source.playerOrException
                                 val engine = engine(ctx.source) ?: return@executes 0
-                                val result = engine.publish(
+                                val pokemonText = StringArgumentType.getString(ctx, "pokemon")
+                                val pokemonId = try {
+                                    java.util.UUID.fromString(pokemonText)
+                                } catch (_: IllegalArgumentException) {
+                                    ctx.source.sendFailure(Component.literal("Invalid Pokemon UUID: $pokemonText"))
+                                    return@executes 0
+                                }
+                                val payment = try {
+                                    PaymentSpec(
+                                        ADAPTER,
+                                        StringArgumentType.getString(ctx, "currency"),
+                                        IntegerArgumentType.getInteger(ctx, "amount").toLong()
+                                    )
+                                } catch (error: IllegalArgumentException) {
+                                    ctx.source.sendFailure(Component.literal("Invalid payment: ${error.message}"))
+                                    return@executes 0
+                                }
+                                report(ctx.source, engine.publish(
                                     player.uuid,
                                     player.gameProfile.name,
-                                    java.util.UUID.fromString(StringArgumentType.getString(ctx, "pokemon")),
-                                    PaymentSpec(ADAPTER, StringArgumentType.getString(ctx, "currency"),
-                                        IntegerArgumentType.getInteger(ctx, "amount").toLong())
-                                )
-                                report(ctx.source, result)
+                                    pokemonId,
+                                    payment
+                                ))
                             }))))
             .then(Commands.literal("buy")
                 .then(Commands.argument("offer", StringArgumentType.word())
@@ -182,7 +197,14 @@ object V2TestCommands {
                     .executes { ctx ->
                     val player = ctx.source.playerOrException
                     val engine = engine(ctx.source) ?: return@executes 0
-                    report(ctx.source, engine.purchase(player.uuid, OfferId(java.util.UUID.fromString(StringArgumentType.getString(ctx, "offer")))))
+                    val offerText = StringArgumentType.getString(ctx, "offer")
+                    val offerId = try {
+                        OfferId(java.util.UUID.fromString(offerText))
+                    } catch (_: IllegalArgumentException) {
+                        ctx.source.sendFailure(Component.literal("Invalid offer UUID: $offerText"))
+                        return@executes 0
+                    }
+                    report(ctx.source, engine.purchase(player.uuid, offerId))
                 }))
             .then(Commands.literal("withdraw")
                 .then(Commands.argument("offer", StringArgumentType.word())
@@ -199,14 +221,26 @@ object V2TestCommands {
                     .executes { ctx ->
                     val player = ctx.source.playerOrException
                     val engine = engine(ctx.source) ?: return@executes 0
-                    report(ctx.source, engine.withdraw(player.uuid, OfferId(java.util.UUID.fromString(StringArgumentType.getString(ctx, "offer")))))
+                    val offerText = StringArgumentType.getString(ctx, "offer")
+                    val offerId = try {
+                        OfferId(java.util.UUID.fromString(offerText))
+                    } catch (_: IllegalArgumentException) {
+                        ctx.source.sendFailure(Component.literal("Invalid offer UUID: $offerText"))
+                        return@executes 0
+                    }
+                    report(ctx.source, engine.withdraw(player.uuid, offerId))
                 }))
             .then(Commands.literal("claim")
                 .then(Commands.argument("currency", StringArgumentType.word()).executes { ctx ->
                     val player = ctx.source.playerOrException
                     val engine = engine(ctx.source) ?: return@executes 0
-                    val result = engine.claim(player.uuid,
-                        ProceedsKey(ADAPTER, StringArgumentType.getString(ctx, "currency")))
+                    val key = try {
+                        ProceedsKey(ADAPTER, StringArgumentType.getString(ctx, "currency"))
+                    } catch (error: IllegalArgumentException) {
+                        ctx.source.sendFailure(Component.literal("Invalid currency: ${error.message}"))
+                        return@executes 0
+                    }
+                    val result = engine.claim(player.uuid, key)
                     val text = when (result) {
                         is ClaimResult.Success -> "claim ok: ${result.amount} ${result.key.currency}"
                         is ClaimResult.Rejected -> "claim rejected: ${result.reason}"
