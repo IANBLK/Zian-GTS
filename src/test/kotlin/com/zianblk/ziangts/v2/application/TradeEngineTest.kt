@@ -143,6 +143,7 @@ class TradeEngineTest {
             PokemonMutation.Rejected("not used")
         override fun deliver(operationId: UUID, ownerId: UUID, pokemon: PokemonEnvelope): PokemonMutation =
             PokemonMutation.Rejected("storage full")
+        override fun owns(playerId: UUID, pokemonId: UUID): Boolean = false
     }
 
     private class RejectingWithdrawEconomy : EconomyPort {
