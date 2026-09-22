@@ -77,7 +77,7 @@ object V2TestCommands {
                                 ) }, true)
                                 1
                             }
-                        }))))
+                        })))
             .then(Commands.literal("publish")
                 .then(Commands.argument("pokemon", StringArgumentType.word())
                     .then(Commands.argument("amount", IntegerArgumentType.integer(1))
