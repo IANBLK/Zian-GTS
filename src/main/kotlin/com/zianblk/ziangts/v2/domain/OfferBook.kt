@@ -45,3 +45,62 @@ class InMemoryOfferBook : OfferBook {
 
     override fun remove(id: OfferId): TradeOffer? = offers.remove(id)
 }
+
+
+/**
+ * Pure market projection used by server commands/UI. It never mutates OfferBook.
+ * Expired offers remain visible to their owner for retrieval but are excluded from the public market.
+ */
+data class MarketView(val offers: List<TradeOffer>, val total: Int, val page: Int, val pageSize: Int)
+
+fun OfferBook.query(query: MarketQuery): MarketView {
+    val visible = all().asSequence()
+        .filter { offer ->
+            when (query.filter) {
+                OfferFilter.OWN -> offer.owner.playerId == query.viewer
+                else -> offer.stateAt(query.now) == OfferState.CURRENT
+            }
+        }
+        .filter { offer ->
+            when (query.filter) {
+                OfferFilter.ALL, OfferFilter.OWN -> true
+                OfferFilter.SHINY -> offer.pokemon.shiny
+                OfferFilter.ALPHA -> offer.pokemon.alpha
+                OfferFilter.LEGENDARY -> isLegendarySpecies(offer.pokemon.species)
+                OfferFilter.LEGENDARY_SHINY -> offer.pokemon.shiny && isLegendarySpecies(offer.pokemon.species)
+            }
+        }
+        .sortedWith(
+            when (query.sort) {
+                OfferSort.NEWEST -> compareByDescending<TradeOffer> { it.publishedAt }.thenBy { it.id.value }
+                OfferSort.OLDEST -> compareBy<TradeOffer> { it.publishedAt }.thenBy { it.id.value }
+                OfferSort.PRICE_LOW -> compareBy<TradeOffer> { it.payment.amount }.thenByDescending { it.publishedAt }
+                OfferSort.PRICE_HIGH -> compareByDescending<TradeOffer> { it.payment.amount }.thenByDescending { it.publishedAt }
+                OfferSort.LEVEL_LOW -> compareBy<TradeOffer> { it.pokemon.level }.thenByDescending { it.publishedAt }
+                OfferSort.LEVEL_HIGH -> compareByDescending<TradeOffer> { it.pokemon.level }.thenByDescending { it.publishedAt }
+            }
+        )
+        .toList()
+
+    val from = ((query.page - 1) * query.pageSize).coerceAtMost(visible.size)
+    val to = (from + query.pageSize).coerceAtMost(visible.size)
+    return MarketView(visible.subList(from, to), visible.size, query.page, query.pageSize)
+}
+
+/**
+ * Domain-only fallback list. Runtime integrations may later replace this with Cobblemon registry tags.
+ * Keeping the decision here deterministic makes filters testable without Minecraft classes.
+ */
+private fun isLegendarySpecies(species: String): Boolean = species.substringAfter(':') in LEGENDARY_SPECIES
+
+private val LEGENDARY_SPECIES = setOf(
+    "articuno", "zapdos", "moltres", "mewtwo", "mew",
+    "raikou", "entei", "suicune", "lugia", "ho_oh", "celebi",
+    "regirock", "regice", "registeel", "latias", "latios", "kyogre", "groudon", "rayquaza", "jirachi", "deoxys",
+    "uxie", "mesprit", "azelf", "dialga", "palkia", "heatran", "regigigas", "giratina", "cresselia", "phione", "manaphy", "darkrai", "shaymin", "arceus",
+    "cobalion", "terrakion", "virizion", "tornadus", "thundurus", "reshiram", "zekrom", "landorus", "kyurem", "keldeo", "meloetta", "genesect",
+    "xerneas", "yveltal", "zygarde", "diancie", "hoopa", "volcanion",
+    "type_null", "silvally", "tapu_koko", "tapu_lele", "tapu_bulu", "tapu_fini", "cosmog", "cosmoem", "solgaleo", "lunala", "nihilego", "buzzwole", "pheromosa", "xurkitree", "celesteela", "kartana", "guzzlord", "necrozma", "magearna", "marshadow", "poipole", "naganadel", "stakataka", "blacephalon", "zeraora", "meltan", "melmetal",
+    "zacian", "zamazenta", "eternatus", "kubfu", "urshifu", "zarude", "regieleki", "regidrago", "glastrier", "spectrier", "calyrex", "enamorus",
+    "wo_chien", "chien_pao", "ting_lu", "chi_yu", "koraidon", "miraidon", "okidogi", "munkidori", "fezandipiti", "ogerpon", "terapagos", "pecharunt"
+)
