@@ -140,6 +140,33 @@ class TradeEngineTest {
         assertTrue(journal.quarantined.isEmpty())
     }
 
+    @Test fun rejectedPokemonDeliveryAfterPaymentRefundsBuyerRestoresOfferAndAborts() {
+        val seller = UUID.randomUUID()
+        val buyer = UUID.randomUUID()
+        val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
+        val offers = InMemoryOfferBook()
+        val offer = TradeOffer(OfferId(UUID.randomUUID()), OfferOwner(seller, "Seller"), payment, p, now, now.plusSeconds(3600))
+        offers.add(offer)
+        val economy = TestEconomy().apply { balances[buyer] = 20 }
+        val journal = RecordingTradeJournal()
+        val engine = TradeEngine(
+            offers,
+            RejectingDeliveryPokemonPort(),
+            economy,
+            InMemoryProceedsStore(),
+            journal,
+            Clock.fixed(now, ZoneOffset.UTC)
+        )
+
+        val result = engine.purchase(buyer, offer.id)
+
+        assertTrue(result is TradeResult.Rejected)
+        assertEquals(20, economy.balances[buyer])
+        assertNotNull(offers.find(offer.id))
+        assertTrue(journal.events.any { it.value.startsWith("abort:") })
+        assertTrue(journal.quarantined.isEmpty())
+    }
+
     @Test fun purchaseRejectsOwnOfferWithoutMutation() {
         val seller = UUID.randomUUID()
         val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
