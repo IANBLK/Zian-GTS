@@ -38,6 +38,7 @@ object FullPurchaseCrashProbe {
         DurableTradeJournal(root.resolve("transactions-v2.wal")).use { journal ->
             val engine = TradeEngine(market, pokemon, economy, market, journal,
                 Clock.fixed(Instant.parse("2026-09-22T17:00:00Z"), ZoneOffset.UTC),
+                history = history,
                 faultHook = { if (it == killAt) Runtime.getRuntime().halt(29) })
             engine.purchase(buyer, offerId)
         }
