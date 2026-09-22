@@ -74,8 +74,9 @@ class TradeEngine(
         when (removed) {
             PokemonMutation.Applied -> journal.stage(ticket, TradeStage.POKEMON_REMOVED)
             is PokemonMutation.Rejected -> {
-                journal.quarantine(ticket, "pokemon removal rejected after journal begin: ${removed.reason}")
-                return@mutate TradeResult.Quarantined(ticket.operationId, removed.reason)
+                // Rejected means the adapter knows removal did not happen.
+                journal.abort(ticket, "pokemon removal rejected with no external side effect: ${removed.reason}")
+                return@mutate TradeResult.Rejected(removed.reason)
             }
             is PokemonMutation.Uncertain -> {
                 journal.quarantine(ticket, "pokemon removal uncertain: ${removed.reason}")
