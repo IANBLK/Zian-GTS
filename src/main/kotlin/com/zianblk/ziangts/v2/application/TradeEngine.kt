@@ -142,6 +142,7 @@ class TradeEngine(
                 reserved.payment.amount
             )
             journal.stage(ticket, TradeStage.PROCEEDS_CREDITED)
+            faultHook(TradeStage.PROCEEDS_CREDITED)
             journal.stage(ticket, TradeStage.RUNTIME_COMPLETE)
             journal.complete(ticket)
             TradeResult.Success(reserved)
