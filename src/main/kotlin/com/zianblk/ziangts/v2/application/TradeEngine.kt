@@ -25,6 +25,7 @@ class TradeEngine(
     private val economy: EconomyPort,
     private val proceeds: ProceedsStore,
     private val journal: TradeJournalPort,
+    private val history: HistoryPort? = null,
     private val clock: Clock,
     private val maxOffersPerPlayer: Int = 20,
     private val offerLifetime: Duration = Duration.ofHours(48),
@@ -143,6 +144,20 @@ class TradeEngine(
             )
             journal.stage(ticket, TradeStage.PROCEEDS_CREDITED)
             faultHook(TradeStage.PROCEEDS_CREDITED)
+            history?.append(
+                TradeHistoryRecord(
+                    ticket.operationId,
+                    reserved.id,
+                    reserved.owner.playerId,
+                    buyerId,
+                    reserved.pokemon.pokemonId,
+                    reserved.pokemon.species,
+                    reserved.payment,
+                    Instant.now(clock)
+                )
+            )
+            journal.stage(ticket, TradeStage.HISTORY_APPENDED)
+            faultHook(TradeStage.HISTORY_APPENDED)
             journal.stage(ticket, TradeStage.RUNTIME_COMPLETE)
             journal.complete(ticket)
             TradeResult.Success(reserved)
