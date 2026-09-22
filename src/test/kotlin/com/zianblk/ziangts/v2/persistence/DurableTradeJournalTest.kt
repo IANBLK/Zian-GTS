@@ -37,6 +37,24 @@ class DurableTradeJournalTest {
         }
     }
 
+    @Test fun resolutionRequiresAuditNoteAndSurvivesReopen() {
+        val path = dir.resolve("transactions-v2.wal")
+        val id: UUID
+        DurableTradeJournal(path).use { j ->
+            val t = j.begin(TradeOperation.PURCHASE, UUID.randomUUID())
+            id = t.operationId
+            j.stage(t, TradeStage.PAYMENT_APPLIED)
+            assertThrows(IllegalArgumentException::class.java) { j.resolve(id, "   ") }
+            assertTrue(j.blocksTrading())
+            j.resolve(id, "admin reconciled wallet and pokemon storage")
+            assertFalse(j.blocksTrading())
+        }
+        DurableTradeJournal(path).use {
+            assertFalse(it.blocksTrading())
+            assertTrue(it.unresolved().isEmpty())
+        }
+    }
+
     @Test fun quarantineSurvivesReopenUntilExplicitResolve() {
         val path = dir.resolve("transactions-v2.wal")
         val id: UUID
