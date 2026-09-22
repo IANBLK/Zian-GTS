@@ -44,6 +44,15 @@ object ZianGtsV2Runtime {
             val market = DurableMarketStore(root.resolve("market-v2.state"))
             val journal = DurableTradeJournal(root.resolve("transactions-v2.wal"))
             if (journal.blocksTrading()) {
+                val reconciled = journal.reconcileRuntimeComplete()
+                if (reconciled.isNotEmpty()) {
+                    ZianGts.LOGGER.warn(
+                        "Zian GTS V2 reconciled {} transaction(s) that were durably at RUNTIME_COMPLETE after the previous process stopped.",
+                        reconciled.size
+                    )
+                }
+            }
+            if (journal.blocksTrading()) {
                 blockedJournal = journal
                 blockedReason = "unresolved transaction journal"
                 ZianGts.LOGGER.error(
