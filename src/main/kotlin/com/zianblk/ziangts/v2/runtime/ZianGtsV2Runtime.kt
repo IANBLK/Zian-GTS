@@ -7,7 +7,10 @@ import com.zianblk.ziangts.v2.persistence.DurableHistoryStore
 import com.zianblk.ziangts.v2.persistence.DurableTradeJournal
 import com.zianblk.ziangts.v2.domain.MarketQuery
 import com.zianblk.ziangts.v2.domain.MarketView
+import com.zianblk.ziangts.v2.domain.MarketScreenRequest
+import com.zianblk.ziangts.v2.domain.MarketScreenModel
 import com.zianblk.ziangts.v2.domain.query
+import com.zianblk.ziangts.v2.domain.screen
 import com.zianblk.ziangts.v2.port.TradeHistoryRecord
 import com.zianblk.ziangts.v2.domain.ProceedsKey
 import net.minecraft.server.MinecraftServer
@@ -95,6 +98,13 @@ object ZianGtsV2Runtime {
      * Returning null instead of opening storage separately preserves the single runtime owner.
      */
     fun marketView(query: MarketQuery): MarketView? = context?.market?.query(query)
+
+    /**
+     * Final UI-facing market projection. The runtime owns visibility and action eligibility;
+     * clients only render the returned model.
+     */
+    fun marketScreen(request: MarketScreenRequest): MarketScreenModel? =
+        context?.market?.screen(request)
 
     /** Completed trades involving this player, newest first. */
     fun historyFor(playerId: java.util.UUID, limit: Int = 50): List<TradeHistoryRecord>? {
