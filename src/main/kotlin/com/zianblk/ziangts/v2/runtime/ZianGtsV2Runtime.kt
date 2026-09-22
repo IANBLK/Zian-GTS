@@ -3,6 +3,7 @@ package com.zianblk.ziangts.v2.runtime
 import com.zianblk.ziangts.ZianGts
 import com.zianblk.ziangts.v2.application.TradeEngine
 import com.zianblk.ziangts.v2.persistence.DurableMarketStore
+import com.zianblk.ziangts.v2.persistence.DurableHistoryStore
 import com.zianblk.ziangts.v2.persistence.DurableTradeJournal
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.storage.LevelResource
@@ -18,7 +19,8 @@ object ZianGtsV2Runtime {
     data class Context(
         val market: DurableMarketStore,
         val journal: DurableTradeJournal,
-        val engine: TradeEngine
+        val engine: TradeEngine,
+        val history: DurableHistoryStore
     )
 
     @Volatile private var context: Context? = null
@@ -43,8 +45,9 @@ object ZianGtsV2Runtime {
             }
             val pokemon = CobblemonPokemonPort(server)
             val economy = AvecoinsEconomyPort()
-            val engine = TradeEngine(market, pokemon, economy, market, journal, Clock.systemUTC())
-            context = Context(market, journal, engine)
+            val history = DurableHistoryStore(root.resolve("history-v2.wal"))
+            val engine = TradeEngine(market, pokemon, economy, market, journal, history, Clock.systemUTC())
+            context = Context(market, journal, engine, history)
             blockedReason = null
             ZianGts.LOGGER.info("Zian GTS V2 runtime ready at {}", root)
         } catch (error: Exception) {
@@ -62,6 +65,7 @@ object ZianGtsV2Runtime {
         blockedReason = "V2 runtime stopped"
         if (current != null) {
             try {
+                current.history.close()
                 current.journal.close()
                 ZianGts.LOGGER.info("Zian GTS V2 runtime closed cleanly")
             } catch (error: Exception) {
