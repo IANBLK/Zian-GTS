@@ -23,7 +23,7 @@ class TradeEngineTest {
         val pokemon = DurableFilePokemonPort(dir.resolve("pokemon.state")).apply { seed(seller, p) }
         val offers = InMemoryOfferBook()
         val journal = RecordingTradeJournal()
-        val engine = TradeEngine(offers, pokemon, journal, Clock.fixed(now, ZoneOffset.UTC))
+        val engine = TradeEngine(offers, pokemon, TestEconomy(), InMemoryProceedsStore(), journal, Clock.fixed(now, ZoneOffset.UTC))
 
         val result = engine.publish(seller, "Seller", p.pokemonId, payment)
         assertTrue(result is TradeResult.Success)
@@ -41,7 +41,7 @@ class TradeEngineTest {
         val offer = TradeOffer(OfferId(UUID.randomUUID()), OfferOwner(seller, "Seller"), payment, p, now, now.plusSeconds(3600))
         offers.add(offer)
         val journal = RecordingTradeJournal()
-        val engine = TradeEngine(offers, pokemon, journal, Clock.fixed(now, ZoneOffset.UTC))
+        val engine = TradeEngine(offers, pokemon, TestEconomy(), InMemoryProceedsStore(), journal, Clock.fixed(now, ZoneOffset.UTC))
 
         val result = engine.withdraw(seller, offer.id)
         assertTrue(result is TradeResult.Success)
@@ -55,9 +55,61 @@ class TradeEngineTest {
         val offers = InMemoryOfferBook()
         val offer = TradeOffer(OfferId(UUID.randomUUID()), OfferOwner(seller, "Seller"), payment, p, now, now.plusSeconds(3600))
         offers.add(offer)
-        val engine = TradeEngine(offers, DurableFilePokemonPort(dir.resolve("pokemon.state")), RecordingTradeJournal(), Clock.fixed(now, ZoneOffset.UTC))
+        val engine = TradeEngine(offers, DurableFilePokemonPort(dir.resolve("pokemon.state")), TestEconomy(), InMemoryProceedsStore(), RecordingTradeJournal(), Clock.fixed(now, ZoneOffset.UTC))
 
         assertTrue(engine.withdraw(UUID.randomUUID(), offer.id) is TradeResult.Rejected)
         assertNotNull(offers.find(offer.id))
+    }
+    @Test fun purchaseChargesDeliversAndCreditsSeller() {
+        val seller = UUID.randomUUID()
+        val buyer = UUID.randomUUID()
+        val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
+        val pokemon = DurableFilePokemonPort(dir.resolve("purchase-pokemon.state"))
+        val offers = InMemoryOfferBook()
+        val offer = TradeOffer(OfferId(UUID.randomUUID()), OfferOwner(seller, "Seller"), payment, p, now, now.plusSeconds(3600))
+        offers.add(offer)
+        val economy = TestEconomy().apply { balances[buyer] = 20 }
+        val proceeds = InMemoryProceedsStore()
+        val journal = RecordingTradeJournal()
+        val engine = TradeEngine(offers, pokemon, economy, proceeds, journal, Clock.fixed(now, ZoneOffset.UTC))
+
+        val result = engine.purchase(buyer, offer.id)
+
+        assertTrue(result is TradeResult.Success)
+        assertNull(offers.find(offer.id))
+        assertEquals(12, economy.balances[buyer])
+        assertTrue(pokemon.owns(buyer, p.pokemonId))
+        assertEquals(8, proceeds.balance(seller, ProceedsKey("avecoins_wallet", "avecoins:coppercoin")))
+        assertTrue(journal.events.any { it.value == "stage:PAYMENT_APPLIED" })
+        assertTrue(journal.events.any { it.value == "stage:POKEMON_DELIVERED" })
+        assertTrue(journal.events.any { it.value == "stage:PROCEEDS_CREDITED" })
+    }
+
+    @Test fun purchaseRejectsOwnOfferWithoutMutation() {
+        val seller = UUID.randomUUID()
+        val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
+        val offers = InMemoryOfferBook()
+        val offer = TradeOffer(OfferId(UUID.randomUUID()), OfferOwner(seller, "Seller"), payment, p, now, now.plusSeconds(3600))
+        offers.add(offer)
+        val economy = TestEconomy().apply { balances[seller] = 20 }
+        val engine = TradeEngine(offers, DurableFilePokemonPort(dir.resolve("own.state")), economy, InMemoryProceedsStore(), RecordingTradeJournal(), Clock.fixed(now, ZoneOffset.UTC))
+
+        assertTrue(engine.purchase(seller, offer.id) is TradeResult.Rejected)
+        assertEquals(20, economy.balances[seller])
+        assertNotNull(offers.find(offer.id))
+    }
+
+    private class TestEconomy : EconomyPort {
+        val balances = mutableMapOf<UUID, Long>()
+        override fun canWithdraw(playerId: UUID, currency: String, amount: Long) = (balances[playerId] ?: 0) >= amount
+        override fun withdraw(operationId: UUID, playerId: UUID, currency: String, amount: Long): EconomyResult {
+            if (!canWithdraw(playerId, currency, amount)) return EconomyResult.Rejected("insufficient funds")
+            balances[playerId] = (balances[playerId] ?: 0) - amount
+            return EconomyResult.Applied
+        }
+        override fun deposit(operationId: UUID, playerId: UUID, currency: String, amount: Long): EconomyResult {
+            balances[playerId] = (balances[playerId] ?: 0) + amount
+            return EconomyResult.Applied
+        }
     }
 }
