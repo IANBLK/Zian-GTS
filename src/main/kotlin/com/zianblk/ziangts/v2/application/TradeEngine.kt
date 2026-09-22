@@ -7,6 +7,12 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
+sealed interface ClaimResult {
+    data class Success(val amount: Long, val key: ProceedsKey) : ClaimResult
+    data class Rejected(val reason: String) : ClaimResult
+    data class Quarantined(val operationId: UUID, val reason: String) : ClaimResult
+}
+
 sealed interface TradeResult {
     data class Success(val offer: TradeOffer) : TradeResult
     data class Rejected(val reason: String) : TradeResult
@@ -145,6 +151,39 @@ class TradeEngine(
         }
     }
 
+    fun claim(ownerId: UUID, key: ProceedsKey): ClaimResult = mutateClaim {
+        val amount = proceeds.balance(ownerId, key)
+        if (amount <= 0) return@mutateClaim ClaimResult.Rejected("no proceeds available")
+
+        val ticket = journal.begin(TradeOperation.CLAIM, ownerId)
+        // Reserve internally first. A second/reentrant claim can no longer see this balance.
+        proceeds.debit(ownerId, key, amount)
+        journal.stage(ticket, TradeStage.BEFORE_PAYMENT)
+
+        return@mutateClaim when (val deposited = economy.deposit(
+            ticket.operationId, ownerId, key.currency, amount
+        )) {
+            EconomyResult.Applied -> {
+                journal.stage(ticket, TradeStage.PAYMENT_APPLIED)
+                faultHook(TradeStage.PAYMENT_APPLIED)
+                journal.stage(ticket, TradeStage.RUNTIME_COMPLETE)
+                journal.complete(ticket)
+                ClaimResult.Success(amount, key)
+            }
+            is EconomyResult.Rejected -> {
+                // Known non-application: restoring our reserved proceeds is safe.
+                proceeds.credit(ownerId, key, amount)
+                journal.quarantine(ticket, "claim deposit rejected: ${deposited.reason}")
+                ClaimResult.Quarantined(ticket.operationId, deposited.reason)
+            }
+            is EconomyResult.Uncertain -> {
+                // Never restore on uncertainty: doing so could allow a duplicate payout.
+                journal.quarantine(ticket, "claim deposit outcome uncertain: ${deposited.reason}")
+                ClaimResult.Quarantined(ticket.operationId, deposited.reason)
+            }
+        }
+    }
+
     fun withdraw(ownerId: UUID, offerId: OfferId): TradeResult = mutate {
         val offer = offers.find(offerId) ?: return@mutate TradeResult.Rejected("offer not found")
         if (offer.owner.playerId != ownerId) return@mutate TradeResult.Rejected("offer is not owned by player")
@@ -170,6 +209,12 @@ class TradeEngine(
                 TradeResult.Quarantined(ticket.operationId, delivered.reason)
             }
         }
+    }
+
+    private fun mutateClaim(action: () -> ClaimResult): ClaimResult {
+        if (mutating) return ClaimResult.Rejected("market mutation already in progress")
+        mutating = true
+        return try { action() } finally { mutating = false }
     }
 
     private fun mutate(action: () -> TradeResult): TradeResult {
