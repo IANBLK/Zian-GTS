@@ -86,6 +86,18 @@ object ZianGtsV2Runtime {
     fun engineOrNull(): TradeEngine? = context?.engine
     fun unresolvedTransactions(): List<DurableTradeJournal.Pending> =
         (context?.journal ?: blockedJournal)?.unresolved() ?: emptyList()
+
+    @Synchronized
+    fun resolveBlockedTransaction(operationId: java.util.UUID, note: String): Boolean {
+        check(context == null) { "recovery resolution is only allowed while V2 trading is blocked" }
+        val journal = blockedJournal ?: return false
+        if (journal.unresolved().none { it.ticket.operationId == operationId }) return false
+        journal.resolve(operationId, note)
+        blockedReason = if (journal.blocksTrading()) "unresolved transaction journal"
+        else "recovery resolved; restart server to reopen V2 trading"
+        return true
+    }
+
     fun isReady(): Boolean = context != null
     fun blockedReason(): String? = blockedReason
 }
