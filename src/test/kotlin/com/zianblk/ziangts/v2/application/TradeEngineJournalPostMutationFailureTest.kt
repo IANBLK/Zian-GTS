@@ -70,6 +70,7 @@ class TradeEngineJournalPostMutationFailureTest {
             if (stage == failStage) error("simulated journal write failure at $stage")
         }
         override fun complete(ticket: JournalTicket) = Unit
+        override fun abort(ticket: JournalTicket, reason: String) = Unit
         override fun quarantine(ticket: JournalTicket, reason: String) = Unit
     }
 
