@@ -25,6 +25,21 @@ object V2TestCommands {
                 ctx.source.sendSuccess({ Component.literal("Zian GTS V2: ready=$ready, status=$detail") }, false)
                 1
             })
+            .then(Commands.literal("recovery")
+                .executes { ctx ->
+                    val pending = ZianGtsV2Runtime.unresolvedTransactions()
+                    if (pending.isEmpty()) {
+                        ctx.source.sendSuccess({ Component.literal("Zian GTS V2: no unresolved transactions") }, false)
+                    } else {
+                        ctx.source.sendFailure(Component.literal("Zian GTS V2: ${pending.size} unresolved transaction(s); trading remains blocked"))
+                        pending.take(10).forEach { incident ->
+                            ctx.source.sendFailure(Component.literal(
+                                "id=${incident.ticket.operationId} op=${incident.ticket.operation} subject=${incident.subjectId} stage=${incident.stage} quarantined=${incident.quarantined} reason=${incident.reason ?: "-"}"
+                            ))
+                        }
+                    }
+                    1
+                })
             .then(Commands.literal("publish")
                 .then(Commands.argument("pokemon", StringArgumentType.word())
                     .then(Commands.argument("amount", IntegerArgumentType.integer(1))
