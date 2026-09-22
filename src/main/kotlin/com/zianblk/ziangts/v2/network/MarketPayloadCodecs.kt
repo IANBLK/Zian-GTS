@@ -38,6 +38,12 @@ object MarketPayloadCodecs {
             { buf -> MarketPageResponsePayload(PAGE_RESPONSE.decode(buf)) }
         )
 
+    val OPEN_SCREEN_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, OpenMarketScreenPayload> =
+        StreamCodec.of(
+            { _, _ -> },
+            { _ -> OpenMarketScreenPayload }
+        )
+
     private fun encodeRequest(buf: RegistryFriendlyByteBuf, value: MarketPageRequest) {
         buf.writeVarInt(value.protocolVersion)
         buf.writeEnum(value.tab)
