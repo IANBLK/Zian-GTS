@@ -111,6 +111,60 @@ class TransactionJournalTest {
             }
         }
     }
+    @Test fun `crash integration preserves persisted buy state without duplication`() {
+        val classpath = checkNotNull(System.getProperty("ziangts.crashTestClasspath"))
+        for (stage in listOf("after_begin", "after_payment", "after_delivery")) {
+            val root = directory.resolve("integration-$stage")
+            Files.createDirectories(root)
+            val journalPath = root.resolve("transactions.wal")
+            val statePath = root.resolve("market.state")
+            val process = ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-cp", classpath, GtsBuyCrashProbe::class.java.name,
+                journalPath.toString(), statePath.toString(), stage)
+                .redirectErrorStream(true).redirectOutput(root.resolve("probe.log").toFile()).start()
+            val exited = process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
+            if (!exited) process.destroyForcibly()
+            assertTrue(exited, "Child timed out: $stage")
+            assertEquals(29, process.exitValue(), Files.readString(root.resolve("probe.log")))
+
+            val state = GtsBuyCrashProbe.readState(statePath)
+            when (stage) {
+                "after_begin" -> {
+                    assertTrue(state.listingPresent)
+                    assertEquals(10L, state.buyerBalance)
+                    assertEquals(0, state.buyerPokemon)
+                    assertEquals(0L, state.sellerProceeds)
+                }
+                "after_payment" -> {
+                    assertFalse(state.listingPresent)
+                    assertEquals(5L, state.buyerBalance)
+                    assertEquals(0, state.buyerPokemon)
+                    assertEquals(0L, state.sellerProceeds)
+                }
+                "after_delivery" -> {
+                    assertFalse(state.listingPresent)
+                    assertEquals(5L, state.buyerBalance)
+                    assertEquals(1, state.buyerPokemon)
+                    assertEquals(0L, state.sellerProceeds)
+                }
+            }
+            assertTrue(state.buyerPokemon in 0..1)
+            assertTrue(state.buyerBalance in setOf(10L, 5L))
+
+            TransactionJournal(journalPath).use { journal ->
+                assertNull(journal.fault)
+                assertTrue(journal.blocksTrading())
+                val incident = journal.entries().single()
+                assertEquals("buy", incident.operation)
+                assertEquals(stage, incident.stage)
+                assertTrue(journal.resolve(incident.id, "test-admin", actor))
+                assertFalse(journal.blocksTrading())
+            }
+            assertEquals(state, GtsBuyCrashProbe.readState(statePath),
+                "resolve() must not mutate persisted market/economy/Pokémon state")
+        }
+    }
+
 }
 
 object JournalCrashProbe {
@@ -123,5 +177,51 @@ object JournalCrashProbe {
             else -> journal.stage(id, args[1])
         }
         Runtime.getRuntime().halt(23) // No finally, close, shutdown hook or graceful server event.
+    }
+}
+
+
+object GtsBuyCrashProbe {
+    data class State(val listingPresent: Boolean, val buyerBalance: Long, val buyerPokemon: Int, val sellerProceeds: Long)
+
+    @JvmStatic fun main(args: Array<String>) {
+        val journalPath = Path.of(args[0])
+        val statePath = Path.of(args[1])
+        val stopAt = args[2]
+        var state = State(true, 10L, 0, 0L)
+        persist(statePath, state)
+
+        val journal = TransactionJournal(journalPath)
+        val id = journal.begin("buy", UUID.randomUUID(), "{listing:true,buyerBalance:10,buyerPokemon:0,sellerProceeds:0}")
+        journal.stage(id, "after_begin")
+        if (stopAt == "after_begin") Runtime.getRuntime().halt(29)
+
+        state = state.copy(listingPresent = false, buyerBalance = 5L)
+        persist(statePath, state)
+        journal.stage(id, "after_payment")
+        if (stopAt == "after_payment") Runtime.getRuntime().halt(29)
+
+        state = state.copy(buyerPokemon = 1)
+        persist(statePath, state)
+        journal.stage(id, "after_delivery")
+        if (stopAt == "after_delivery") Runtime.getRuntime().halt(29)
+
+        error("Unknown crash boundary: $stopAt")
+    }
+
+    fun readState(path: Path): State {
+        val parts = Files.readString(path).trim().split('|')
+        return State(parts[0].toBooleanStrict(), parts[1].toLong(), parts[2].toInt(), parts[3].toLong())
+    }
+
+    private fun persist(path: Path, state: State) {
+        val bytes = java.nio.ByteBuffer.wrap(
+            "${state.listingPresent}|${state.buyerBalance}|${state.buyerPokemon}|${state.sellerProceeds}\n"
+                .toByteArray(Charsets.UTF_8))
+        java.nio.channels.FileChannel.open(path, java.nio.file.StandardOpenOption.CREATE,
+            java.nio.file.StandardOpenOption.TRUNCATE_EXISTING, java.nio.file.StandardOpenOption.WRITE).use { file ->
+            while (bytes.hasRemaining()) file.write(bytes)
+            file.force(true)
+        }
     }
 }
