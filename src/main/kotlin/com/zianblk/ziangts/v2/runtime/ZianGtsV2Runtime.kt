@@ -64,7 +64,16 @@ object ZianGtsV2Runtime {
             val pokemon = CobblemonPokemonPort(server)
             val economy = AvecoinsEconomyPort()
             val history = DurableHistoryStore(root.resolve("history-v2.wal"))
-            val engine = TradeEngine(market, pokemon, economy, market, journal, Clock.systemUTC(), history)
+            val engine = TradeEngine(
+                market,
+                pokemon,
+                economy,
+                market,
+                journal,
+                Clock.systemUTC(),
+                history,
+                mutationThreadCheck = { server.isSameThread }
+            )
             context = Context(market, journal, engine, history)
             blockedJournal = null
             blockedReason = null
