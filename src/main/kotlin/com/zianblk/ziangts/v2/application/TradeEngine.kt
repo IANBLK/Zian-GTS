@@ -123,7 +123,10 @@ class TradeEngine(
 
         // Reserve first so a reentrant/double purchase cannot observe the offer as available.
         val reserved = offers.remove(offerId)
-            ?: return@mutate TradeResult.Rejected("offer disappeared")
+        if (reserved == null) {
+            journal.abort(ticket, "offer disappeared before reservation; no external side effect")
+            return@mutate TradeResult.Rejected("offer disappeared")
+        }
 
         journal.stage(ticket, TradeStage.BEFORE_PAYMENT)
         val charged = try {
@@ -140,8 +143,8 @@ class TradeEngine(
             is EconomyResult.Rejected -> {
                 // Payment is known not to have happened, so restoring the reservation is safe.
                 offers.add(reserved)
-                journal.quarantine(ticket, "payment rejected after reservation: ${charged.reason}")
-                return@mutate TradeResult.Quarantined(ticket.operationId, charged.reason)
+                journal.abort(ticket, "payment rejected and offer reservation restored: ${charged.reason}")
+                return@mutate TradeResult.Rejected(charged.reason)
             }
             is EconomyResult.Uncertain -> {
                 journal.quarantine(ticket, "payment outcome uncertain: ${charged.reason}")
@@ -251,8 +254,8 @@ class TradeEngine(
             is EconomyResult.Rejected -> {
                 // Known non-application: restoring our reserved proceeds is safe.
                 proceeds.credit(ownerId, key, amount)
-                journal.quarantine(ticket, "claim deposit rejected: ${deposited.reason}")
-                ClaimResult.Quarantined(ticket.operationId, deposited.reason)
+                journal.abort(ticket, "claim deposit rejected and proceeds restored: ${deposited.reason}")
+                ClaimResult.Rejected(deposited.reason)
             }
             is EconomyResult.Uncertain -> {
                 // Never restore on uncertainty: doing so could allow a duplicate payout.
@@ -272,7 +275,10 @@ class TradeEngine(
             return@mutate TradeResult.Rejected("journal unavailable")
         }
         val removed = offers.remove(offerId)
-            ?: return@mutate TradeResult.Rejected("offer disappeared")
+        if (removed == null) {
+            journal.abort(ticket, "offer disappeared before withdrawal reservation; no external side effect")
+            return@mutate TradeResult.Rejected("offer disappeared")
+        }
 
         journal.stage(ticket, TradeStage.BEFORE_POKEMON_DELIVERY)
         val delivered = try {
