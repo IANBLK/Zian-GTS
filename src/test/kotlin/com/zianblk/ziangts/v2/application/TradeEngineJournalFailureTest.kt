@@ -63,6 +63,7 @@ class TradeEngineJournalFailureTest {
         override fun begin(operation: TradeOperation, subjectId: UUID): JournalTicket = error("disk unavailable")
         override fun stage(ticket: JournalTicket, stage: TradeStage) = Unit
         override fun complete(ticket: JournalTicket) = Unit
+        override fun abort(ticket: JournalTicket, reason: String) = Unit
         override fun quarantine(ticket: JournalTicket, reason: String) = Unit
     }
 
@@ -70,6 +71,7 @@ class TradeEngineJournalFailureTest {
         override fun begin(operation: TradeOperation, subjectId: UUID) = JournalTicket(UUID.randomUUID(), operation)
         override fun stage(ticket: JournalTicket, stage: TradeStage) = error("disk unavailable")
         override fun complete(ticket: JournalTicket) = Unit
+        override fun abort(ticket: JournalTicket, reason: String) = Unit
         override fun quarantine(ticket: JournalTicket, reason: String) = Unit
     }
 
