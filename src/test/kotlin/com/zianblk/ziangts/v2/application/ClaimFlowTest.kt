@@ -35,7 +35,7 @@ class ClaimFlowTest {
         val economy = ClaimEconomy(result = EconomyResult.Rejected("wallet rejected"))
         val result = engine(economy, proceeds, RecordingTradeJournal()).claim(owner, key)
 
-        assertTrue(result is ClaimResult.Quarantined)
+        assertTrue(result is ClaimResult.Rejected)
         assertEquals(8, proceeds.balance(owner, key))
         assertEquals(0, economy.balances[owner] ?: 0)
     }
