@@ -18,6 +18,8 @@ import net.minecraft.network.chat.Component
 class MarketScreen : Screen(Component.literal("Zian GTS")) {
     private var state = MarketUiState()
     private var observedRevision = -1L
+    private var previousButton: Button? = null
+    private var nextButton: Button? = null
 
     override fun init() {
         super.init()
@@ -31,7 +33,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 switchTab(MarketTab.MY_OFFERS)
             }.bounds(width / 2 + 5, 18, 100, 20).build()
         )
-        addRenderableWidget(
+        previousButton = addRenderableWidget(
             Button.builder(Component.literal("<")) {
                 val next = state.previousPage()
                 if (next !== state) {
@@ -40,7 +42,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 }
             }.bounds(width / 2 - 65, height - 34, 30, 20).build()
         )
-        addRenderableWidget(
+        nextButton = addRenderableWidget(
             Button.builder(Component.literal(">")) {
                 val next = state.nextPage()
                 if (next !== state) {
@@ -49,6 +51,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 }
             }.bounds(width / 2 + 35, height - 34, 30, 20).build()
         )
+        updateNavigationButtons()
         requestCurrent()
     }
 
@@ -60,6 +63,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             val response = V2MarketClientState.snapshot()
             if (response != null && response.tab == state.tab) {
                 state = state.accept(response)
+                updateNavigationButtons()
             }
         }
     }
@@ -106,11 +110,18 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     private fun switchTab(tab: MarketTab) {
         if (state.tab == tab) return
         state = state.switchTab(tab)
+        updateNavigationButtons()
         requestCurrent()
+    }
+
+    private fun updateNavigationButtons() {
+        previousButton?.active = !state.loading && state.page > 1
+        nextButton?.active = !state.loading && (state.response?.hasNext == true)
     }
 
     private fun requestCurrent() {
         state = state.beginRequest()
+        updateNavigationButtons()
         when (state.tab) {
             MarketTab.MARKET -> V2MarketClient.requestMarket(
                 page = state.page,
