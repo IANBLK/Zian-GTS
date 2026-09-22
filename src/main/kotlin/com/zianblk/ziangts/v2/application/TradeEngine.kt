@@ -143,7 +143,12 @@ class TradeEngine(
             }
             is EconomyResult.Rejected -> {
                 // Payment is known not to have happened, so restoring the reservation is safe.
-                offers.add(reserved)
+                try {
+                    offers.add(reserved)
+                } catch (error: Exception) {
+                    journal.quarantine(ticket, "payment rejected but offer restoration failed: ${error.javaClass.simpleName}")
+                    return@mutate TradeResult.Quarantined(ticket.operationId, "offer restoration failed")
+                }
                 journal.abort(ticket, "payment rejected and offer reservation restored: ${charged.reason}")
                 return@mutate TradeResult.Rejected(charged.reason)
             }
@@ -254,7 +259,12 @@ class TradeEngine(
             }
             is EconomyResult.Rejected -> {
                 // Known non-application: restoring our reserved proceeds is safe.
-                proceeds.credit(ownerId, key, amount)
+                try {
+                    proceeds.credit(ownerId, key, amount)
+                } catch (error: Exception) {
+                    journal.quarantine(ticket, "claim deposit rejected but proceeds restoration failed: ${error.javaClass.simpleName}")
+                    return@mutateClaim ClaimResult.Quarantined(ticket.operationId, "proceeds restoration failed")
+                }
                 journal.abort(ticket, "claim deposit rejected and proceeds restored: ${deposited.reason}")
                 ClaimResult.Rejected(deposited.reason)
             }
@@ -297,7 +307,12 @@ class TradeEngine(
             }
             is PokemonMutation.Rejected -> {
                 // Delivery is known not to have happened, so restoring the offer is safe.
-                offers.add(removed)
+                try {
+                    offers.add(removed)
+                } catch (error: Exception) {
+                    journal.quarantine(ticket, "pokemon return rejected but offer restoration failed: ${error.javaClass.simpleName}")
+                    return@mutate TradeResult.Quarantined(ticket.operationId, "offer restoration failed")
+                }
                 journal.abort(ticket, "pokemon return rejected and offer reservation restored: ${delivered.reason}")
                 TradeResult.Rejected(delivered.reason)
             }
