@@ -55,8 +55,16 @@ class TradeEngine(
             return@mutate TradeResult.Rejected("pokemon ownership check failed")
         } ?: return@mutate TradeResult.Rejected("pokemon is not owned by seller")
 
-        val ticket = journal.begin(TradeOperation.PUBLISH, pokemonId)
-        journal.stage(ticket, TradeStage.BEFORE_POKEMON_REMOVE)
+        val ticket = try {
+            journal.begin(TradeOperation.PUBLISH, pokemonId)
+        } catch (error: Exception) {
+            return@mutate TradeResult.Rejected("journal unavailable")
+        }
+        try {
+            journal.stage(ticket, TradeStage.BEFORE_POKEMON_REMOVE)
+        } catch (error: Exception) {
+            return@mutate TradeResult.Quarantined(ticket.operationId, "journal persistence failed before pokemon removal")
+        }
         val removed = try {
             pokemon.removeOwned(ticket.operationId, sellerId, pokemonId)
         } catch (error: Exception) {
@@ -107,7 +115,11 @@ class TradeEngine(
         }
         if (!canWithdraw) return@mutate TradeResult.Rejected("insufficient funds")
 
-        val ticket = journal.begin(TradeOperation.PURCHASE, offerId.value)
+        val ticket = try {
+            journal.begin(TradeOperation.PURCHASE, offerId.value)
+        } catch (error: Exception) {
+            return@mutate TradeResult.Rejected("journal unavailable")
+        }
 
         // Reserve first so a reentrant/double purchase cannot observe the offer as available.
         val reserved = offers.remove(offerId)
@@ -206,7 +218,11 @@ class TradeEngine(
         }
         if (amount <= 0) return@mutateClaim ClaimResult.Rejected("no proceeds available")
 
-        val ticket = journal.begin(TradeOperation.CLAIM, ownerId)
+        val ticket = try {
+            journal.begin(TradeOperation.CLAIM, ownerId)
+        } catch (error: Exception) {
+            return@mutateClaim ClaimResult.Rejected("journal unavailable")
+        }
         // Reserve internally first. A second/reentrant claim can no longer see this balance.
         try {
             proceeds.debit(ownerId, key, amount)
@@ -250,7 +266,11 @@ class TradeEngine(
         val offer = offers.find(offerId) ?: return@mutate TradeResult.Rejected("offer not found")
         if (offer.owner.playerId != ownerId) return@mutate TradeResult.Rejected("offer is not owned by player")
 
-        val ticket = journal.begin(TradeOperation.WITHDRAW, offerId.value)
+        val ticket = try {
+            journal.begin(TradeOperation.WITHDRAW, offerId.value)
+        } catch (error: Exception) {
+            return@mutate TradeResult.Rejected("journal unavailable")
+        }
         val removed = offers.remove(offerId)
             ?: return@mutate TradeResult.Rejected("offer disappeared")
 
