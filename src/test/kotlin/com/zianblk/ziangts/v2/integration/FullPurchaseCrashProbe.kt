@@ -2,7 +2,7 @@ package com.zianblk.ziangts.v2.integration
 
 import com.zianblk.ziangts.v2.application.TradeEngine
 import com.zianblk.ziangts.v2.domain.*
-import com.zianblk.ziangts.v2.persistence.DurableMarketStore
+import com.zianblk.ziangts.v2.persistence.DurableMarketStore\nimport com.zianblk.ziangts.v2.persistence.DurableHistoryStore
 import com.zianblk.ziangts.v2.persistence.DurableTradeJournal
 import com.zianblk.ziangts.v2.port.TradeStage
 import com.zianblk.ziangts.v2.testadapter.DurableFileEconomyPort
@@ -34,7 +34,7 @@ object FullPurchaseCrashProbe {
         val economy = DurableFileEconomyPort(root.resolve("economy.state")).apply {
             if (balance(buyer, key.currency) == 0L) setBalance(buyer, key.currency, 20)
         }
-        val pokemon = DurableFilePokemonPort(root.resolve("pokemon.state"))
+        val pokemon = DurableFilePokemonPort(root.resolve("pokemon.state"))\n        val history = DurableHistoryStore(root.resolve("history-v2.wal"))
         DurableTradeJournal(root.resolve("transactions-v2.wal")).use { journal ->
             val engine = TradeEngine(market, pokemon, economy, market, journal,
                 Clock.fixed(Instant.parse("2026-09-22T17:00:00Z"), ZoneOffset.UTC),
