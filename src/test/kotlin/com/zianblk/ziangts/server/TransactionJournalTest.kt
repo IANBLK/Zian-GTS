@@ -181,6 +181,14 @@ object JournalCrashProbe {
 }
 
 
+/**
+ * Crash-model probe for the journal contract only.
+ *
+ * This deliberately persists a small synthetic market state with force(true) at each boundary.
+ * It does NOT execute GtsService.buyInternal(), Minecraft SavedData, Cobblemon storage or AVECOINS,
+ * whose durability boundaries differ in production. Keep real Youer crash/restart validation as the
+ * end-to-end authority for cross-store behaviour.
+ */
 object GtsBuyCrashProbe {
     data class State(val listingPresent: Boolean, val buyerBalance: Long, val buyerPokemon: Int, val sellerProceeds: Long)
 
