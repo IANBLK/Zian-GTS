@@ -40,6 +40,21 @@ class FullPurchaseCrashIntegrationTest {
         }
     }
 
+    @Test fun crashAfterProceedsCreditPreservesAllAppliedEffectsAndBlocks() {
+        crashAt(TradeStage.PROCEEDS_CREDITED)
+        val market = DurableMarketStore(dir.resolve("market-v2.state"))
+        assertNull(market.find(FullPurchaseCrashProbe.offerId))
+        assertEquals(8, market.balance(FullPurchaseCrashProbe.seller, FullPurchaseCrashProbe.key))
+        assertEquals(12, DurableFileEconomyPort(dir.resolve("economy.state"))
+            .balance(FullPurchaseCrashProbe.buyer, FullPurchaseCrashProbe.key.currency))
+        assertTrue(DurableFilePokemonPort(dir.resolve("pokemon.state"))
+            .owns(FullPurchaseCrashProbe.buyer, FullPurchaseCrashProbe.pokemonId))
+        DurableTradeJournal(dir.resolve("transactions-v2.wal")).use { journal ->
+            assertTrue(journal.blocksTrading())
+            assertEquals(TradeStage.PROCEEDS_CREDITED, journal.unresolved().single().stage)
+        }
+    }
+
     @Test fun crashAfterDeliveryPreservesPokemonAndStillBlocks() {
         crashAt(TradeStage.POKEMON_DELIVERED)
         val market = DurableMarketStore(dir.resolve("market-v2.state"))
