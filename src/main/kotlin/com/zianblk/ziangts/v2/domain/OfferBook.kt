@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 enum class OfferFilter { ALL, SHINY, ALPHA, LEGENDARY, LEGENDARY_SHINY, OWN }
+enum class OfferOwnership { ANY, MINE, OTHERS }
 enum class OfferSort { NEWEST, OLDEST, PRICE_LOW, PRICE_HIGH, LEVEL_LOW, LEVEL_HIGH }
 
 data class MarketQuery(
@@ -12,6 +13,7 @@ data class MarketQuery(
     val pageSize: Int = 6,
     val filter: OfferFilter = OfferFilter.ALL,
     val sort: OfferSort = OfferSort.NEWEST,
+    val ownership: OfferOwnership = OfferOwnership.ANY,
     val now: Instant = Instant.now()
 ) {
     init {
@@ -59,6 +61,13 @@ fun OfferBook.query(query: MarketQuery): MarketView {
             when (query.filter) {
                 OfferFilter.OWN -> offer.owner.playerId == query.viewer
                 else -> offer.stateAt(query.now) == OfferState.CURRENT
+            }
+        }
+        .filter { offer ->
+            when (query.ownership) {
+                OfferOwnership.ANY -> true
+                OfferOwnership.MINE -> offer.owner.playerId == query.viewer
+                OfferOwnership.OTHERS -> offer.owner.playerId != query.viewer
             }
         }
         .filter { offer ->
