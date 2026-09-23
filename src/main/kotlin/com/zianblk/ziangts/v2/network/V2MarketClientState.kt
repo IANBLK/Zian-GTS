@@ -13,6 +13,9 @@ object V2MarketClientState {
     private var revision: Long = 0
 
     @Volatile
+    private var latestMarketRequestId: Long = 0
+
+    @Volatile
     private var action: MarketActionResponsePayload? = null
 
     @Volatile
@@ -29,7 +32,12 @@ object V2MarketClientState {
     @Volatile private var history: HistoryResponsePayload? = null
     @Volatile private var historyRevision: Long = 0
 
-    fun accept(response: MarketPageResponse) {
+    fun markMarketRequest(requestId: Long) {
+        if (requestId > latestMarketRequestId) latestMarketRequestId = requestId
+    }
+
+    fun accept(requestId: Long, response: MarketPageResponse) {
+        if (requestId < latestMarketRequestId) return
         require(response.protocolVersion == MARKET_PROTOCOL_VERSION) {
             "unsupported market protocol version"
         }
