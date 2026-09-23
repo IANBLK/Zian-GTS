@@ -17,6 +17,7 @@ import net.minecraft.commands.Commands
 import net.minecraft.network.chat.Component
 import net.neoforged.neoforge.network.PacketDistributor
 import com.zianblk.ziangts.v2.network.OpenMarketScreenPayload
+import com.zianblk.ziangts.economy.AvecoinsWalletProvider
 
 /** Temporary operator-facing commands for real Youer validation before V2 GUI/network wiring. */
 object V2TestCommands {
@@ -167,6 +168,14 @@ object V2TestCommands {
                 .then(Commands.argument("pokemon", StringArgumentType.word())
                     .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                         .then(Commands.argument("currency", StringArgumentType.word())
+                            .suggests { _, builder ->
+                                try {
+                                    AvecoinsWalletProvider.supportedCurrencies().forEach { builder.suggest(it) }
+                                } catch (_: Exception) {
+                                    // Keep command parsing available; execution will still fail closed if AVECOINS is unavailable.
+                                }
+                                builder.buildFuture()
+                            }
                             .executes { ctx ->
                                 val player = ctx.source.playerOrException
                                 val engine = engine(ctx.source) ?: return@executes 0
