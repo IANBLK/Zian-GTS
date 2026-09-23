@@ -183,7 +183,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             val species = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
             graphics.drawString(font, Component.literal(species), x + 8, y + 8, 0xFFFFFF)
             graphics.drawString(font, Component.literal("Nv. " + entry.level), x + 8, y + 21, 0xBBBBBB)
-            val traits = listOfNotNull(if (entry.shiny) "Shiny" else null, if (entry.alpha) "Alpha" else null).joinToString(" · ")
+            val traits = listOfNotNull(if (entry.legendary) "Legendario" else null, if (entry.shiny) "Shiny" else null, if (entry.alpha) "Alpha" else null).joinToString(" · ")
             if (traits.isNotEmpty()) graphics.drawString(font, Component.literal(traits), x + 8, y + 34, 0xFFD966)
             val priceLabel = "Precio: " + entry.price
             graphics.drawString(font, Component.literal(priceLabel), x + 8, y + 51, 0xFFFFFF)
