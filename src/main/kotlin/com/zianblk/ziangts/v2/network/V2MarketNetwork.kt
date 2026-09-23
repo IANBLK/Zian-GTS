@@ -206,7 +206,7 @@ object V2MarketNetwork {
                     val result = engine.claim(player.uuid, ProceedsKey(payload.adapter, payload.currency))
                     val success = result is ClaimResult.Success
                     val message = when (result) {
-                        is ClaimResult.Success -> "Cobrado: ${result.amount}"
+                        is ClaimResult.Success -> "Se agregaron ${result.amount} ${currencyDisplayName(result.key.currency, result.amount)} a tu wallet exitosamente"
                         is ClaimResult.Rejected -> result.reason
                         is ClaimResult.Quarantined -> "Cobro bloqueado para recuperación: ${result.operationId}"
                     }
@@ -232,6 +232,21 @@ object V2MarketNetwork {
             context.enqueueWork {
                 V2MarketClientHandlers.openMarketScreen()
             }
+        }
+    }
+
+    private fun currencyDisplayName(currency: String, amount: Long): String {
+        val singular = amount == 1L
+        return when (currency.substringAfter(':')) {
+            "coppercoin" -> if (singular) "Moneda de Cobre" else "Monedas de Cobre"
+            "ironcoin" -> if (singular) "Moneda de Hierro" else "Monedas de Hierro"
+            "goldcoin" -> if (singular) "Moneda de Oro" else "Monedas de Oro"
+            "diamondcoin" -> if (singular) "Moneda de Diamante" else "Monedas de Diamante"
+            "netheritecoin" -> if (singular) "Moneda de Netherita" else "Monedas de Netherita"
+            "goldticket" -> if (singular) "Ticket de Oro" else "Tickets de Oro"
+            "diamondticket" -> if (singular) "Ticket de Diamante" else "Tickets de Diamante"
+            "netheriteticket" -> if (singular) "Ticket de Netherita" else "Tickets de Netherita"
+            else -> currency.substringAfter(':').replace('_', ' ')
         }
     }
 
