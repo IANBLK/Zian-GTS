@@ -92,6 +92,33 @@ object MarketPayloadCodecs {
             { buf -> PublishOfferResponsePayload(buf.readBoolean(), buf.readUtf(256)) }
         )
 
+    val PROCEEDS_REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, ProceedsRequestPayload> =
+        StreamCodec.of({ _, _ -> }, { _ -> ProceedsRequestPayload })
+
+    val PROCEEDS_RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, ProceedsResponsePayload> =
+        StreamCodec.of(
+            { buf, value ->
+                buf.writeVarInt(value.entries.size)
+                value.entries.forEach { buf.writeUtf(it.adapter, 128); buf.writeUtf(it.currency, 128); buf.writeVarLong(it.amount) }
+            },
+            { buf ->
+                val count = buf.readVarInt().also { require(it in 0..64) }
+                ProceedsResponsePayload(List(count) { ProceedsEntryDto(buf.readUtf(128), buf.readUtf(128), buf.readVarLong()) })
+            }
+        )
+
+    val CLAIM_PROCEEDS_REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, ClaimProceedsRequestPayload> =
+        StreamCodec.of(
+            { buf, value -> buf.writeUtf(value.adapter, 128); buf.writeUtf(value.currency, 128) },
+            { buf -> ClaimProceedsRequestPayload(buf.readUtf(128), buf.readUtf(128)) }
+        )
+
+    val CLAIM_PROCEEDS_RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, ClaimProceedsResponsePayload> =
+        StreamCodec.of(
+            { buf, value -> buf.writeBoolean(value.success); buf.writeUtf(value.message, 256) },
+            { buf -> ClaimProceedsResponsePayload(buf.readBoolean(), buf.readUtf(256)) }
+        )
+
     private fun encodeRequest(buf: RegistryFriendlyByteBuf, value: MarketPageRequest) {
         buf.writeVarInt(value.protocolVersion)
         buf.writeEnum(value.tab)
