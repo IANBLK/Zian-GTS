@@ -150,3 +150,38 @@ data class ClaimProceedsResponsePayload(val success: Boolean, val message: Strin
         )
     }
 }
+
+
+data class HistoryRequestPayload(val page: Int, val pageSize: Int) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<HistoryRequestPayload>(
+            ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_history_request")
+        )
+    }
+}
+
+data class HistoryEntryDto(
+    val operationId: java.util.UUID,
+    val sellerId: java.util.UUID,
+    val buyerId: java.util.UUID,
+    val species: String,
+    val amount: Long,
+    val currency: String,
+    val completedAtEpochMilli: Long
+)
+
+data class HistoryResponsePayload(
+    val entries: List<HistoryEntryDto>,
+    val page: Int,
+    val totalPages: Int,
+    val hasPrevious: Boolean,
+    val hasNext: Boolean
+) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<HistoryResponsePayload>(
+            ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_history_response")
+        )
+    }
+}
