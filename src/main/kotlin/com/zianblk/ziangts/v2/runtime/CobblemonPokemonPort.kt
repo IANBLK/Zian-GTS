@@ -28,20 +28,10 @@ class CobblemonPokemonPort(
         return Cobblemon.storage.getParty(player).get(slot - 1)?.uuid
     }
 
-    /** Lists PC Pokemon for operator-facing validation without exposing Cobblemon types outside the adapter. */
-    fun pcPokemonChoices(ownerId: UUID): List<Pair<UUID, String>> {
-        val player = online(ownerId) ?: return emptyList()
-        requireServerThread()
-        val pc = Cobblemon.storage.getPC(player)
-        return pc.iterator().asSequence()
-            .map { it.uuid to "${it.species.resourceIdentifier} Nv.${it.level}" }
-            .toList()
-    }
-
     override fun inspectOwned(ownerId: UUID, pokemonId: UUID): PokemonEnvelope? {
         val player = online(ownerId) ?: return null
         requireServerThread()
-        val pokemon = find(player, pokemonId) ?: return null
+        val pokemon = Cobblemon.storage.getParty(player)[pokemonId] ?: return null
         if (!pokemon.tradeable || pokemon.state !is InactivePokemonState) return null
         return envelope(pokemon)
     }
@@ -50,14 +40,11 @@ class CobblemonPokemonPort(
         val player = online(ownerId) ?: return PokemonMutation.Rejected("player_offline")
         requireServerThread()
         val party = Cobblemon.storage.getParty(player)
-        val pc = Cobblemon.storage.getPC(player)
-        val partyPokemon = party[pokemonId]
-        val pcPokemon = pc[pokemonId]
-        val pokemon = partyPokemon ?: pcPokemon ?: return PokemonMutation.Rejected("pokemon_not_owned")
+        val pokemon = party[pokemonId] ?: return PokemonMutation.Rejected("pokemon_not_in_party")
         if (!pokemon.tradeable) return PokemonMutation.Rejected("pokemon_not_tradeable")
         if (pokemon.state !is InactivePokemonState) return PokemonMutation.Rejected("pokemon_not_recalled")
         return try {
-            val removed = if (partyPokemon != null) party.remove(pokemon) else pc.remove(pokemon)
+            val removed = party.remove(pokemon)
             if (removed) PokemonMutation.Applied
             else PokemonMutation.Rejected("pokemon_remove_rejected")
         } catch (error: Exception) {
