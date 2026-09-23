@@ -59,4 +59,12 @@ class ZianGtsV2RuntimeLifecycleTest {
         assertTrue(journalClosed)
         assertNull(failure)
     }
+    @Test
+    fun startupAllowedOnlyWhenNoRuntimeOwnerExists() {
+        assertTrue(ZianGtsV2Runtime.mayStart(hasContext = false, hasBlockedJournal = false))
+        assertFalse(ZianGtsV2Runtime.mayStart(hasContext = true, hasBlockedJournal = false))
+        assertFalse(ZianGtsV2Runtime.mayStart(hasContext = false, hasBlockedJournal = true))
+        assertFalse(ZianGtsV2Runtime.mayStart(hasContext = true, hasBlockedJournal = true))
+    }
+
 }
