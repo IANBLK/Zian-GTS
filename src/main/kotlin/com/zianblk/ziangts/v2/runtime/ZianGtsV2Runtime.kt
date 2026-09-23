@@ -153,6 +153,9 @@ object ZianGtsV2Runtime {
     fun partyPokemonId(playerId: java.util.UUID, slot: Int): java.util.UUID? =
         context?.pokemon?.partyPokemonId(playerId, slot)
 
+    fun partyEntries(playerId: java.util.UUID): List<CobblemonPokemonPort.PartyEntry>? =
+        context?.pokemon?.partyEntries(playerId)
+
 
 
     /**
