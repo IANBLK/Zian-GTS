@@ -9,6 +9,9 @@ import net.neoforged.neoforge.network.PacketDistributor
  * authenticated server network context.
  */
 object V2MarketClient {
+    fun requestProceeds() = PacketDistributor.sendToServer(ProceedsRequestPayload)
+    fun claimProceeds(adapter: String, currency: String) = PacketDistributor.sendToServer(ClaimProceedsRequestPayload(adapter, currency))
+
     fun requestPublishOptions() = PacketDistributor.sendToServer(PublishOptionsRequestPayload)
 
     fun publish(pokemonId: java.util.UUID, amount: Long, currency: String) =
