@@ -9,6 +9,10 @@ import net.neoforged.neoforge.network.PacketDistributor
  * authenticated server network context.
  */
 object V2MarketClient {
+    fun requestAction(offerId: java.util.UUID, action: MarketAction) {
+        PacketDistributor.sendToServer(MarketActionRequestPayload(offerId, action))
+    }
+
     fun requestPage(request: MarketPageRequest) {
         PacketDistributor.sendToServer(MarketPageRequestPayload(request))
     }
