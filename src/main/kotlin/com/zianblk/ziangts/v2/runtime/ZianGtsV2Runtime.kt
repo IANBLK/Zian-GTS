@@ -37,9 +37,10 @@ object ZianGtsV2Runtime {
 
     @Synchronized
     fun start(server: MinecraftServer) {
-        if (context != null) return
-        if (blockedJournal != null) {
-            ZianGts.LOGGER.warn("Zian GTS V2 start ignored because a blocked/recovery journal is already owned by this process.")
+        if (!mayStart(context != null, blockedJournal != null)) {
+            if (blockedJournal != null) {
+                ZianGts.LOGGER.warn("Zian GTS V2 start ignored because a blocked/recovery journal is already owned by this process.")
+            }
             return
         }
         check(server.isSameThread) { "Zian GTS V2 runtime must start on the server thread" }
@@ -128,6 +129,9 @@ object ZianGtsV2Runtime {
             }
         }
     }
+
+    internal fun mayStart(hasContext: Boolean, hasBlockedJournal: Boolean): Boolean =
+        !hasContext && !hasBlockedJournal
 
     internal fun closeRuntimeResources(history: AutoCloseable, journal: AutoCloseable): Exception? {
         var failure: Exception? = null
