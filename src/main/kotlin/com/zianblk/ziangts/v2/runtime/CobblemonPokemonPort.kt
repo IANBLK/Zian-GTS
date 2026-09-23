@@ -20,6 +20,27 @@ class CobblemonPokemonPort(
     private val server: MinecraftServer,
     private val registryAccess: RegistryAccess = server.registryAccess()
 ) : PokemonPort {
+    data class PartyEntry(
+        val slot: Int,
+        val pokemonId: UUID,
+        val species: String,
+        val level: Int,
+        val shiny: Boolean,
+        val alpha: Boolean,
+        val legendary: Boolean
+    )
+
+    fun partyEntries(ownerId: UUID): List<PartyEntry> {
+        val player = online(ownerId) ?: return emptyList()
+        requireServerThread()
+        val party = Cobblemon.storage.getParty(player)
+        return (1..6).mapNotNull { slot ->
+            val pokemon = party.get(slot - 1) ?: return@mapNotNull null
+            val envelope = envelope(pokemon)
+            PartyEntry(slot, pokemon.uuid, envelope.species, envelope.level, envelope.shiny, envelope.alpha, envelope.legendary)
+        }
+    }
+
     /** Resolves a human-friendly 1-based party slot to the Pokemon UUID for temporary V2 commands. */
     fun partyPokemonId(ownerId: UUID, slot: Int): UUID? {
         require(slot in 1..6) { "party slot must be between 1 and 6" }
