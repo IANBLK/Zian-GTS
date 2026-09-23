@@ -75,8 +75,8 @@ class PokemonDetailsScreen(
         }
 
         // Compact Cobblemon-style IV radar. Values are normalized against the legal IV maximum (31).
-        val radarX = left + panelW - 112
-        val radarY = top + 232
+        val radarX = left + panelW - 108
+        val radarY = top + 244
         drawIvRadar(graphics, radarX, radarY, 46, entry.ivs)
 
         y += 4
@@ -96,7 +96,7 @@ class PokemonDetailsScreen(
         val stack = graphics.pose()
         stack.pushPose()
         try {
-            stack.translate((left + panelW - 120).toDouble(), (top + 125).toDouble(), 100.0)
+            stack.translate((left + panelW - 120).toDouble(), (top + 112).toDouble(), 100.0)
             pose.currentAspects = buildSet {
                 if (entry.shiny) add("shiny")
                 if (entry.alpha) add("alpha")
