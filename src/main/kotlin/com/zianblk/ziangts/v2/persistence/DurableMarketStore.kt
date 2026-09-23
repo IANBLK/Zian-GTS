@@ -86,11 +86,11 @@ class DurableMarketStore(private val path: Path) : OfferBook, ProceedsStore {
     }
 
     private fun serialize(): String = buildString {
-        appendLine("ZIANGTS_V2|2")
+        appendLine("ZIANGTS_V2|3")
         offers.values.forEach { o ->
             appendLine(listOf("O", o.id.value, o.owner.playerId, enc(o.owner.displayName),
                 o.payment.adapter, o.payment.currency, o.payment.amount, o.pokemon.pokemonId,
-                o.pokemon.species, o.pokemon.level, o.pokemon.shiny, o.pokemon.alpha,
+                enc(o.pokemon.species), o.pokemon.level, o.pokemon.shiny, o.pokemon.alpha,
                 enc(o.pokemon.serialized), o.publishedAt.toEpochMilli(), o.expiresAt.toEpochMilli(),
                 enc(o.pokemon.gender), enc(o.pokemon.nature), enc(o.pokemon.ability),
                 enc(o.pokemon.ivs.joinToString(",")), enc(o.pokemon.moves.joinToString("\u0000")),
@@ -107,18 +107,19 @@ class DurableMarketStore(private val path: Path) : OfferBook, ProceedsStore {
         val version = when (lines.firstOrNull()) {
             "ZIANGTS_V2|1" -> 1
             "ZIANGTS_V2|2" -> 2
+            "ZIANGTS_V2|3" -> 3
             else -> throw IllegalArgumentException("unsupported/corrupt V2 market store")
         }
         lines.drop(1).filter { it.isNotBlank() }.forEach { line ->
             val p = line.split("|")
             when (p[0]) {
                 "O" -> {
-                    require((version == 1 && p.size == 15) || (version == 2 && p.size == 21))
+                    require((version == 1 && p.size == 15) || (version >= 2 && p.size == 21))
                     val offer = TradeOffer(OfferId(UUID.fromString(p[1])),
                         OfferOwner(UUID.fromString(p[2]), dec(p[3])),
                         PaymentSpec(p[4], p[5], p[6].toLong()),
                         PokemonEnvelope(
-                            pokemonId = UUID.fromString(p[7]), species = p[8], level = p[9].toInt(),
+                            pokemonId = UUID.fromString(p[7]), species = if (version >= 3) dec(p[8]) else p[8], level = p[9].toInt(),
                             shiny = p[10].toBooleanStrict(), alpha = p[11].toBooleanStrict(),
                             serialized = dec(p[12]),
                             gender = if (version >= 2) dec(p[15]) else "UNKNOWN",
