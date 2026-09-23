@@ -15,6 +15,7 @@ class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal(
     private var observedResult = -1L
     private var message = "Cargando equipo..."
     private var pending = false
+    private var confirmArmed = false
     private var priceBox: EditBox? = null
     private var pokemonButton: Button? = null
     private var currencyButton: Button? = null
@@ -63,12 +64,14 @@ class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal(
     }
 
     private fun cyclePokemon() {
+        confirmArmed = false
         val list = options?.party.orEmpty()
         if (list.isNotEmpty()) selectedPokemon = (selectedPokemon + 1) % list.size
         refresh()
     }
 
     private fun cycleCurrency() {
+        confirmArmed = false
         val list = options?.currencies.orEmpty()
         if (list.isNotEmpty()) selectedCurrency = (selectedCurrency + 1) % list.size
         refresh()
@@ -79,10 +82,19 @@ class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal(
         val currency = options?.currencies?.getOrNull(selectedCurrency) ?: return
         val amount = priceBox?.value?.toLongOrNull()
         if (amount == null || amount <= 0) {
+            confirmArmed = false
             message = "Introduce un precio válido"
+            refresh()
+            return
+        }
+        if (!confirmArmed) {
+            confirmArmed = true
+            message = "Confirma: ${friendly(pokemon.species)} por $amount ${friendly(currency)}"
+            refresh()
             return
         }
         pending = true
+        confirmArmed = false
         message = "Publicando..."
         refresh()
         V2MarketClient.publish(pokemon.pokemonId, amount, currency)
@@ -97,6 +109,7 @@ class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal(
         val currency = options?.currencies?.getOrNull(selectedCurrency)
         currencyButton?.message = Component.literal(currency?.let(::friendly) ?: "Sin moneda disponible")
         currencyButton?.active = !pending && !options?.currencies.isNullOrEmpty()
+        confirmButton?.message = Component.literal(if (confirmArmed) "Confirmar" else "Publicar")
         confirmButton?.active = !pending && pokemon != null && currency != null
         priceBox?.setEditable(!pending)
     }
