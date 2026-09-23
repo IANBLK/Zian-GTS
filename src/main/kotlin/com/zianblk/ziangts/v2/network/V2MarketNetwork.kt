@@ -50,17 +50,28 @@ object V2MarketNetwork {
                     PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, false, "GTS no disponible"))
                     return@enqueueWork
                 }
-                val result = when (payload.action) {
-                    MarketAction.BUY -> engine.purchase(player.uuid, OfferId(payload.offerId))
-                    MarketAction.WITHDRAW -> engine.withdraw(player.uuid, OfferId(payload.offerId))
+                try {
+                    val result = when (payload.action) {
+                        MarketAction.BUY -> engine.purchase(player.uuid, OfferId(payload.offerId))
+                        MarketAction.WITHDRAW -> engine.withdraw(player.uuid, OfferId(payload.offerId))
+                    }
+                    val success = result is TradeResult.Success
+                    val message = when (result) {
+                        is TradeResult.Success -> if (payload.action == MarketAction.BUY) "Compra completada" else "Pokémon retirado"
+                        is TradeResult.Rejected -> result.reason
+                        is TradeResult.Quarantined -> "Operación bloqueada para recuperación: ${result.operationId}"
+                    }
+                    PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, success, message))
+                } catch (error: Exception) {
+                    ZianGts.LOGGER.error(
+                        "Unhandled V2 market action {} for player {} and offer {}",
+                        payload.action, player.scoreboardName, payload.offerId, error
+                    )
+                    PacketDistributor.sendToPlayer(
+                        player,
+                        MarketActionResponsePayload(payload.offerId, false, "No se pudo completar la operación")
+                    )
                 }
-                val success = result is TradeResult.Success
-                val message = when (result) {
-                    is TradeResult.Success -> if (payload.action == MarketAction.BUY) "Compra completada" else "Pokémon retirado"
-                    is TradeResult.Rejected -> result.reason
-                    is TradeResult.Quarantined -> "Operación bloqueada para recuperación: ${result.operationId}"
-                }
-                PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, success, message))
             }
         }
 
