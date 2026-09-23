@@ -28,14 +28,14 @@ object MarketPayloadCodecs {
 
     val REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, MarketPageRequestPayload> =
         StreamCodec.of(
-            { buf, value -> PAGE_REQUEST.encode(buf, value.request) },
-            { buf -> MarketPageRequestPayload(PAGE_REQUEST.decode(buf)) }
+            { buf, value -> buf.writeVarLong(value.requestId); PAGE_REQUEST.encode(buf, value.request) },
+            { buf -> MarketPageRequestPayload(buf.readVarLong(), PAGE_REQUEST.decode(buf)) }
         )
 
     val RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, MarketPageResponsePayload> =
         StreamCodec.of(
-            { buf, value -> PAGE_RESPONSE.encode(buf, value.response) },
-            { buf -> MarketPageResponsePayload(PAGE_RESPONSE.decode(buf)) }
+            { buf, value -> buf.writeVarLong(value.requestId); PAGE_RESPONSE.encode(buf, value.response) },
+            { buf -> MarketPageResponsePayload(buf.readVarLong(), PAGE_RESPONSE.decode(buf)) }
         )
 
     val OPEN_SCREEN_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, OpenMarketScreenPayload> =
