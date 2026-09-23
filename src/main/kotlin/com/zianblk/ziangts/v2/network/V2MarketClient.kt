@@ -9,6 +9,7 @@ import net.neoforged.neoforge.network.PacketDistributor
  * authenticated server network context.
  */
 object V2MarketClient {
+    private val marketRequestSequence = java.util.concurrent.atomic.AtomicLong(0)
     fun requestHistory(page: Int = 1, pageSize: Int = 8) = PacketDistributor.sendToServer(HistoryRequestPayload(page, pageSize))
 
     fun requestProceeds() = PacketDistributor.sendToServer(ProceedsRequestPayload)
@@ -24,7 +25,9 @@ object V2MarketClient {
     }
 
     fun requestPage(request: MarketPageRequest) {
-        PacketDistributor.sendToServer(MarketPageRequestPayload(request))
+        val requestId = marketRequestSequence.incrementAndGet()
+        V2MarketClientState.markMarketRequest(requestId)
+        PacketDistributor.sendToServer(MarketPageRequestPayload(requestId, request))
     }
 
     fun requestMarket(
