@@ -28,6 +28,16 @@ class CobblemonPokemonPort(
         return Cobblemon.storage.getParty(player).get(slot - 1)?.uuid
     }
 
+    /** Lists PC Pokemon for operator-facing validation without exposing Cobblemon types outside the adapter. */
+    fun pcPokemonChoices(ownerId: UUID): List<Pair<UUID, String>> {
+        val player = online(ownerId) ?: return emptyList()
+        requireServerThread()
+        val pc = Cobblemon.storage.getPC(player)
+        return pc.iterator().asSequence()
+            .map { it.uuid to "${it.species.resourceIdentifier} Nv.${it.level}" }
+            .toList()
+    }
+
     override fun inspectOwned(ownerId: UUID, pokemonId: UUID): PokemonEnvelope? {
         val player = online(ownerId) ?: return null
         requireServerThread()
