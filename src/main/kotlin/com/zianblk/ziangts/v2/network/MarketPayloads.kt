@@ -71,3 +71,45 @@ data class MarketActionResponsePayload(
         )
     }
 }
+
+
+data object PublishOptionsRequestPayload : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    val TYPE = CustomPacketPayload.Type<PublishOptionsRequestPayload>(
+        ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_publish_options_request")
+    )
+}
+
+data class PublishOptionsResponsePayload(val response: PublishOptionsResponse) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<PublishOptionsResponsePayload>(
+            ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_publish_options_response")
+        )
+    }
+}
+
+data class PublishOfferRequestPayload(
+    val pokemonId: java.util.UUID,
+    val amount: Long,
+    val currency: String
+) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<PublishOfferRequestPayload>(
+            ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_publish_offer_request")
+        )
+    }
+}
+
+data class PublishOfferResponsePayload(
+    val success: Boolean,
+    val message: String
+) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<PublishOfferResponsePayload>(
+            ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_publish_offer_response")
+        )
+    }
+}
