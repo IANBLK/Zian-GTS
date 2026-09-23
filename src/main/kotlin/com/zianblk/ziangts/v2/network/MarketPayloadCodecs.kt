@@ -44,6 +44,18 @@ object MarketPayloadCodecs {
             { _ -> OpenMarketScreenPayload }
         )
 
+    val ACTION_REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, MarketActionRequestPayload> =
+        StreamCodec.of(
+            { buf, value -> buf.writeUUID(value.offerId); buf.writeEnum(value.action) },
+            { buf -> MarketActionRequestPayload(buf.readUUID(), buf.readEnum(MarketAction::class.java)) }
+        )
+
+    val ACTION_RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, MarketActionResponsePayload> =
+        StreamCodec.of(
+            { buf, value -> buf.writeUUID(value.offerId); buf.writeBoolean(value.success); buf.writeUtf(value.message, 256) },
+            { buf -> MarketActionResponsePayload(buf.readUUID(), buf.readBoolean(), buf.readUtf(256)) }
+        )
+
     private fun encodeRequest(buf: RegistryFriendlyByteBuf, value: MarketPageRequest) {
         buf.writeVarInt(value.protocolVersion)
         buf.writeEnum(value.tab)
