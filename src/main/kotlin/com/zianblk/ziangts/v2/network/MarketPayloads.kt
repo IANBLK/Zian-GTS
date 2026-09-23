@@ -42,3 +42,32 @@ data object OpenMarketScreenPayload : CustomPacketPayload {
         ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_open_market_screen")
     )
 }
+
+
+/** Client requests a server-authoritative mutation for one offer. */
+enum class MarketAction { BUY, WITHDRAW }
+
+data class MarketActionRequestPayload(
+    val offerId: java.util.UUID,
+    val action: MarketAction
+) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<MarketActionRequestPayload>(
+            ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_market_action_request")
+        )
+    }
+}
+
+data class MarketActionResponsePayload(
+    val offerId: java.util.UUID,
+    val success: Boolean,
+    val message: String
+) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<MarketActionResponsePayload>(
+            ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_market_action_response")
+        )
+    }
+}
