@@ -82,7 +82,18 @@ class HistoryScreen(private val parent: Screen) : Screen(Component.literal("Hist
 
     private fun friendly(value: String): String {
         val path = value.substringAfter(':')
-        val known = mapOf("coppercoin" to "Cobre", "ironcoin" to "Hierro", "goldcoin" to "Oro", "diamondcoin" to "Diamante", "netheritecoin" to "Netherita")
-        return known[path] ?: path.replace('_', ' ').replace('-', ' ')
+        val known = mapOf(
+            "coppercoin" to "Copper Coin",
+            "ironcoin" to "Iron Coin",
+            "goldcoin" to "Gold Coin",
+            "diamondcoin" to "Diamond Coin",
+            "netheritecoin" to "Netherite Coin",
+            "copperticket" to "Copper Ticket",
+            "ironticket" to "Iron Ticket",
+            "goldticket" to "Gold Ticket",
+            "diamondticket" to "Diamond Ticket",
+            "netheriteticket" to "Netherite Ticket"
+        )
+        return known[path.lowercase()] ?: path.replace('_', ' ').replace('-', ' ').split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     }
 }
