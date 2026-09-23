@@ -166,6 +166,19 @@ object V2TestCommands {
             })
             .then(Commands.literal("publish")
                 .then(Commands.argument("pokemon", StringArgumentType.word())
+                    .suggests { ctx, builder ->
+                        val player = ctx.source.player
+                        if (player != null) {
+                            for (slot in 1..6) {
+                                val id = ZianGtsV2Runtime.partyPokemonId(player.uuid, slot)
+                                if (id != null) builder.suggest(slot)
+                            }
+                            ZianGtsV2Runtime.pcPokemonChoices(player.uuid).forEach { (id, label) ->
+                                builder.suggest(id.toString(), Component.literal("PC: $label"))
+                            }
+                        }
+                        builder.buildFuture()
+                    }
                     .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                         .then(Commands.argument("currency", StringArgumentType.greedyString())
                             .suggests { _, builder ->
