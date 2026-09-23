@@ -225,6 +225,42 @@ object V2MarketNetwork {
             context.enqueueWork { V2MarketClientState.acceptClaimResult(payload) }
         }
 
+        registrar.playToServer(
+            HistoryRequestPayload.TYPE,
+            MarketPayloadCodecs.HISTORY_REQUEST_PAYLOAD
+        ) { payload, context ->
+            val player = context.player()
+            if (player !is ServerPlayer) return@playToServer
+            context.enqueueWork {
+                try {
+                    require(payload.page >= 1) { "invalid history page" }
+                    require(payload.pageSize in 1..20) { "invalid history page size" }
+                    val records = ZianGtsV2Runtime.historyFor(player.uuid, 500)
+                    if (records == null) {
+                        PacketDistributor.sendToPlayer(player, HistoryResponsePayload(emptyList(), 1, 1, false, false))
+                        return@enqueueWork
+                    }
+                    val totalPages = maxOf(1, (records.size + payload.pageSize - 1) / payload.pageSize)
+                    val page = payload.page.coerceAtMost(totalPages)
+                    val start = (page - 1) * payload.pageSize
+                    val entries = records.drop(start).take(payload.pageSize).map {
+                        HistoryEntryDto(it.operationId, it.sellerId, it.buyerId, it.species, it.payment.amount, it.payment.currency, it.completedAt.toEpochMilli())
+                    }
+                    PacketDistributor.sendToPlayer(player, HistoryResponsePayload(entries, page, totalPages, page > 1, page < totalPages))
+                } catch (error: Exception) {
+                    ZianGts.LOGGER.error("Failed to serve V2 history for {}", player.scoreboardName, error)
+                    PacketDistributor.sendToPlayer(player, HistoryResponsePayload(emptyList(), 1, 1, false, false))
+                }
+            }
+        }
+
+        registrar.playToClient(
+            HistoryResponsePayload.TYPE,
+            MarketPayloadCodecs.HISTORY_RESPONSE_PAYLOAD
+        ) { payload, context ->
+            context.enqueueWork { V2MarketClientState.acceptHistory(payload) }
+        }
+
         registrar.playToClient(
             OpenMarketScreenPayload.TYPE,
             MarketPayloadCodecs.OPEN_SCREEN_PAYLOAD
