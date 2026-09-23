@@ -107,7 +107,7 @@ class DurableMarketStore(private val path: Path) : OfferBook, ProceedsStore {
         val version = when (lines.firstOrNull()) {
             "ZIANGTS_V2|1" -> 1
             "ZIANGTS_V2|2" -> 2
-            else -> error("unsupported/corrupt V2 market store")
+            else -> throw IllegalArgumentException("unsupported/corrupt V2 market store")
         }
         lines.drop(1).filter { it.isNotBlank() }.forEach { line ->
             val p = line.split("|")
