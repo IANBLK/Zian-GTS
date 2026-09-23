@@ -8,6 +8,9 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
+import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.item.ItemStack
 
 /**
  * First native Minecraft screen for Zian GTS V2.
@@ -65,10 +68,10 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         init()
         val response = state.response ?: return
         val gap = 8
-        val cardW = minOf(190, (width - 64 - gap * 2) / 3).coerceAtLeast(130)
-        val cardH = 110
+        val cardW = minOf(176, (width - 96 - gap * 2) / 3).coerceAtLeast(138)
+        val cardH = 126
         val left = width / 2 - (cardW * 3 + gap * 2) / 2
-        val top = 68
+        val top = 64
         response.entries.take(6).forEachIndexed { index, entry ->
             val x = left + (index % 3) * (cardW + gap)
             val y = top + (index / 3) * (cardH + gap)
@@ -141,10 +144,10 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         )
 
         val gap = 8
-        val cardW = minOf(190, (width - 64 - gap * 2) / 3).coerceAtLeast(130)
-        val cardH = 110
+        val cardW = minOf(176, (width - 96 - gap * 2) / 3).coerceAtLeast(138)
+        val cardH = 126
         val left = width / 2 - (cardW * 3 + gap * 2) / 2
-        val top = 68
+        val top = 64
         response.entries.take(6).forEachIndexed { index, entry ->
             val x = left + (index % 3) * (cardW + gap)
             val y = top + (index / 3) * (cardH + gap)
@@ -155,17 +158,26 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             graphics.drawString(font, Component.literal("Nv. " + entry.level), x + 8, y + 21, 0xBBBBBB)
             val traits = listOfNotNull(if (entry.shiny) "Shiny" else null, if (entry.alpha) "Alpha" else null).joinToString(" · ")
             if (traits.isNotEmpty()) graphics.drawString(font, Component.literal(traits), x + 8, y + 34, 0xFFD966)
-            graphics.drawString(font, Component.literal("Precio: " + entry.price), x + 8, y + 48, 0xFFFFFF)
-            graphics.drawString(font, Component.literal(entry.currency.substringAfter(':')), x + 8, y + 61, 0xAAAAAA)
-            graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), x + 8, y + 74, 0xCCCCCC)
+            val priceLabel = "Precio: " + entry.price
+            graphics.drawString(font, Component.literal(priceLabel), x + 8, y + 51, 0xFFFFFF)
+            renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), y + 47)
+            graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), x + 8, y + 73, 0xCCCCCC)
             val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
             val time = if (seconds >= 3600) "Expira: " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira: " + (seconds / 60) + "m"
-            graphics.drawString(font, Component.literal(time), x + 8, y + 87, 0x999999)
+            graphics.drawString(font, Component.literal(time), x + 8, y + 88, 0x999999)
         }
         actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, height - 52, 0xCCCCCC) }
         if (response.entries.isEmpty()) {
             graphics.drawCenteredString(font, Component.literal("No hay anuncios en esta página"), width / 2, 86, 0xAAAAAA)
         }
+    }
+
+
+    private fun renderCurrencyIcon(graphics: GuiGraphics, currency: String, x: Int, y: Int) {
+        val id = ResourceLocation.tryParse(currency) ?: return
+        val item = BuiltInRegistries.ITEM.get(id)
+        if (BuiltInRegistries.ITEM.getKey(item) != id) return
+        graphics.renderItem(ItemStack(item), x, y)
     }
 
     private fun switchTab(tab: MarketTab) {
