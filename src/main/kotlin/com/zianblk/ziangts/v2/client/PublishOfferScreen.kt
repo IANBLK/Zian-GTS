@@ -98,7 +98,7 @@ class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal(
         currencyButton?.message = Component.literal(currency?.let(::friendly) ?: "Sin moneda disponible")
         currencyButton?.active = !pending && !options?.currencies.isNullOrEmpty()
         confirmButton?.active = !pending && pokemon != null && currency != null
-        priceBox?.isEditable = !pending
+        priceBox?.setEditable(!pending)
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
