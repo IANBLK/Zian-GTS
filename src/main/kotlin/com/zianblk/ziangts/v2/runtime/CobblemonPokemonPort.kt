@@ -20,6 +20,14 @@ class CobblemonPokemonPort(
     private val server: MinecraftServer,
     private val registryAccess: RegistryAccess = server.registryAccess()
 ) : PokemonPort {
+    /** Resolves a human-friendly 1-based party slot to the Pokemon UUID for temporary V2 commands. */
+    fun partyPokemonId(ownerId: UUID, slot: Int): UUID? {
+        require(slot in 1..6) { "party slot must be between 1 and 6" }
+        val player = online(ownerId) ?: return null
+        requireServerThread()
+        return Cobblemon.storage.getParty(player).get(slot - 1)?.uuid
+    }
+
     override fun inspectOwned(ownerId: UUID, pokemonId: UUID): PokemonEnvelope? {
         val player = online(ownerId) ?: return null
         requireServerThread()
