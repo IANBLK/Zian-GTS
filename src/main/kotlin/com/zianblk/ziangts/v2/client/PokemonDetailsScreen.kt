@@ -32,12 +32,14 @@ class PokemonDetailsScreen(
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        renderBackground(graphics, mouseX, mouseY, partialTick)
+        // Avoid Screen.renderBackground here: on in-game screens it applies Minecraft's
+        // menu blur, which also softens this custom details surface on some clients.
+        graphics.fill(0, 0, width, height, 0xD0101418.toInt())
         val panelW = minOf(430, width - 30)
         val panelH = minOf(250, height - 55)
         val left = (width - panelW) / 2
         val top = (height - panelH) / 2 - 6
-        graphics.fill(left, top, left + panelW, top + panelH, 0xE0181C20.toInt())
+        graphics.fill(left, top, left + panelW, top + panelH, 0xFF181C20.toInt())
         graphics.renderOutline(left, top, panelW, panelH, 0xFF666D75.toInt())
         graphics.drawCenteredString(font, title, width / 2, top + 10, 0xFFFFFF)
 
@@ -74,7 +76,8 @@ class PokemonDetailsScreen(
         } finally {
             stack.popPose()
         }
-        super.render(graphics, mouseX, mouseY, partialTick)
+        // Render widgets explicitly. Calling Screen.render() would invoke the background path again.
+        for (renderable in renderables) renderable.render(graphics, mouseX, mouseY, partialTick)
     }
 
     override fun isPauseScreen() = false
