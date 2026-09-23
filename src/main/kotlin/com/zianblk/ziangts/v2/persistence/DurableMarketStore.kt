@@ -86,12 +86,15 @@ class DurableMarketStore(private val path: Path) : OfferBook, ProceedsStore {
     }
 
     private fun serialize(): String = buildString {
-        appendLine("ZIANGTS_V2|1")
+        appendLine("ZIANGTS_V2|2")
         offers.values.forEach { o ->
             appendLine(listOf("O", o.id.value, o.owner.playerId, enc(o.owner.displayName),
                 o.payment.adapter, o.payment.currency, o.payment.amount, o.pokemon.pokemonId,
                 o.pokemon.species, o.pokemon.level, o.pokemon.shiny, o.pokemon.alpha,
-                enc(o.pokemon.serialized), o.publishedAt.toEpochMilli(), o.expiresAt.toEpochMilli()).joinToString("|"))
+                enc(o.pokemon.serialized), o.publishedAt.toEpochMilli(), o.expiresAt.toEpochMilli(),
+                enc(o.pokemon.gender), enc(o.pokemon.nature), enc(o.pokemon.ability),
+                enc(o.pokemon.ivs.joinToString(",")), enc(o.pokemon.moves.joinToString("\u0000")),
+                o.pokemon.legendary).joinToString("|"))
         }
         proceeds.forEach { (pair, amount) ->
             appendLine(listOf("P", pair.first, pair.second.adapter, pair.second.currency, amount).joinToString("|"))
@@ -101,19 +104,29 @@ class DurableMarketStore(private val path: Path) : OfferBook, ProceedsStore {
     private fun load() {
         if (!Files.exists(path)) return
         val lines = Files.readAllLines(path, Charsets.UTF_8)
-        require(lines.firstOrNull() == "ZIANGTS_V2|1") { "unsupported/corrupt V2 market store" }
+        val version = when (lines.firstOrNull()) {
+            "ZIANGTS_V2|1" -> 1
+            "ZIANGTS_V2|2" -> 2
+            else -> error("unsupported/corrupt V2 market store")
+        }
         lines.drop(1).filter { it.isNotBlank() }.forEach { line ->
             val p = line.split("|")
             when (p[0]) {
                 "O" -> {
-                    require(p.size == 15)
+                    require((version == 1 && p.size == 15) || (version == 2 && p.size == 21))
                     val offer = TradeOffer(OfferId(UUID.fromString(p[1])),
                         OfferOwner(UUID.fromString(p[2]), dec(p[3])),
                         PaymentSpec(p[4], p[5], p[6].toLong()),
                         PokemonEnvelope(
                             pokemonId = UUID.fromString(p[7]), species = p[8], level = p[9].toInt(),
                             shiny = p[10].toBooleanStrict(), alpha = p[11].toBooleanStrict(),
-                            serialized = dec(p[12])
+                            serialized = dec(p[12]),
+                            gender = if (version >= 2) dec(p[15]) else "UNKNOWN",
+                            nature = if (version >= 2) dec(p[16]) else "unknown",
+                            ability = if (version >= 2) dec(p[17]) else "unknown",
+                            ivs = if (version >= 2) dec(p[18]).split(",").filter { it.isNotBlank() }.map { it.toInt() }.let { if (it.size == 6) it else List(6) { 0 } } else List(6) { 0 },
+                            moves = if (version >= 2) dec(p[19]).split("\u0000").filter { it.isNotBlank() } else emptyList(),
+                            legendary = if (version >= 2) p[20].toBooleanStrict() else isLegendarySpecies(p[8])
                         ),
                         Instant.ofEpochMilli(p[13].toLong()), Instant.ofEpochMilli(p[14].toLong()))
                     require(offer.id !in offers && !containsPokemon(offer.pokemon.pokemonId))
@@ -129,6 +142,19 @@ class DurableMarketStore(private val path: Path) : OfferBook, ProceedsStore {
             }
         }
     }
+
+    private fun isLegendarySpecies(species: String): Boolean =
+        species.substringAfter(':') in setOf(
+            "articuno","zapdos","moltres","mewtwo","mew","raikou","entei","suicune","lugia","ho_oh","celebi",
+            "regirock","regice","registeel","latias","latios","kyogre","groudon","rayquaza","jirachi","deoxys",
+            "uxie","mesprit","azelf","dialga","palkia","heatran","regigigas","giratina","cresselia","phione","manaphy","darkrai","shaymin","arceus",
+            "cobalion","terrakion","virizion","tornadus","thundurus","reshiram","zekrom","landorus","kyurem","keldeo","meloetta","genesect",
+            "xerneas","yveltal","zygarde","diancie","hoopa","volcanion","type_null","silvally","tapu_koko","tapu_lele","tapu_bulu","tapu_fini",
+            "cosmog","cosmoem","solgaleo","lunala","nihilego","buzzwole","pheromosa","xurkitree","celesteela","kartana","guzzlord","necrozma",
+            "magearna","marshadow","poipole","naganadel","stakataka","blacephalon","zeraora","meltan","melmetal","zacian","zamazenta","eternatus",
+            "kubfu","urshifu","zarude","regieleki","regidrago","glastrier","spectrier","calyrex","enamorus","wo_chien","chien_pao","ting_lu",
+            "chi_yu","koraidon","miraidon","okidogi","munkidori","fezandipiti","ogerpon","terapagos","pecharunt"
+        )
 
     private fun enc(s: String) = Base64.getUrlEncoder().withoutPadding().encodeToString(s.toByteArray(Charsets.UTF_8))
     private fun dec(s: String) = String(Base64.getUrlDecoder().decode(s), Charsets.UTF_8)
