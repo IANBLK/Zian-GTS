@@ -10,7 +10,7 @@ import java.util.UUID
  * These DTOs contain no NeoForge/Cobblemon classes so codec and packet wiring can evolve
  * without leaking runtime objects into the domain layer.
  */
-const val MARKET_PROTOCOL_VERSION = 1
+const val MARKET_PROTOCOL_VERSION = 2
 
 data class MarketPageRequest(
     val protocolVersion: Int = MARKET_PROTOCOL_VERSION,
@@ -40,6 +40,7 @@ data class MarketEntryDto(
     val level: Int,
     val shiny: Boolean,
     val alpha: Boolean,
+    val legendary: Boolean,
     val gender: String,
     val nature: String,
     val ability: String,
@@ -82,6 +83,7 @@ fun MarketScreenModel.toPageResponse(): MarketPageResponse =
                 level = offer.pokemon.level,
                 shiny = offer.pokemon.shiny,
                 alpha = offer.pokemon.alpha,
+                legendary = offer.pokemon.legendary,
                 gender = offer.pokemon.gender,
                 nature = offer.pokemon.nature,
                 ability = offer.pokemon.ability,
