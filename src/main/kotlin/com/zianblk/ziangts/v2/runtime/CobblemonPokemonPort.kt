@@ -93,15 +93,34 @@ class CobblemonPokemonPort(
             // Cobblemon 1.8 stores Alpha as a native Pokémon property. Its persisted NBT
             // includes that state, so detect it from the canonical payload instead of
             // hardcoding false (legacy behaviour from pre-1.8 alpha addons).
-            isAlpha(tag.toString()),
+            isAlpha(pokemon, tag.toString()),
             tag.toString()
         )
     }
 
-    private fun isAlpha(serialized: String): Boolean {
-        // 1.8 native alpha may be represented by a boolean property and/or persisted
-        // alpha aspects/marks. Keep this boundary tolerant across 1.8.x serialization
-        // changes while the domain remains independent of Cobblemon internals.
+    private fun isAlpha(pokemon: Pokemon, serialized: String): Boolean {
+        // Cobblemon 1.8 owns Alpha natively, but keeping the V2 domain free of
+        // Cobblemon classes means this adapter is the only place allowed to know
+        // how that state is represented. Prefer the runtime Pokémon object first.
+        val runtimeAlpha = runCatching {
+            val type = pokemon.javaClass
+            val booleanGetterNames = listOf("isAlpha", "getAlpha")
+            booleanGetterNames.firstNotNullOfOrNull { name ->
+                type.methods.firstOrNull {
+                    it.name == name && it.parameterCount == 0 &&
+                        (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java)
+                }?.invoke(pokemon) as? Boolean
+            } ?: type.methods.firstOrNull {
+                it.name == "getAspects" && it.parameterCount == 0
+            }?.invoke(pokemon)?.let { value ->
+                (value as? Iterable<*>)?.any { it.toString().equals("alpha", true) }
+            }
+        }.getOrNull()
+        if (runtimeAlpha == true) return true
+
+        // Compatibility fallback for 1.8.x serialization changes. This is not
+        // the primary path; it only prevents silently losing Alpha metadata when
+        // a patch changes the public getter while retaining persisted state.
         val compact = serialized.lowercase()
         return Regex("""(?:is_?alpha|alpha)\\s*[:=]\\s*(?:1b|1|true)""").containsMatchIn(compact) ||
             Regex("""(?:aspects?|marks?)\\s*[:=][^}\\]]*alpha""").containsMatchIn(compact) ||
