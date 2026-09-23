@@ -37,7 +37,11 @@ object ZianGtsV2Runtime {
 
     @Synchronized
     fun start(server: MinecraftServer) {
-        if (context != null || blockedJournal != null) return
+        if (context != null) return
+        if (blockedJournal != null) {
+            ZianGts.LOGGER.warn("Zian GTS V2 start ignored because a blocked/recovery journal is already owned by this process.")
+            return
+        }
         check(server.isSameThread) { "Zian GTS V2 runtime must start on the server thread" }
         val root = server.getWorldPath(LevelResource.ROOT).resolve("ziangts-v2")
         var journal: DurableTradeJournal? = null
@@ -86,6 +90,9 @@ object ZianGtsV2Runtime {
             // of its file lock. Other partially opened resources are closed independently.
             if (journal != null) {
                 blockedJournal = journal
+                ZianGts.LOGGER.error(
+                    "Zian GTS V2 retained the opened transaction journal after startup failure; recovery evidence remains inspectable and the WAL lock stays single-owned."
+                )
             }
             if (history != null) {
                 try {
