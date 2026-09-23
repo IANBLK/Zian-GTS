@@ -6,6 +6,10 @@ import com.zianblk.ziangts.v2.domain.OfferSort
 import com.zianblk.ziangts.v2.network.V2MarketClient
 import com.zianblk.ziangts.v2.network.V2MarketClientState
 import com.zianblk.ziangts.v2.network.MarketAction
+import com.cobblemon.mod.common.client.gui.drawProfilePokemon
+import com.cobblemon.mod.common.client.render.models.blockbench.FloatingState
+import org.joml.Quaternionf
+import java.util.UUID
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
@@ -32,6 +36,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     private val actionButtons = mutableListOf<Button>()
     private var filterButton: Button? = null
     private var sortButton: Button? = null
+    private val previewStates = mutableMapOf<UUID, FloatingState>()
 
     override fun init() {
         super.init()
@@ -174,6 +179,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             val y = top + (index / 3) * (cardH + gap)
             graphics.fill(x, y, x + cardW, y + cardH, 0xB0202020.toInt())
             graphics.fill(x, y, x + cardW, y + 1, 0xFF777777.toInt())
+            renderPokemonPreview(graphics, entry, x + cardW - 36, y + 38, partialTick)
             val species = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
             graphics.drawString(font, Component.literal(species), x + 8, y + 8, 0xFFFFFF)
             graphics.drawString(font, Component.literal("Nv. " + entry.level), x + 8, y + 21, 0xBBBBBB)
@@ -193,6 +199,54 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         }
     }
 
+
+    private fun renderPokemonPreview(
+        graphics: GuiGraphics,
+        entry: com.zianblk.ziangts.v2.network.MarketEntryDto,
+        centerX: Int,
+        centerY: Int,
+        partialTick: Float
+    ) {
+        val pose = previewStates.getOrPut(entry.offerId) { FloatingState() }
+        pose.currentAspects = buildSet {
+            if (entry.shiny) add("shiny")
+            if (entry.alpha) add("alpha")
+        }
+        graphics.pose().pushPose()
+        try {
+            graphics.pose().translate(centerX.toDouble(), centerY.toDouble(), 90.0)
+            drawProfilePokemon(
+                ResourceLocation.parse(entry.species),
+                graphics.pose(),
+                Quaternionf().rotationXYZ(0.08f, 0.45f, 0f),
+                state = pose,
+                partialTicks = partialTick,
+                scale = 22f
+            )
+        } finally {
+            graphics.pose().popPose()
+        }
+    }
+
+    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (super.mouseClicked(mouseX, mouseY, button)) return true
+        if (button != 0) return false
+        val response = state.response ?: return false
+        val gap = 8
+        val cardW = minOf(176, (width - 96 - gap * 2) / 3).coerceAtLeast(138)
+        val cardH = 126
+        val left = width / 2 - (cardW * 3 + gap * 2) / 2
+        val top = 80
+        response.entries.take(6).forEachIndexed { index, entry ->
+            val x = left + (index % 3) * (cardW + gap)
+            val y = top + (index / 3) * (cardH + gap)
+            if (mouseX >= x && mouseX < x + cardW && mouseY >= y && mouseY < y + cardH - 25) {
+                minecraft?.setScreen(PokemonDetailsScreen(entry, this))
+                return true
+            }
+        }
+        return false
+    }
 
     private fun renderCurrencyIcon(graphics: GuiGraphics, currency: String, x: Int, y: Int, mouseX: Int, mouseY: Int) {
         val id = ResourceLocation.tryParse(currency) ?: return
