@@ -1,6 +1,8 @@
 package com.zianblk.ziangts.v2.client
 
 import com.zianblk.ziangts.v2.domain.MarketTab
+import com.zianblk.ziangts.v2.domain.OfferFilter
+import com.zianblk.ziangts.v2.domain.OfferSort
 import com.zianblk.ziangts.v2.network.V2MarketClient
 import com.zianblk.ziangts.v2.network.V2MarketClientState
 import com.zianblk.ziangts.v2.network.MarketAction
@@ -28,6 +30,8 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     private var actionMessage: String? = null
     private var actionPending = false
     private val actionButtons = mutableListOf<Button>()
+    private var filterButton: Button? = null
+    private var sortButton: Button? = null
 
     override fun init() {
         super.init()
@@ -41,6 +45,23 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 switchTab(MarketTab.MY_OFFERS)
             }.bounds(width / 2 + 5, 18, 100, 20).build()
         )
+        filterButton = addRenderableWidget(
+            Button.builder(Component.literal(filterLabel())) {
+                if (state.tab == MarketTab.MARKET) {
+                    state = state.copy(filter = nextFilter(state.filter), page = 1)
+                    refreshControls()
+                    requestCurrent()
+                }
+            }.bounds(width / 2 - 105, 41, 100, 18).build()
+        )
+        sortButton = addRenderableWidget(
+            Button.builder(Component.literal(sortLabel())) {
+                state = state.copy(sort = nextSort(state.sort), page = 1)
+                refreshControls()
+                requestCurrent()
+            }.bounds(width / 2 + 5, 41, 100, 18).build()
+        )
+        refreshControls()
         previousButton = addRenderableWidget(
             Button.builder(Component.literal("<")) {
                 val next = state.previousPage()
@@ -71,7 +92,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         val cardW = minOf(176, (width - 96 - gap * 2) / 3).coerceAtLeast(138)
         val cardH = 126
         val left = width / 2 - (cardW * 3 + gap * 2) / 2
-        val top = 64
+        val top = 80
         response.entries.take(6).forEachIndexed { index, entry ->
             val x = left + (index % 3) * (cardW + gap)
             val y = top + (index / 3) * (cardH + gap)
@@ -139,7 +160,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             font,
             Component.literal("Página ${response.page}/${response.totalPages.coerceAtLeast(1)}"),
             width / 2,
-            44,
+            61,
             0xCCCCCC
         )
 
@@ -147,7 +168,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         val cardW = minOf(176, (width - 96 - gap * 2) / 3).coerceAtLeast(138)
         val cardH = 126
         val left = width / 2 - (cardW * 3 + gap * 2) / 2
-        val top = 64
+        val top = 80
         response.entries.take(6).forEachIndexed { index, entry ->
             val x = left + (index % 3) * (cardW + gap)
             val y = top + (index / 3) * (cardH + gap)
@@ -203,9 +224,48 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             .joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     }
 
+
+    private fun refreshControls() {
+        filterButton?.message = Component.literal(filterLabel())
+        filterButton?.active = state.tab == MarketTab.MARKET && !state.loading
+        sortButton?.message = Component.literal(sortLabel())
+        sortButton?.active = !state.loading
+    }
+
+    private fun nextFilter(current: OfferFilter): OfferFilter {
+        val values = listOf(OfferFilter.ALL, OfferFilter.SHINY, OfferFilter.ALPHA, OfferFilter.LEGENDARY, OfferFilter.LEGENDARY_SHINY)
+        val index = values.indexOf(current).coerceAtLeast(0)
+        return values[(index + 1) % values.size]
+    }
+
+    private fun nextSort(current: OfferSort): OfferSort {
+        val values = listOf(OfferSort.NEWEST, OfferSort.OLDEST, OfferSort.PRICE_LOW, OfferSort.PRICE_HIGH, OfferSort.LEVEL_LOW, OfferSort.LEVEL_HIGH)
+        val index = values.indexOf(current).coerceAtLeast(0)
+        return values[(index + 1) % values.size]
+    }
+
+    private fun filterLabel(): String = "Filtro: " + when (state.filter) {
+        OfferFilter.ALL -> "Todos"
+        OfferFilter.SHINY -> "Shiny"
+        OfferFilter.ALPHA -> "Alpha"
+        OfferFilter.LEGENDARY -> "Legendarios"
+        OfferFilter.LEGENDARY_SHINY -> "Legendario Shiny"
+        OfferFilter.OWN -> "Míos"
+    }
+
+    private fun sortLabel(): String = "Orden: " + when (state.sort) {
+        OfferSort.NEWEST -> "Recientes"
+        OfferSort.OLDEST -> "Antiguos"
+        OfferSort.PRICE_LOW -> "Precio ↑"
+        OfferSort.PRICE_HIGH -> "Precio ↓"
+        OfferSort.LEVEL_LOW -> "Nivel ↑"
+        OfferSort.LEVEL_HIGH -> "Nivel ↓"
+    }
+
     private fun switchTab(tab: MarketTab) {
         if (state.tab == tab) return
         state = state.switchTab(tab)
+        refreshControls()
         updateNavigationButtons()
         requestCurrent()
     }
@@ -217,6 +277,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
 
     private fun requestCurrent() {
         state = state.beginRequest()
+        refreshControls()
         updateNavigationButtons()
         when (state.tab) {
             MarketTab.MARKET -> V2MarketClient.requestMarket(
