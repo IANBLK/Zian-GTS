@@ -94,6 +94,18 @@ class CobblemonPokemonPort(
             // includes that state, so detect it from the canonical payload instead of
             // hardcoding false (legacy behaviour from pre-1.8 alpha addons).
             isAlpha(pokemon, tag.toString()),
+            pokemon.gender.name,
+            pokemon.nature.name.toString(),
+            pokemon.ability.template.name,
+            listOf(
+                pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.HP] ?: 0,
+                pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.ATTACK] ?: 0,
+                pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.DEFENCE] ?: 0,
+                pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.SPECIAL_ATTACK] ?: 0,
+                pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.SPECIAL_DEFENCE] ?: 0,
+                pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.SPEED] ?: 0
+            ),
+            pokemon.moveSet.getMoves().map { it.template.name },
             tag.toString()
         )
     }
