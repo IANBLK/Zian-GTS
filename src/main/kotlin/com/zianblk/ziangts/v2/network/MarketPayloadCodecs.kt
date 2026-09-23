@@ -56,6 +56,42 @@ object MarketPayloadCodecs {
             { buf -> MarketActionResponsePayload(buf.readUUID(), buf.readBoolean(), buf.readUtf(256)) }
         )
 
+    val PUBLISH_OPTIONS_REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, PublishOptionsRequestPayload> =
+        StreamCodec.of({ _, _ -> }, { _ -> PublishOptionsRequestPayload })
+
+    val PUBLISH_OPTIONS_RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, PublishOptionsResponsePayload> =
+        StreamCodec.of(
+            { buf, value ->
+                buf.writeVarInt(value.response.party.size)
+                value.response.party.forEach {
+                    buf.writeVarInt(it.slot); buf.writeUUID(it.pokemonId); buf.writeUtf(it.species, 128)
+                    buf.writeVarInt(it.level); buf.writeBoolean(it.shiny); buf.writeBoolean(it.alpha); buf.writeBoolean(it.legendary)
+                }
+                buf.writeVarInt(value.response.currencies.size)
+                value.response.currencies.forEach { buf.writeUtf(it, 128) }
+            },
+            { buf ->
+                val partyCount = buf.readVarInt().also { require(it in 0..6) }
+                val party = List(partyCount) {
+                    PartyEntryDto(buf.readVarInt(), buf.readUUID(), buf.readUtf(128), buf.readVarInt(), buf.readBoolean(), buf.readBoolean(), buf.readBoolean())
+                }
+                val currencyCount = buf.readVarInt().also { require(it in 0..64) }
+                PublishOptionsResponsePayload(PublishOptionsResponse(party, List(currencyCount) { buf.readUtf(128) }))
+            }
+        )
+
+    val PUBLISH_OFFER_REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, PublishOfferRequestPayload> =
+        StreamCodec.of(
+            { buf, value -> buf.writeUUID(value.pokemonId); buf.writeVarLong(value.amount); buf.writeUtf(value.currency, 128) },
+            { buf -> PublishOfferRequestPayload(buf.readUUID(), buf.readVarLong(), buf.readUtf(128)) }
+        )
+
+    val PUBLISH_OFFER_RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, PublishOfferResponsePayload> =
+        StreamCodec.of(
+            { buf, value -> buf.writeBoolean(value.success); buf.writeUtf(value.message, 256) },
+            { buf -> PublishOfferResponsePayload(buf.readBoolean(), buf.readUtf(256)) }
+        )
+
     private fun encodeRequest(buf: RegistryFriendlyByteBuf, value: MarketPageRequest) {
         buf.writeVarInt(value.protocolVersion)
         buf.writeEnum(value.tab)
