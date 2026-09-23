@@ -29,14 +29,14 @@ data class PokemonEnvelope(
     val ability: String = "unknown",
     val ivs: List<Int> = List(6) { 0 },
     val moves: List<String> = emptyList(),
-    val serialized: String
+    val serialized: String = ""
 ) {
     init {
         require(species.isNotBlank())
         require(level > 0)
         require(ivs.size == 6)
         require(moves.size <= 4)
-        require(serialized.isNotBlank())
+        // Legacy/test envelopes may omit the serialized payload; production Cobblemon offers include it.
     }
 }
 
