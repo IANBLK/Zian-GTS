@@ -270,7 +270,16 @@ object V2TestCommands {
                     report(ctx.source, engine.withdraw(player.uuid, offerId))
                 }))
             .then(Commands.literal("claim")
-                .then(Commands.argument("currency", StringArgumentType.word()).executes { ctx ->
+                .then(Commands.argument("currency", StringArgumentType.greedyString())
+                    .suggests { _, builder ->
+                        try {
+                            AvecoinsWalletProvider.supportedCurrencies().forEach { builder.suggest(it) }
+                        } catch (_: Exception) {
+                            // Keep command parsing available; execution still fails closed if AVECOINS is unavailable.
+                        }
+                        builder.buildFuture()
+                    }
+                    .executes { ctx ->
                     val player = ctx.source.playerOrException
                     val engine = engine(ctx.source) ?: return@executes 0
                     val key = try {
