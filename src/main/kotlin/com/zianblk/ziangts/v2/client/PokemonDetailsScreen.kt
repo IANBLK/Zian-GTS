@@ -36,7 +36,7 @@ class PokemonDetailsScreen(
         // menu blur, which also softens this custom details surface on some clients.
         graphics.fill(0, 0, width, height, 0xD0101418.toInt())
         val panelW = minOf(430, width - 30)
-        val panelH = minOf(250, height - 55)
+        val panelH = minOf(300, height - 55)
         val left = (width - panelW) / 2
         val top = (height - panelH) / 2 - 6
         graphics.fill(left, top, left + panelW, top + panelH, 0xFF181C20.toInt())
@@ -54,6 +54,7 @@ class PokemonDetailsScreen(
         line("Nivel", entry.level.toString())
         line("Shiny", if (entry.shiny) "Sí" else "No")
         line("Alpha", if (entry.alpha) "Sí" else "No")
+        line("Legendario", if (entry.legendary) "Sí" else "No")
         line("Género", friendly(entry.gender))
         line("Naturaleza", friendly(entry.nature))
         line("Habilidad", friendly(entry.ability))
