@@ -110,8 +110,11 @@ class DurableMarketStore(private val path: Path) : OfferBook, ProceedsStore {
                     val offer = TradeOffer(OfferId(UUID.fromString(p[1])),
                         OfferOwner(UUID.fromString(p[2]), dec(p[3])),
                         PaymentSpec(p[4], p[5], p[6].toLong()),
-                        PokemonEnvelope(UUID.fromString(p[7]), p[8], p[9].toInt(),
-                            p[10].toBooleanStrict(), p[11].toBooleanStrict(), dec(p[12])),
+                        PokemonEnvelope(
+                            pokemonId = UUID.fromString(p[7]), species = p[8], level = p[9].toInt(),
+                            shiny = p[10].toBooleanStrict(), alpha = p[11].toBooleanStrict(),
+                            serialized = dec(p[12])
+                        ),
                         Instant.ofEpochMilli(p[13].toLong()), Instant.ofEpochMilli(p[14].toLong()))
                     require(offer.id !in offers && !containsPokemon(offer.pokemon.pokemonId))
                     offers[offer.id] = offer
