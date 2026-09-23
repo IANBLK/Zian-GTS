@@ -9,6 +9,8 @@ import net.neoforged.neoforge.network.PacketDistributor
  * authenticated server network context.
  */
 object V2MarketClient {
+    fun requestHistory(page: Int = 1, pageSize: Int = 8) = PacketDistributor.sendToServer(HistoryRequestPayload(page, pageSize))
+
     fun requestProceeds() = PacketDistributor.sendToServer(ProceedsRequestPayload)
     fun claimProceeds(adapter: String, currency: String) = PacketDistributor.sendToServer(ClaimProceedsRequestPayload(adapter, currency))
 
