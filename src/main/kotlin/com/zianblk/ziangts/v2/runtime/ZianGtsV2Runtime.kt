@@ -153,6 +153,9 @@ object ZianGtsV2Runtime {
     fun partyPokemonId(playerId: java.util.UUID, slot: Int): java.util.UUID? =
         context?.pokemon?.partyPokemonId(playerId, slot)
 
+    fun pcPokemonChoices(playerId: java.util.UUID): List<Pair<java.util.UUID, String>> =
+        context?.pokemon?.pcPokemonChoices(playerId) ?: emptyList()
+
 
     /**
      * Read-only market projection for commands/network/UI.
