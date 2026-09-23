@@ -96,7 +96,7 @@ class PokemonDetailsScreen(
         val stack = graphics.pose()
         stack.pushPose()
         try {
-            stack.translate((left + panelW - 120).toDouble(), (top + 88).toDouble(), 100.0)
+            stack.translate((left + panelW - 120).toDouble(), (top + 58).toDouble(), 100.0)
             pose.currentAspects = buildSet {
                 if (entry.shiny) add("shiny")
                 if (entry.alpha) add("alpha")
