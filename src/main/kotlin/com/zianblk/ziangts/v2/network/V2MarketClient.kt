@@ -9,6 +9,11 @@ import net.neoforged.neoforge.network.PacketDistributor
  * authenticated server network context.
  */
 object V2MarketClient {
+    fun requestPublishOptions() = PacketDistributor.sendToServer(PublishOptionsRequestPayload)
+
+    fun publish(pokemonId: java.util.UUID, amount: Long, currency: String) =
+        PacketDistributor.sendToServer(PublishOfferRequestPayload(pokemonId, amount, currency))
+
     fun requestAction(offerId: java.util.UUID, action: MarketAction) {
         PacketDistributor.sendToServer(MarketActionRequestPayload(offerId, action))
     }
