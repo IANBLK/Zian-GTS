@@ -160,7 +160,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             if (traits.isNotEmpty()) graphics.drawString(font, Component.literal(traits), x + 8, y + 34, 0xFFD966)
             val priceLabel = "Precio: " + entry.price
             graphics.drawString(font, Component.literal(priceLabel), x + 8, y + 51, 0xFFFFFF)
-            renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), y + 47)
+            renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), y + 47, mouseX, mouseY)
             graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), x + 8, y + 73, 0xCCCCCC)
             val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
             val time = if (seconds >= 3600) "Expira: " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira: " + (seconds / 60) + "m"
@@ -173,11 +173,34 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     }
 
 
-    private fun renderCurrencyIcon(graphics: GuiGraphics, currency: String, x: Int, y: Int) {
+    private fun renderCurrencyIcon(graphics: GuiGraphics, currency: String, x: Int, y: Int, mouseX: Int, mouseY: Int) {
         val id = ResourceLocation.tryParse(currency) ?: return
         val item = BuiltInRegistries.ITEM.get(id)
         if (BuiltInRegistries.ITEM.getKey(item) != id) return
         graphics.renderItem(ItemStack(item), x, y)
+        if (mouseX in x until (x + 16) && mouseY in y until (y + 16)) {
+            graphics.renderTooltip(font, Component.literal(currencyDisplayName(id.path)), mouseX, mouseY)
+        }
+    }
+
+    private fun currencyDisplayName(path: String): String {
+        val known = mapOf(
+            "coppercoin" to "Moneda de Cobre",
+            "ironcoin" to "Moneda de Hierro",
+            "goldcoin" to "Moneda de Oro",
+            "diamondcoin" to "Moneda de Diamante",
+            "netheritecoin" to "Moneda de Netherita",
+            "goldticket" to "Ticket de Oro",
+            "diamondticket" to "Ticket de Diamante",
+            "netheriteticket" to "Ticket de Netherita"
+        )
+        return known[path] ?: path
+            .replace(Regex("([a-z])([A-Z])"), "$1 $2")
+            .replace('_', ' ')
+            .replace('-', ' ')
+            .split(' ')
+            .filter { it.isNotBlank() }
+            .joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     }
 
     private fun switchTab(tab: MarketTab) {
