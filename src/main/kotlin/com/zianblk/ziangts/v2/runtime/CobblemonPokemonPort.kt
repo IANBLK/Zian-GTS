@@ -99,36 +99,24 @@ class CobblemonPokemonPort(
     }
 
     private fun isAlpha(pokemon: Pokemon, serialized: String): Boolean {
-        // Cobblemon 1.8 owns Alpha natively, but keeping the V2 domain free of
-        // Cobblemon classes means this adapter is the only place allowed to know
-        // how that state is represented. Prefer the runtime Pokémon object first.
-        val runtimeAlpha = runCatching {
-            val type = pokemon.javaClass
-            val booleanGetterNames = listOf("isAlpha", "getAlpha")
-            booleanGetterNames.firstNotNullOfOrNull { name ->
-                type.methods.firstOrNull {
-                    it.name == name && it.parameterCount == 0 &&
-                        (it.returnType == java.lang.Boolean.TYPE || it.returnType == java.lang.Boolean::class.java)
-                }?.invoke(pokemon) as? Boolean
-            } ?: type.methods.firstOrNull {
-                it.name == "getAspects" && it.parameterCount == 0
-            }?.invoke(pokemon)?.let { value ->
-                (value as? Iterable<*>)?.any { it.toString().equals("alpha", true) }
-            }
-        }.getOrNull()
-        if (runtimeAlpha == true) return true
+        // Cobblemon 1.8 identifies owned Alpha Pokémon with the native Alpha Mark.
+        // This is a stronger signal than visual aspects: the eyes can be toggled,
+        // while the mark remains attached to the Pokémon.
+        val alphaMark = "cobblemon:mark_alpha"
+        if (pokemon.activeMark?.identifier?.toString() == alphaMark) return true
+        if (pokemon.marks.any { it.identifier.toString() == alphaMark }) return true
+        if (pokemon.potentialMarks.any { it.identifier.toString() == alphaMark }) return true
 
-        // Compatibility fallback for 1.8.x serialization changes. This is not
-        // the primary path; it only prevents silently losing Alpha metadata when
-        // a patch changes the public getter while retaining persisted state.
-        val compact = serialized.lowercase()
-        return Regex("""(?:is_?alpha|alpha)\\s*[:=]\\s*(?:1b|1|true)""").containsMatchIn(compact) ||
-            Regex("""(?:aspects?|marks?)\\s*[:=][^}\\]]*alpha""").containsMatchIn(compact) ||
-            "alpha_eyes" in compact
+        // Compatibility fallback for 1.8.x persisted data. Keep it narrow to the
+        // official mark rather than treating arbitrary alpha-looking aspects as truth.
+        return serialized.lowercase().contains("cobblemon:mark_alpha")
     }
 
     private fun decode(envelope: PokemonEnvelope): Pokemon =
-        Pokemon().also { it.loadFromNBT(registryAccess, TagParser.parseTag(envelope.serialized)) }
+        // Use Cobblemon's codec-backed companion loader. Creating an empty Pokémon
+        // and mutating it through the instance loader can lose registry-backed
+        // metadata such as marks on some 1.8.x builds.
+        Pokemon.loadFromNBT(registryAccess, TagParser.parseTag(envelope.serialized))
 
     private fun online(id: UUID): ServerPlayer? = server.playerList.getPlayer(id)
 
