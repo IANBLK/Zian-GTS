@@ -85,8 +85,8 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     }
 
     private fun rebuildEntryButtons() {
-        clearWidgets()
-        init()
+        actionButtons.forEach { removeWidget(it) }
+        actionButtons.clear()
         val response = state.response ?: return
         val gap = 8
         val cardW = minOf(176, (width - 96 - gap * 2) / 3).coerceAtLeast(138)
