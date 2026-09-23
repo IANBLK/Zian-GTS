@@ -28,7 +28,8 @@ object ZianGtsV2Runtime {
         val market: DurableMarketStore,
         val journal: DurableTradeJournal,
         val engine: TradeEngine,
-        val history: DurableHistoryStore
+        val history: DurableHistoryStore,
+        val pokemon: CobblemonPokemonPort
     )
 
     @Volatile private var context: Context? = null
@@ -81,7 +82,7 @@ object ZianGtsV2Runtime {
                 history,
                 mutationThreadCheck = { server.isSameThread }
             )
-            context = Context(market, journal, engine, history)
+            context = Context(market, journal, engine, history, pokemon)
             blockedJournal = null
             blockedReason = null
             ZianGts.LOGGER.info("Zian GTS V2 runtime ready at {}", root)
@@ -149,6 +150,9 @@ object ZianGtsV2Runtime {
     }
 
     fun engineOrNull(): TradeEngine? = context?.engine
+    fun partyPokemonId(playerId: java.util.UUID, slot: Int): java.util.UUID? =
+        context?.pokemon?.partyPokemonId(playerId, slot)
+
 
     /**
      * Read-only market projection for commands/network/UI.
