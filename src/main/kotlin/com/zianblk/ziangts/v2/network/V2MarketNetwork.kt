@@ -29,7 +29,7 @@ object V2MarketNetwork {
             val player = context.player()
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
-                handlePageRequest(player, payload.request)
+                handlePageRequest(player, payload.requestId, payload.request)
             }
         }
 
@@ -38,7 +38,7 @@ object V2MarketNetwork {
             MarketPayloadCodecs.RESPONSE_PAYLOAD
         ) { payload, context ->
             context.enqueueWork {
-                V2MarketClientState.accept(payload.response)
+                V2MarketClientState.accept(payload.requestId, payload.response)
             }
         }
 
@@ -286,7 +286,7 @@ object V2MarketNetwork {
         }
     }
 
-    private fun handlePageRequest(player: ServerPlayer, request: MarketPageRequest) {
+    private fun handlePageRequest(player: ServerPlayer, requestId: Long, request: MarketPageRequest) {
         if (!ZianGtsV2Runtime.isReady()) {
             ZianGts.LOGGER.debug("Ignoring V2 market request while runtime is unavailable")
             return
@@ -295,7 +295,7 @@ object V2MarketNetwork {
             val screen = ZianGtsV2Runtime.marketScreen(
                 request.toScreenRequest(player.uuid, Instant.now())
             ) ?: return
-            PacketDistributor.sendToPlayer(player, MarketPageResponsePayload(screen.toPageResponse()))
+            PacketDistributor.sendToPlayer(player, MarketPageResponsePayload(requestId, screen.toPageResponse()))
         } catch (error: IllegalArgumentException) {
             ZianGts.LOGGER.warn("Rejected invalid V2 market request from {}", player.scoreboardName)
         } catch (error: Exception) {
