@@ -3,6 +3,8 @@ package com.zianblk.ziangts.v2.network
 import com.zianblk.ziangts.ZianGts
 import com.zianblk.ziangts.v2.runtime.ZianGtsV2Runtime
 import com.zianblk.ziangts.v2.domain.OfferId
+import com.zianblk.ziangts.v2.domain.PaymentSpec
+import com.zianblk.ziangts.economy.AvecoinsWalletProvider
 import com.zianblk.ziangts.v2.application.TradeResult
 import net.minecraft.server.level.ServerPlayer
 import net.neoforged.neoforge.network.PacketDistributor
@@ -82,6 +84,75 @@ object V2MarketNetwork {
             context.enqueueWork {
                 V2MarketClientState.acceptAction(payload)
             }
+        }
+
+        registrar.playToServer(
+            PublishOptionsRequestPayload.TYPE,
+            MarketPayloadCodecs.PUBLISH_OPTIONS_REQUEST_PAYLOAD
+        ) { _, context ->
+            val player = context.player()
+            if (player !is ServerPlayer) return@playToServer
+            context.enqueueWork {
+                try {
+                    val party = ZianGtsV2Runtime.partyEntries(player.uuid) ?: return@enqueueWork
+                    val currencies = AvecoinsWalletProvider.supportedCurrencies()
+                    val dto = party.map { PartyEntryDto(it.slot, it.pokemonId, it.species, it.level, it.shiny, it.alpha, it.legendary) }
+                    PacketDistributor.sendToPlayer(player, PublishOptionsResponsePayload(PublishOptionsResponse(dto, currencies)))
+                } catch (error: Exception) {
+                    ZianGts.LOGGER.error("Failed to prepare V2 publish options for {}", player.scoreboardName, error)
+                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, "No se pudieron cargar las opciones de publicación"))
+                }
+            }
+        }
+
+        registrar.playToClient(
+            PublishOptionsResponsePayload.TYPE,
+            MarketPayloadCodecs.PUBLISH_OPTIONS_RESPONSE_PAYLOAD
+        ) { payload, context ->
+            context.enqueueWork { V2MarketClientState.acceptPublishOptions(payload.response) }
+        }
+
+        registrar.playToServer(
+            PublishOfferRequestPayload.TYPE,
+            MarketPayloadCodecs.PUBLISH_OFFER_REQUEST_PAYLOAD
+        ) { payload, context ->
+            val player = context.player()
+            if (player !is ServerPlayer) return@playToServer
+            context.enqueueWork {
+                try {
+                    require(payload.amount > 0) { "price must be positive" }
+                    val supported = AvecoinsWalletProvider.supportedCurrencies()
+                    require(payload.currency in supported) { "unsupported currency" }
+                    val engine = ZianGtsV2Runtime.engineOrNull()
+                    if (engine == null) {
+                        PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, "GTS no disponible"))
+                        return@enqueueWork
+                    }
+                    val result = engine.publish(
+                        player.uuid,
+                        player.gameProfile.name,
+                        payload.pokemonId,
+                        PaymentSpec("avecoins_wallet", payload.currency, payload.amount)
+                    )
+                    val success = result is TradeResult.Success
+                    val message = when (result) {
+                        is TradeResult.Success -> "Pokémon publicado"
+                        is TradeResult.Rejected -> result.reason
+                        is TradeResult.Quarantined -> "Operación bloqueada para recuperación: ${result.operationId}"
+                    }
+                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(success, message))
+                } catch (error: Exception) {
+                    ZianGts.LOGGER.error("Unhandled V2 publish for player {}", player.scoreboardName, error)
+                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, "No se pudo publicar el Pokémon"))
+                }
+            }
+        }
+
+        registrar.playToClient(
+            PublishOfferResponsePayload.TYPE,
+            MarketPayloadCodecs.PUBLISH_OFFER_RESPONSE_PAYLOAD
+        ) { payload, context ->
+            context.enqueueWork { V2MarketClientState.acceptPublishResult(payload) }
         }
 
         registrar.playToClient(
