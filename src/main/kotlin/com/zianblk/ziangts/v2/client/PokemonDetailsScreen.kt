@@ -54,8 +54,31 @@ class PokemonDetailsScreen(
         line("Nivel", entry.level.toString())
         line("Shiny", if (entry.shiny) "Sí" else "No")
         line("Alpha", if (entry.alpha) "Sí" else "No")
+        line("Género", friendly(entry.gender))
+        line("Naturaleza", friendly(entry.nature))
+        line("Habilidad", friendly(entry.ability))
         line("Vendedor", entry.sellerName)
         line("Precio", entry.price.toString())
+        y += 5
+        graphics.drawString(font, Component.literal("IVs"), textX, y, 0xFFF4D481.toInt(), false)
+        y += 14
+        val ivLabels = listOf("PS", "At.", "Def.", "At. Esp.", "Def. Esp.", "Vel.")
+        entry.ivs.zip(ivLabels).chunked(2).forEach { row ->
+            val text = row.joinToString("    ") { (value, label) -> "$label: $value" }
+            graphics.drawString(font, Component.literal(text), textX, y, 0xFFE2E8F0.toInt(), false)
+            y += 12
+        }
+        y += 4
+        graphics.drawString(font, Component.literal("Movimientos"), textX, y, 0xFFF4D481.toInt(), false)
+        y += 14
+        if (entry.moves.isEmpty()) {
+            graphics.drawString(font, Component.literal("Sin movimientos"), textX, y, 0xFFA1A6AB.toInt(), false)
+        } else {
+            entry.moves.forEach { move ->
+                graphics.drawString(font, Component.literal("• ${friendly(move)}"), textX, y, 0xFFE2E8F0.toInt(), false)
+                y += 12
+            }
+        }
 
         val stack = graphics.pose()
         stack.pushPose()
@@ -79,6 +102,10 @@ class PokemonDetailsScreen(
         // Render widgets explicitly. Calling Screen.render() would invoke the background path again.
         for (renderable in renderables) renderable.render(graphics, mouseX, mouseY, partialTick)
     }
+
+    private fun friendly(value: String): String =
+        value.substringAfter(':').replace('_', ' ').split(' ')
+            .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
 
     override fun isPauseScreen() = false
 }
