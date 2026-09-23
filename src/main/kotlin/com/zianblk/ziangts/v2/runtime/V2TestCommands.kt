@@ -167,7 +167,7 @@ object V2TestCommands {
             .then(Commands.literal("publish")
                 .then(Commands.argument("pokemon", StringArgumentType.word())
                     .then(Commands.argument("amount", IntegerArgumentType.integer(1))
-                        .then(Commands.argument("currency", StringArgumentType.string())
+                        .then(Commands.argument("currency", StringArgumentType.greedyString())
                             .suggests { _, builder ->
                                 try {
                                     AvecoinsWalletProvider.supportedCurrencies().forEach { builder.suggest(it) }
