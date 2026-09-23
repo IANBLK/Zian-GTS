@@ -24,6 +24,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     private var observedActionRevision = -1L
     private var actionMessage: String? = null
     private var actionPending = false
+    private val actionButtons = mutableListOf<Button>()
 
     override fun init() {
         super.init()
@@ -63,25 +64,33 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         clearWidgets()
         init()
         val response = state.response ?: return
-        var y = 57
-        response.entries.forEach { entry ->
+        val gap = 8
+        val cardW = minOf(190, (width - 64 - gap * 2) / 3).coerceAtLeast(130)
+        val cardH = 110
+        val left = width / 2 - (cardW * 3 + gap * 2) / 2
+        val top = 68
+        response.entries.take(6).forEachIndexed { index, entry ->
+            val x = left + (index % 3) * (cardW + gap)
+            val y = top + (index / 3) * (cardH + gap)
             val action = when {
                 entry.canWithdraw -> MarketAction.WITHDRAW
                 entry.canBuy -> MarketAction.BUY
                 else -> null
             }
             if (action != null) {
-                addRenderableWidget(
+                val actionButton = addRenderableWidget(
                     Button.builder(Component.literal(if (action == MarketAction.BUY) "Comprar" else "Retirar")) {
                         if (!actionPending) {
                             actionPending = true
                             actionMessage = "Procesando..."
+                            actionButtons.forEach { it.active = false }
                             V2MarketClient.requestAction(entry.offerId, action)
                         }
-                    }.bounds(width / 2 + 105, y, 65, 16).build()
-                ).active = !actionPending
+                    }.bounds(x + 8, y + cardH - 23, cardW - 16, 17).build()
+                )
+                actionButton.active = !actionPending
+                actionButtons += actionButton
             }
-            y += 18
         }
     }
 
@@ -131,15 +140,31 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             0xCCCCCC
         )
 
-        var y = 62
-        for (entry in response.entries) {
-            val line = "${entry.species} Nv.${entry.level}  ${entry.price} ${entry.currency}  ${entry.sellerName}"
-            graphics.drawString(font, Component.literal(line), width / 2 - 150, y, 0xFFFFFF)
-            y += 18
+        val gap = 8
+        val cardW = minOf(190, (width - 64 - gap * 2) / 3).coerceAtLeast(130)
+        val cardH = 110
+        val left = width / 2 - (cardW * 3 + gap * 2) / 2
+        val top = 68
+        response.entries.take(6).forEachIndexed { index, entry ->
+            val x = left + (index % 3) * (cardW + gap)
+            val y = top + (index / 3) * (cardH + gap)
+            graphics.fill(x, y, x + cardW, y + cardH, 0xB0202020.toInt())
+            graphics.fill(x, y, x + cardW, y + 1, 0xFF777777.toInt())
+            val species = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
+            graphics.drawString(font, Component.literal(species), x + 8, y + 8, 0xFFFFFF)
+            graphics.drawString(font, Component.literal("Nv. " + entry.level), x + 8, y + 21, 0xBBBBBB)
+            val traits = listOfNotNull(if (entry.shiny) "Shiny" else null, if (entry.alpha) "Alpha" else null).joinToString(" · ")
+            if (traits.isNotEmpty()) graphics.drawString(font, Component.literal(traits), x + 8, y + 34, 0xFFD966)
+            graphics.drawString(font, Component.literal("Precio: " + entry.price), x + 8, y + 48, 0xFFFFFF)
+            graphics.drawString(font, Component.literal(entry.currency.substringAfter(':')), x + 8, y + 61, 0xAAAAAA)
+            graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), x + 8, y + 74, 0xCCCCCC)
+            val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
+            val time = if (seconds >= 3600) "Expira: " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira: " + (seconds / 60) + "m"
+            graphics.drawString(font, Component.literal(time), x + 8, y + 87, 0x999999)
         }
         actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, height - 52, 0xCCCCCC) }
         if (response.entries.isEmpty()) {
-            graphics.drawCenteredString(font, Component.literal("No hay anuncios en esta página"), width / 2, 72, 0xAAAAAA)
+            graphics.drawCenteredString(font, Component.literal("No hay anuncios en esta página"), width / 2, 86, 0xAAAAAA)
         }
     }
 
