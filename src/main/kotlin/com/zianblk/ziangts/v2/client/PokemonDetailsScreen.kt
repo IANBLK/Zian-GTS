@@ -38,7 +38,7 @@ class PokemonDetailsScreen(
         // Avoid Screen.renderBackground here: on in-game screens it applies Minecraft's
         // menu blur, which also softens this custom details surface on some clients.
         graphics.fill(0, 0, width, height, 0xD0101418.toInt())
-        val panelW = minOf(500, width - 30)
+        val panelW = minOf(520, width - 30)
         val panelH = minOf(330, height - 55)
         val left = (width - panelW) / 2
         val top = (height - panelH) / 2 - 6
@@ -48,7 +48,7 @@ class PokemonDetailsScreen(
 
         val speciesName = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
         val textX = left + 20
-        val columnW = (panelW * 0.52).toInt()
+        val columnW = (panelW * 0.50).toInt()
         var y = top + 42
         fun line(label: String, value: String, color: Int = 0xFFE2E8F0.toInt()) {
             graphics.drawString(font, Component.literal("$label: $value"), textX, y, color, false)
@@ -75,9 +75,9 @@ class PokemonDetailsScreen(
         }
 
         // Compact Cobblemon-style IV radar. Values are normalized against the legal IV maximum (31).
-        val radarX = left + panelW - 108
-        val radarY = top + 244
-        drawIvRadar(graphics, radarX, radarY, 46, entry.ivs)
+        val radarX = left + panelW - 112
+        val radarY = top + 246
+        drawIvRadar(graphics, radarX, radarY, 44, entry.ivs)
 
         y += 4
         graphics.drawString(font, Component.literal("Movimientos"), textX, y, 0xFFF4D481.toInt(), false)
@@ -96,7 +96,7 @@ class PokemonDetailsScreen(
         val stack = graphics.pose()
         stack.pushPose()
         try {
-            stack.translate((left + panelW - 120).toDouble(), (top + 112).toDouble(), 100.0)
+            stack.translate((left + panelW - 120).toDouble(), (top + 88).toDouble(), 100.0)
             pose.currentAspects = buildSet {
                 if (entry.shiny) add("shiny")
                 if (entry.alpha) add("alpha")
@@ -107,7 +107,7 @@ class PokemonDetailsScreen(
                 Quaternionf().rotationXYZ(0.08f, 0.45f, 0f),
                 state = pose,
                 partialTicks = partialTick,
-                scale = 48f
+                scale = 55.2f
             )
         } finally {
             stack.popPose()
