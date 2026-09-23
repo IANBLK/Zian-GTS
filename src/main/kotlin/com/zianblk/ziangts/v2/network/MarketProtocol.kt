@@ -107,3 +107,19 @@ fun MarketScreenModel.toPageResponse(): MarketPageResponse =
         filter = filter,
         sort = sort
     )
+
+
+data class PartyEntryDto(
+    val slot: Int,
+    val pokemonId: UUID,
+    val species: String,
+    val level: Int,
+    val shiny: Boolean,
+    val alpha: Boolean,
+    val legendary: Boolean
+)
+
+data class PublishOptionsResponse(
+    val party: List<PartyEntryDto>,
+    val currencies: List<String>
+)
