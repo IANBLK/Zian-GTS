@@ -86,18 +86,16 @@ class CobblemonPokemonPort(
     private fun envelope(pokemon: Pokemon): PokemonEnvelope {
         val tag = pokemon.saveToNBT(registryAccess)
         return PokemonEnvelope(
-            pokemon.uuid,
-            pokemon.species.resourceIdentifier.toString(),
-            pokemon.level,
-            pokemon.shiny,
-            // Cobblemon 1.8 stores Alpha as a native Pokémon property. Its persisted NBT
-            // includes that state, so detect it from the canonical payload instead of
-            // hardcoding false (legacy behaviour from pre-1.8 alpha addons).
-            isAlpha(pokemon, tag.toString()),
-            pokemon.gender.name,
-            pokemon.nature.name.toString(),
-            pokemon.ability.template.name,
-            listOf(
+            pokemonId = pokemon.uuid,
+            species = pokemon.species.resourceIdentifier.toString(),
+            level = pokemon.level,
+            shiny = pokemon.shiny,
+            alpha = isAlpha(pokemon, tag.toString()),
+            legendary = isLegendarySpecies(pokemon.species.resourceIdentifier.toString()),
+            gender = pokemon.gender.name,
+            nature = pokemon.nature.name.toString(),
+            ability = pokemon.ability.template.name,
+            ivs = listOf(
                 pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.HP] ?: 0,
                 pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.ATTACK] ?: 0,
                 pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.DEFENCE] ?: 0,
@@ -105,10 +103,23 @@ class CobblemonPokemonPort(
                 pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.SPECIAL_DEFENCE] ?: 0,
                 pokemon.ivs[com.cobblemon.mod.common.api.pokemon.stats.Stats.SPEED] ?: 0
             ),
-            pokemon.moveSet.getMoves().map { it.template.name },
-            tag.toString()
+            moves = pokemon.moveSet.getMoves().map { it.template.name },
+            serialized = tag.toString()
         )
     }
+
+    private fun isLegendarySpecies(species: String): Boolean =
+        species.substringAfter(':') in setOf(
+            "articuno","zapdos","moltres","mewtwo","mew","raikou","entei","suicune","lugia","ho_oh","celebi",
+            "regirock","regice","registeel","latias","latios","kyogre","groudon","rayquaza","jirachi","deoxys",
+            "uxie","mesprit","azelf","dialga","palkia","heatran","regigigas","giratina","cresselia","phione","manaphy","darkrai","shaymin","arceus",
+            "cobalion","terrakion","virizion","tornadus","thundurus","reshiram","zekrom","landorus","kyurem","keldeo","meloetta","genesect",
+            "xerneas","yveltal","zygarde","diancie","hoopa","volcanion","type_null","silvally","tapu_koko","tapu_lele","tapu_bulu","tapu_fini",
+            "cosmog","cosmoem","solgaleo","lunala","nihilego","buzzwole","pheromosa","xurkitree","celesteela","kartana","guzzlord","necrozma",
+            "magearna","marshadow","poipole","naganadel","stakataka","blacephalon","zeraora","meltan","melmetal","zacian","zamazenta","eternatus",
+            "kubfu","urshifu","zarude","regieleki","regidrago","glastrier","spectrier","calyrex","enamorus","wo_chien","chien_pao","ting_lu",
+            "chi_yu","koraidon","miraidon","okidogi","munkidori","fezandipiti","ogerpon","terapagos","pecharunt"
+        )
 
     private fun isAlpha(pokemon: Pokemon, serialized: String): Boolean {
         // Cobblemon 1.8 identifies owned Alpha Pokémon with the native Alpha Mark.
