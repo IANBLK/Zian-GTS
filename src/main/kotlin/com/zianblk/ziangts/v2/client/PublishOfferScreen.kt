@@ -57,7 +57,10 @@ class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal(
             if (result != null) {
                 pending = false
                 message = result.message
-                if (result.success) V2MarketClient.requestPublishOptions()
+                if (result.success) {
+                    minecraft?.setScreen(parent)
+                    return
+                }
                 refresh()
             }
         }
