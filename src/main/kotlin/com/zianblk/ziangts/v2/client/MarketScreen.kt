@@ -55,6 +55,11 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 minecraft?.setScreen(PublishOfferScreen(this))
             }.bounds(width / 2 + 115, 18, 75, 20).build()
         )
+        addRenderableWidget(
+            Button.builder(Component.literal("Ganancias")) {
+                minecraft?.setScreen(ProceedsScreen(this))
+            }.bounds(width / 2 + 115, 41, 75, 18).build()
+        )
         filterButton = addRenderableWidget(
             Button.builder(Component.literal(filterLabel())) {
                 if (state.tab == MarketTab.MARKET) {
