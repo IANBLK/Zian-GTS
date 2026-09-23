@@ -22,6 +22,10 @@ object V2MarketClientState {
     @Volatile private var publishOptionsRevision: Long = 0
     @Volatile private var publishResult: PublishOfferResponsePayload? = null
     @Volatile private var publishResultRevision: Long = 0
+    @Volatile private var proceeds: ProceedsResponsePayload? = null
+    @Volatile private var proceedsRevision: Long = 0
+    @Volatile private var claimResult: ClaimProceedsResponsePayload? = null
+    @Volatile private var claimRevision: Long = 0
 
     fun accept(response: MarketPageResponse) {
         require(response.protocolVersion == MARKET_PROTOCOL_VERSION) {
@@ -54,6 +58,14 @@ object V2MarketClientState {
     }
     fun publishResultSnapshot(): PublishOfferResponsePayload? = publishResult
     fun publishResultRevision(): Long = publishResultRevision
+
+    fun acceptProceeds(response: ProceedsResponsePayload) { proceeds = response; proceedsRevision += 1 }
+    fun proceedsSnapshot(): ProceedsResponsePayload? = proceeds
+    fun proceedsRevision(): Long = proceedsRevision
+
+    fun acceptClaimResult(response: ClaimProceedsResponsePayload) { claimResult = response; claimRevision += 1 }
+    fun claimResultSnapshot(): ClaimProceedsResponsePayload? = claimResult
+    fun claimRevision(): Long = claimRevision
 
     fun revision(): Long = revision
 
