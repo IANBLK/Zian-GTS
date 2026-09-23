@@ -120,6 +120,7 @@ object MarketPayloadCodecs {
         buf.writeVarInt(value.level)
         buf.writeBoolean(value.shiny)
         buf.writeBoolean(value.alpha)
+        buf.writeBoolean(value.legendary)
         buf.writeUtf(value.gender, 32)
         buf.writeUtf(value.nature, 128)
         buf.writeUtf(value.ability, 128)
@@ -145,6 +146,7 @@ object MarketPayloadCodecs {
         level = buf.readVarInt(),
         shiny = buf.readBoolean(),
         alpha = buf.readBoolean(),
+        legendary = buf.readBoolean(),
         gender = buf.readUtf(32),
         nature = buf.readUtf(128),
         ability = buf.readUtf(128),
