@@ -96,7 +96,7 @@ class PokemonDetailsScreen(
         val stack = graphics.pose()
         stack.pushPose()
         try {
-            stack.translate((left + panelW - 120).toDouble(), (top + 58).toDouble(), 100.0)
+            stack.translate((left + panelW - 120).toDouble(), (top + 42).toDouble(), 100.0)
             pose.currentAspects = buildSet {
                 if (entry.shiny) add("shiny")
                 if (entry.alpha) add("alpha")
@@ -146,7 +146,7 @@ class PokemonDetailsScreen(
             val p = point(index, radius + 13.0)
             graphics.drawCenteredString(font, Component.literal(label), p.first, p.second - 4, 0xFFB8C0C8.toInt())
         }
-        graphics.drawCenteredString(font, Component.literal("IVs"), cx, cy - radius - 22, 0xFFF4D481.toInt())
+        graphics.drawCenteredString(font, Component.literal("IVs"), cx, cy - radius - 30, 0xFFF4D481.toInt())
     }
 
     private fun drawLine(graphics: GuiGraphics, x0: Int, y0: Int, x1: Int, y1: Int, color: Int) {
