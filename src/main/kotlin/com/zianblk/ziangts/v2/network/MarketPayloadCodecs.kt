@@ -119,6 +119,33 @@ object MarketPayloadCodecs {
             { buf -> ClaimProceedsResponsePayload(buf.readBoolean(), buf.readUtf(256)) }
         )
 
+    val HISTORY_REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, HistoryRequestPayload> =
+        StreamCodec.of(
+            { buf, value -> buf.writeVarInt(value.page); buf.writeVarInt(value.pageSize) },
+            { buf -> HistoryRequestPayload(buf.readVarInt(), buf.readVarInt()) }
+        )
+
+    val HISTORY_RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, HistoryResponsePayload> =
+        StreamCodec.of(
+            { buf, value ->
+                buf.writeVarInt(value.entries.size)
+                value.entries.forEach {
+                    buf.writeUUID(it.operationId); buf.writeUUID(it.sellerId); buf.writeUUID(it.buyerId)
+                    buf.writeUtf(it.species, 128); buf.writeVarLong(it.amount); buf.writeUtf(it.currency, 128)
+                    buf.writeLong(it.completedAtEpochMilli)
+                }
+                buf.writeVarInt(value.page); buf.writeVarInt(value.totalPages)
+                buf.writeBoolean(value.hasPrevious); buf.writeBoolean(value.hasNext)
+            },
+            { buf ->
+                val count = buf.readVarInt().also { require(it in 0..20) }
+                val entries = List(count) {
+                    HistoryEntryDto(buf.readUUID(), buf.readUUID(), buf.readUUID(), buf.readUtf(128), buf.readVarLong(), buf.readUtf(128), buf.readLong())
+                }
+                HistoryResponsePayload(entries, buf.readVarInt(), buf.readVarInt(), buf.readBoolean(), buf.readBoolean())
+            }
+        )
+
     private fun encodeRequest(buf: RegistryFriendlyByteBuf, value: MarketPageRequest) {
         buf.writeVarInt(value.protocolVersion)
         buf.writeEnum(value.tab)
