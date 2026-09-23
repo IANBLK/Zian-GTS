@@ -12,6 +12,12 @@ object V2MarketClientState {
     @Volatile
     private var revision: Long = 0
 
+    @Volatile
+    private var action: MarketActionResponsePayload? = null
+
+    @Volatile
+    private var actionRevision: Long = 0
+
     fun accept(response: MarketPageResponse) {
         require(response.protocolVersion == MARKET_PROTOCOL_VERSION) {
             "unsupported market protocol version"
@@ -21,6 +27,14 @@ object V2MarketClientState {
     }
 
     fun snapshot(): MarketPageResponse? = current
+
+    fun acceptAction(response: MarketActionResponsePayload) {
+        action = response
+        actionRevision += 1
+    }
+
+    fun actionSnapshot(): MarketActionResponsePayload? = action
+    fun actionRevision(): Long = actionRevision
 
     fun revision(): Long = revision
 
