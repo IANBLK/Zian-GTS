@@ -270,6 +270,40 @@ object V2TestCommands {
                     report(ctx.source, engine.withdraw(player.uuid, offerId))
                 }))
             .then(Commands.literal("claim")
+                .executes { ctx ->
+                    val player = ctx.source.playerOrException
+                    val engine = engine(ctx.source) ?: return@executes 0
+                    val balances = ZianGtsV2Runtime.proceedsFor(player.uuid)
+                    if (balances == null) {
+                        ctx.source.sendFailure(Component.literal("Zian GTS V2 proceeds unavailable: ${ZianGtsV2Runtime.blockedReason()}"))
+                        return@executes 0
+                    }
+                    val pending = balances.filterValues { it > 0 }.keys.sortedBy { it.currency }
+                    if (pending.isEmpty()) {
+                        ctx.source.sendSuccess({ Component.literal("Zian GTS V2: no pending proceeds") }, false)
+                        return@executes 1
+                    }
+
+                    var claimed = 0
+                    for (key in pending) {
+                        when (val result = engine.claim(player.uuid, key)) {
+                            is ClaimResult.Success -> {
+                                claimed++
+                                ctx.source.sendSuccess({ Component.literal("claim ok: ${result.amount} ${result.key.currency}") }, false)
+                            }
+                            is ClaimResult.Rejected -> {
+                                ctx.source.sendFailure(Component.literal("claim stopped at ${key.currency}: ${result.reason}"))
+                                return@executes 0
+                            }
+                            is ClaimResult.Quarantined -> {
+                                ctx.source.sendFailure(Component.literal("claim quarantined at ${key.currency}: ${result.operationId} (${result.reason})"))
+                                return@executes 0
+                            }
+                        }
+                    }
+                    ctx.source.sendSuccess({ Component.literal("Zian GTS V2: claimed all pending proceeds ($claimed currency balance(s))") }, false)
+                    1
+                }
                 .then(Commands.argument("currency", StringArgumentType.greedyString())
                     .suggests { _, builder ->
                         try {
