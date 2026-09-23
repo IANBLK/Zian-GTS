@@ -113,3 +113,40 @@ data class PublishOfferResponsePayload(
         )
     }
 }
+
+
+data object ProceedsRequestPayload : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    val TYPE = CustomPacketPayload.Type<ProceedsRequestPayload>(
+        ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_proceeds_request")
+    )
+}
+
+data class ProceedsEntryDto(val adapter: String, val currency: String, val amount: Long)
+
+data class ProceedsResponsePayload(val entries: List<ProceedsEntryDto>) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<ProceedsResponsePayload>(
+            ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_proceeds_response")
+        )
+    }
+}
+
+data class ClaimProceedsRequestPayload(val adapter: String, val currency: String) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<ClaimProceedsRequestPayload>(
+            ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_claim_proceeds_request")
+        )
+    }
+}
+
+data class ClaimProceedsResponsePayload(val success: Boolean, val message: String) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
+    companion object {
+        val TYPE = CustomPacketPayload.Type<ClaimProceedsResponsePayload>(
+            ResourceLocation.fromNamespaceAndPath(ZianGts.MOD_ID, "v2_claim_proceeds_response")
+        )
+    }
+}
