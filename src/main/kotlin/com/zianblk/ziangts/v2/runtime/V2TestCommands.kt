@@ -171,10 +171,18 @@ object V2TestCommands {
                                 val player = ctx.source.playerOrException
                                 val engine = engine(ctx.source) ?: return@executes 0
                                 val pokemonText = StringArgumentType.getString(ctx, "pokemon")
-                                val pokemonId = try {
+                                val pokemonId = pokemonText.toIntOrNull()?.let { slot ->
+                                    if (slot !in 1..6) {
+                                        ctx.source.sendFailure(Component.literal("Invalid party slot: $slot (use 1-6)"))
+                                        return@executes 0
+                                    }
+                                    ZianGtsV2Runtime.partyPokemonId(player.uuid, slot).also {
+                                        if (it == null) ctx.source.sendFailure(Component.literal("No Pokemon found in party slot $slot"))
+                                    } ?: return@executes 0
+                                } ?: try {
                                     java.util.UUID.fromString(pokemonText)
                                 } catch (_: IllegalArgumentException) {
-                                    ctx.source.sendFailure(Component.literal("Invalid Pokemon UUID: $pokemonText"))
+                                    ctx.source.sendFailure(Component.literal("Invalid Pokemon UUID or party slot: $pokemonText"))
                                     return@executes 0
                                 }
                                 val payment = try {
