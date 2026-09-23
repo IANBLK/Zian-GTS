@@ -24,6 +24,7 @@ data class PokemonEnvelope(
     val level: Int,
     val shiny: Boolean,
     val alpha: Boolean,
+    val legendary: Boolean = false,
     val gender: String = "UNKNOWN",
     val nature: String = "unknown",
     val ability: String = "unknown",
