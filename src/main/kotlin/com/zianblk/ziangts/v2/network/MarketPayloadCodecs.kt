@@ -120,6 +120,13 @@ object MarketPayloadCodecs {
         buf.writeVarInt(value.level)
         buf.writeBoolean(value.shiny)
         buf.writeBoolean(value.alpha)
+        buf.writeUtf(value.gender, 32)
+        buf.writeUtf(value.nature, 128)
+        buf.writeUtf(value.ability, 128)
+        buf.writeVarInt(value.ivs.size)
+        value.ivs.forEach(buf::writeVarInt)
+        buf.writeVarInt(value.moves.size)
+        value.moves.forEach { buf.writeUtf(it, 128) }
         buf.writeVarLong(value.price)
         buf.writeUtf(value.currency, 128)
         buf.writeLong(value.publishedAtEpochMilli)
@@ -138,6 +145,11 @@ object MarketPayloadCodecs {
         level = buf.readVarInt(),
         shiny = buf.readBoolean(),
         alpha = buf.readBoolean(),
+        gender = buf.readUtf(32),
+        nature = buf.readUtf(128),
+        ability = buf.readUtf(128),
+        ivs = List(buf.readVarInt().also { require(it == 6) }) { buf.readVarInt() },
+        moves = List(buf.readVarInt().also { require(it in 0..4) }) { buf.readUtf(128) },
         price = buf.readVarLong(),
         currency = buf.readUtf(128),
         publishedAtEpochMilli = buf.readLong(),
