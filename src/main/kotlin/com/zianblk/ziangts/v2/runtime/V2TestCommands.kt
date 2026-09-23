@@ -173,9 +173,6 @@ object V2TestCommands {
                                 val id = ZianGtsV2Runtime.partyPokemonId(player.uuid, slot)
                                 if (id != null) builder.suggest(slot)
                             }
-                            ZianGtsV2Runtime.pcPokemonChoices(player.uuid).forEach { (id, label) ->
-                                builder.suggest(id.toString(), Component.literal("PC: $label"))
-                            }
                         }
                         builder.buildFuture()
                     }
