@@ -90,9 +90,22 @@ class CobblemonPokemonPort(
             pokemon.species.resourceIdentifier.toString(),
             pokemon.level,
             pokemon.shiny,
-            false, // Alpha is addon-defined metadata; V2 adapter hook will be supplied separately.
+            // Cobblemon 1.8 stores Alpha as a native Pokémon property. Its persisted NBT
+            // includes that state, so detect it from the canonical payload instead of
+            // hardcoding false (legacy behaviour from pre-1.8 alpha addons).
+            isAlpha(tag.toString()),
             tag.toString()
         )
+    }
+
+    private fun isAlpha(serialized: String): Boolean {
+        // 1.8 native alpha may be represented by a boolean property and/or persisted
+        // alpha aspects/marks. Keep this boundary tolerant across 1.8.x serialization
+        // changes while the domain remains independent of Cobblemon internals.
+        val compact = serialized.lowercase()
+        return Regex("""(?:is_?alpha|alpha)\\s*[:=]\\s*(?:1b|1|true)""").containsMatchIn(compact) ||
+            Regex("""(?:aspects?|marks?)\\s*[:=][^}\\]]*alpha""").containsMatchIn(compact) ||
+            "alpha_eyes" in compact
     }
 
     private fun decode(envelope: PokemonEnvelope): Pokemon =
