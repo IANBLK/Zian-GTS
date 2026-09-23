@@ -24,11 +24,18 @@ data class PokemonEnvelope(
     val level: Int,
     val shiny: Boolean,
     val alpha: Boolean,
+    val gender: String = "UNKNOWN",
+    val nature: String = "unknown",
+    val ability: String = "unknown",
+    val ivs: List<Int> = List(6) { 0 },
+    val moves: List<String> = emptyList(),
     val serialized: String
 ) {
     init {
         require(species.isNotBlank())
         require(level > 0)
+        require(ivs.size == 6)
+        require(moves.size <= 4)
         require(serialized.isNotBlank())
     }
 }
