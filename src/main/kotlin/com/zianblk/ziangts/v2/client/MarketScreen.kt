@@ -227,9 +227,9 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
 
     private fun refreshControls() {
         filterButton?.message = Component.literal(filterLabel())
-        filterButton?.active = state.tab == MarketTab.MARKET && !state.loading
+        filterButton?.active = state.tab == MarketTab.MARKET
         sortButton?.message = Component.literal(sortLabel())
-        sortButton?.active = !state.loading
+        sortButton?.active = true
     }
 
     private fun nextFilter(current: OfferFilter): OfferFilter {
