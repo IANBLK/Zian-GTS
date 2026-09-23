@@ -115,17 +115,7 @@ object ZianGtsV2Runtime {
         blockedJournal = null
         blockedReason = "V2 runtime stopped"
         if (current != null) {
-            var closeFailure: Exception? = null
-            try {
-                current.history.close()
-            } catch (error: Exception) {
-                closeFailure = error
-            }
-            try {
-                current.journal.close()
-            } catch (error: Exception) {
-                if (closeFailure == null) closeFailure = error else closeFailure.addSuppressed(error)
-            }
+            val closeFailure = closeRuntimeResources(current.history, current.journal)
             if (closeFailure == null) {
                 ZianGts.LOGGER.info("Zian GTS V2 runtime closed cleanly")
             } else {
@@ -137,6 +127,21 @@ object ZianGtsV2Runtime {
                 ZianGts.LOGGER.error("Zian GTS V2 blocked journal close failed", error)
             }
         }
+    }
+
+    internal fun closeRuntimeResources(history: AutoCloseable, journal: AutoCloseable): Exception? {
+        var failure: Exception? = null
+        try {
+            history.close()
+        } catch (error: Exception) {
+            failure = error
+        }
+        try {
+            journal.close()
+        } catch (error: Exception) {
+            if (failure == null) failure = error else failure.addSuppressed(error)
+        }
+        return failure
     }
 
     fun engineOrNull(): TradeEngine? = context?.engine
