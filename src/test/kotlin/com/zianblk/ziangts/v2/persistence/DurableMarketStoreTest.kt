@@ -17,7 +17,7 @@ class DurableMarketStoreTest {
         val key = ProceedsKey("avecoins_wallet", "avecoins:coppercoin")
         val offer = TradeOffer(OfferId(UUID.randomUUID()), OfferOwner(seller, "Seller"),
             PaymentSpec(key.adapter, key.currency, 8),
-            PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{x:1}"),
+            PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, serialized = "{x:1}"),
             Instant.parse("2026-09-22T16:00:00Z"), Instant.parse("2026-09-24T16:00:00Z"))
 
         DurableMarketStore(path).apply { add(offer); credit(seller, key, 13) }
