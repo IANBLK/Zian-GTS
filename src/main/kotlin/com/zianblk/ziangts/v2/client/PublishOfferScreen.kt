@@ -35,6 +35,11 @@ class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal(
             .bounds(width / 2 - 100, height / 2 + 48, 95, 20).build())
         addRenderableWidget(Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
             .bounds(width / 2 + 5, height / 2 + 48, 95, 20).build())
+        // Baseline the global client revisions before requesting fresh data.
+        // Otherwise a successful result from a previous PublishOfferScreen instance
+        // is replayed on the first tick and immediately sends the player back.
+        observedOptions = V2MarketClientState.publishOptionsRevision()
+        observedResult = V2MarketClientState.publishResultRevision()
         refresh()
         V2MarketClient.requestPublishOptions()
     }
