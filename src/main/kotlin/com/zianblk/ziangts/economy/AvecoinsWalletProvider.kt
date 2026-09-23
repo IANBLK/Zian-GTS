@@ -9,6 +9,18 @@ import java.util.UUID
  * Exact configured denominations only; automatic coin exchange is not implied.
  */
 class AvecoinsWalletProvider(override val currencyId: String) : EconomyProvider {
+    companion object {
+        /** Returns the exact denomination ids exposed by AVECOINS 2.3. */
+        fun supportedCurrencies(): List<String> {
+            val mod = ModList.get().getModContainerById("avecoins").orElseThrow {
+                IllegalStateException("AVECOINS is not installed")
+            }
+            check(mod.modInfo.version.toString() == "2.3") { "Only the inspected AVECOINS 2.3 contract is supported" }
+            val crafting = Class.forName("net.sundggs.avecoins.config.CraftingConfig")
+            val managed = crafting.getField("MANAGED_RESULTS").get(null) as Set<*>
+            return managed.filterIsInstance<String>().sorted()
+        }
+    }
     private val store: Class<*>
     private val data: Class<*>
     private val get: java.lang.reflect.Method
