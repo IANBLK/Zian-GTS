@@ -3,6 +3,7 @@ package com.zianblk.ziangts.v2.client
 import com.zianblk.ziangts.v2.domain.MarketTab
 import com.zianblk.ziangts.v2.network.V2MarketClient
 import com.zianblk.ziangts.v2.network.V2MarketClientState
+import com.zianblk.ziangts.v2.network.MarketAction
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
@@ -20,6 +21,9 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     private var observedRevision = -1L
     private var previousButton: Button? = null
     private var nextButton: Button? = null
+    private var observedActionRevision = -1L
+    private var actionMessage: String? = null
+    private var actionPending = false
 
     override fun init() {
         super.init()
@@ -55,6 +59,32 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         requestCurrent()
     }
 
+    private fun rebuildEntryButtons() {
+        clearWidgets()
+        init()
+        val response = state.response ?: return
+        var y = 57
+        response.entries.forEach { entry ->
+            val action = when {
+                entry.canWithdraw -> MarketAction.WITHDRAW
+                entry.canBuy -> MarketAction.BUY
+                else -> null
+            }
+            if (action != null) {
+                addRenderableWidget(
+                    Button.builder(Component.literal(if (action == MarketAction.BUY) "Comprar" else "Retirar")) {
+                        if (!actionPending) {
+                            actionPending = true
+                            actionMessage = "Procesando..."
+                            V2MarketClient.requestAction(entry.offerId, action)
+                        }
+                    }.bounds(width / 2 + 105, y, 65, 16).build()
+                ).active = !actionPending
+            }
+            y += 18
+        }
+    }
+
     override fun tick() {
         super.tick()
         val revision = V2MarketClientState.revision()
@@ -63,7 +93,17 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             val response = V2MarketClientState.snapshot()
             if (response != null && response.tab == state.tab) {
                 state = state.accept(response)
-                updateNavigationButtons()
+                rebuildEntryButtons()
+            }
+        }
+        val actionRev = V2MarketClientState.actionRevision()
+        if (actionRev != observedActionRevision) {
+            observedActionRevision = actionRev
+            val result = V2MarketClientState.actionSnapshot()
+            if (result != null) {
+                actionPending = false
+                actionMessage = result.message
+                requestCurrent()
             }
         }
     }
@@ -93,15 +133,11 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
 
         var y = 62
         for (entry in response.entries) {
-            val action = when {
-                entry.canWithdraw -> "Retirar"
-                entry.canBuy -> "Comprar"
-                else -> ""
-            }
-            val line = "${entry.species} Nv.${entry.level}  ${entry.price} ${entry.currency}  ${entry.sellerName}  $action"
+            val line = "${entry.species} Nv.${entry.level}  ${entry.price} ${entry.currency}  ${entry.sellerName}"
             graphics.drawString(font, Component.literal(line), width / 2 - 150, y, 0xFFFFFF)
             y += 18
         }
+        actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, height - 52, 0xCCCCCC) }
         if (response.entries.isEmpty()) {
             graphics.drawCenteredString(font, Component.literal("No hay anuncios en esta página"), width / 2, 72, 0xAAAAAA)
         }
