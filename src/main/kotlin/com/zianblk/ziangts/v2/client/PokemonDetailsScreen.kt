@@ -60,7 +60,7 @@ class PokemonDetailsScreen(
         line("Naturaleza", localizedNature(entry.nature))
         line("Habilidad", localizedAbility(entry.ability))
         line("Vendedor", entry.sellerName)
-        line("Precio", entry.price.toString())
+        line("Precio", "${entry.price} ${currencyDisplayName(entry.currency)}")
         y += 5
         graphics.drawString(font, Component.literal("IVs"), textX, y, 0xFFF4D481.toInt(), false)
         y += 14
@@ -105,6 +105,23 @@ class PokemonDetailsScreen(
         }
         // Render widgets explicitly. Calling Screen.render() would invoke the background path again.
         for (renderable in renderables) renderable.render(graphics, mouseX, mouseY, partialTick)
+    }
+
+    private fun currencyDisplayName(value: String): String {
+        val key = value.substringAfter(':').lowercase()
+        val known = mapOf(
+            "coppercoin" to "Copper Coin",
+            "ironcoin" to "Iron Coin",
+            "goldcoin" to "Gold Coin",
+            "diamondcoin" to "Diamond Coin",
+            "netheritecoin" to "Netherite Coin",
+            "copperticket" to "Copper Ticket",
+            "ironticket" to "Iron Ticket",
+            "goldticket" to "Gold Ticket",
+            "diamondticket" to "Diamond Ticket",
+            "netheriteticket" to "Netherite Ticket"
+        )
+        return known[key] ?: friendly(value)
     }
 
     private fun localizedGender(value: String): String = when (value.substringAfter(':').uppercase()) {
