@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation
  * The request intentionally carries no player UUID. The server handler must derive
  * the viewer from the authenticated packet context.
  */
-data class MarketPageRequestPayload(val request: MarketPageRequest) : CustomPacketPayload {
+data class MarketPageRequestPayload(val requestId: Long, val request: MarketPageRequest) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
 
     companion object {
@@ -20,7 +20,7 @@ data class MarketPageRequestPayload(val request: MarketPageRequest) : CustomPack
     }
 }
 
-data class MarketPageResponsePayload(val response: MarketPageResponse) : CustomPacketPayload {
+data class MarketPageResponsePayload(val requestId: Long, val response: MarketPageResponse) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
 
     companion object {
