@@ -12,6 +12,7 @@ class ProceedsScreen(private val parent: Screen) : Screen(Component.literal("Mis
     private var entries: List<ProceedsEntryDto> = emptyList()
     private var message = "Cargando ganancias..."
     private var pending = false
+    private var messageTicks = 0
     private val claimButtons = mutableListOf<Button>()
 
     override fun init() {
@@ -28,15 +29,19 @@ class ProceedsScreen(private val parent: Screen) : Screen(Component.literal("Mis
         if (rev != observed) {
             observed = rev
             entries = V2MarketClientState.proceedsSnapshot()?.entries.orEmpty()
-            message = if (entries.isEmpty()) "No tienes ganancias pendientes" else ""
+            if (messageTicks <= 0) {
+                message = if (entries.isEmpty()) "No tienes ganancias pendientes" else ""
+            }
             rebuild()
         }
+        if (messageTicks > 0) messageTicks -= 1
         val claimRev = V2MarketClientState.claimRevision()
         if (claimRev != observedClaim) {
             observedClaim = claimRev
             V2MarketClientState.claimResultSnapshot()?.let {
                 pending = false
                 message = it.message
+                messageTicks = 100
                 V2MarketClient.requestProceeds()
             }
         }
