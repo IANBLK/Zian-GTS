@@ -6,6 +6,8 @@ import com.zianblk.ziangts.v2.domain.OfferId
 import com.zianblk.ziangts.v2.domain.PaymentSpec
 import com.zianblk.ziangts.economy.AvecoinsWalletProvider
 import com.zianblk.ziangts.v2.application.TradeResult
+import com.zianblk.ziangts.v2.application.ClaimResult
+import com.zianblk.ziangts.v2.domain.ProceedsKey
 import net.minecraft.server.level.ServerPlayer
 import net.neoforged.neoforge.network.PacketDistributor
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
@@ -153,6 +155,74 @@ object V2MarketNetwork {
             MarketPayloadCodecs.PUBLISH_OFFER_RESPONSE_PAYLOAD
         ) { payload, context ->
             context.enqueueWork { V2MarketClientState.acceptPublishResult(payload) }
+        }
+
+        registrar.playToServer(
+            ProceedsRequestPayload.TYPE,
+            MarketPayloadCodecs.PROCEEDS_REQUEST_PAYLOAD
+        ) { _, context ->
+            val player = context.player()
+            if (player !is ServerPlayer) return@playToServer
+            context.enqueueWork {
+                try {
+                    val balances = ZianGtsV2Runtime.proceedsFor(player.uuid)
+                    if (balances == null) {
+                        PacketDistributor.sendToPlayer(player, ProceedsResponsePayload(emptyList()))
+                        return@enqueueWork
+                    }
+                    val entries = balances.filterValues { it > 0 }.map { (key, amount) ->
+                        ProceedsEntryDto(key.adapter, key.currency, amount)
+                    }
+                    PacketDistributor.sendToPlayer(player, ProceedsResponsePayload(entries))
+                } catch (error: Exception) {
+                    ZianGts.LOGGER.error("Failed to load V2 proceeds for {}", player.scoreboardName, error)
+                    PacketDistributor.sendToPlayer(player, ProceedsResponsePayload(emptyList()))
+                }
+            }
+        }
+
+        registrar.playToClient(
+            ProceedsResponsePayload.TYPE,
+            MarketPayloadCodecs.PROCEEDS_RESPONSE_PAYLOAD
+        ) { payload, context ->
+            context.enqueueWork { V2MarketClientState.acceptProceeds(payload) }
+        }
+
+        registrar.playToServer(
+            ClaimProceedsRequestPayload.TYPE,
+            MarketPayloadCodecs.CLAIM_PROCEEDS_REQUEST_PAYLOAD
+        ) { payload, context ->
+            val player = context.player()
+            if (player !is ServerPlayer) return@playToServer
+            context.enqueueWork {
+                try {
+                    require(payload.adapter == "avecoins_wallet") { "unsupported proceeds adapter" }
+                    require(payload.currency in AvecoinsWalletProvider.supportedCurrencies()) { "unsupported currency" }
+                    val engine = ZianGtsV2Runtime.engineOrNull()
+                    if (engine == null) {
+                        PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, "GTS no disponible"))
+                        return@enqueueWork
+                    }
+                    val result = engine.claim(player.uuid, ProceedsKey(payload.adapter, payload.currency))
+                    val success = result is ClaimResult.Success
+                    val message = when (result) {
+                        is ClaimResult.Success -> "Cobrado: ${result.amount}"
+                        is ClaimResult.Rejected -> result.reason
+                        is ClaimResult.Quarantined -> "Cobro bloqueado para recuperación: ${result.operationId}"
+                    }
+                    PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(success, message))
+                } catch (error: Exception) {
+                    ZianGts.LOGGER.error("Unhandled V2 proceeds claim for {}", player.scoreboardName, error)
+                    PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, "No se pudieron cobrar las ganancias"))
+                }
+            }
+        }
+
+        registrar.playToClient(
+            ClaimProceedsResponsePayload.TYPE,
+            MarketPayloadCodecs.CLAIM_PROCEEDS_RESPONSE_PAYLOAD
+        ) { payload, context ->
+            context.enqueueWork { V2MarketClientState.acceptClaimResult(payload) }
         }
 
         registrar.playToClient(
