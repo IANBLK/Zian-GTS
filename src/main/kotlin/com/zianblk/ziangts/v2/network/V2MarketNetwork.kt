@@ -2,6 +2,8 @@ package com.zianblk.ziangts.v2.network
 
 import com.zianblk.ziangts.ZianGts
 import com.zianblk.ziangts.v2.runtime.ZianGtsV2Runtime
+import com.zianblk.ziangts.v2.domain.OfferId
+import com.zianblk.ziangts.v2.application.TradeResult
 import net.minecraft.server.level.ServerPlayer
 import net.neoforged.neoforge.network.PacketDistributor
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
@@ -33,6 +35,41 @@ object V2MarketNetwork {
         ) { payload, context ->
             context.enqueueWork {
                 V2MarketClientState.accept(payload.response)
+            }
+        }
+
+        registrar.playToServer(
+            MarketActionRequestPayload.TYPE,
+            MarketPayloadCodecs.ACTION_REQUEST_PAYLOAD
+        ) { payload, context ->
+            val player = context.player()
+            if (player !is ServerPlayer) return@playToServer
+            context.enqueueWork {
+                val engine = ZianGtsV2Runtime.engineOrNull()
+                if (engine == null) {
+                    PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, false, "GTS no disponible"))
+                    return@enqueueWork
+                }
+                val result = when (payload.action) {
+                    MarketAction.BUY -> engine.purchase(player.uuid, OfferId(payload.offerId))
+                    MarketAction.WITHDRAW -> engine.withdraw(player.uuid, OfferId(payload.offerId))
+                }
+                val success = result is TradeResult.Success
+                val message = when (result) {
+                    is TradeResult.Success -> if (payload.action == MarketAction.BUY) "Compra completada" else "Pokémon retirado"
+                    is TradeResult.Rejected -> result.reason
+                    is TradeResult.Quarantined -> "Operación bloqueada para recuperación: ${result.operationId}"
+                }
+                PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, success, message))
+            }
+        }
+
+        registrar.playToClient(
+            MarketActionResponsePayload.TYPE,
+            MarketPayloadCodecs.ACTION_RESPONSE_PAYLOAD
+        ) { payload, context ->
+            context.enqueueWork {
+                V2MarketClientState.acceptAction(payload)
             }
         }
 
