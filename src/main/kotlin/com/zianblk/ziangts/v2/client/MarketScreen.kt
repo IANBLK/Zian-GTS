@@ -40,6 +40,11 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
 
     override fun init() {
         super.init()
+        // Action feedback belongs to this screen session only. A newly opened
+        // market must not replay the previous buy/withdraw result.
+        observedActionRevision = V2MarketClientState.actionRevision()
+        actionMessage = null
+        actionPending = false
         addRenderableWidget(
             Button.builder(Component.literal("Mercado")) {
                 switchTab(MarketTab.MARKET)
