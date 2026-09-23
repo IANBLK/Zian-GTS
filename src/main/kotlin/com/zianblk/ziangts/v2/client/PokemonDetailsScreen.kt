@@ -35,8 +35,8 @@ class PokemonDetailsScreen(
         // Avoid Screen.renderBackground here: on in-game screens it applies Minecraft's
         // menu blur, which also softens this custom details surface on some clients.
         graphics.fill(0, 0, width, height, 0xD0101418.toInt())
-        val panelW = minOf(430, width - 30)
-        val panelH = minOf(300, height - 55)
+        val panelW = minOf(500, width - 30)
+        val panelH = minOf(330, height - 55)
         val left = (width - panelW) / 2
         val top = (height - panelH) / 2 - 6
         graphics.fill(left, top, left + panelW, top + panelH, 0xFF181C20.toInt())
@@ -45,6 +45,7 @@ class PokemonDetailsScreen(
 
         val speciesName = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
         val textX = left + 20
+        val columnW = (panelW * 0.52).toInt()
         var y = top + 42
         fun line(label: String, value: String, color: Int = 0xFFE2E8F0.toInt()) {
             graphics.drawString(font, Component.literal("$label: $value"), textX, y, color, false)
@@ -65,7 +66,7 @@ class PokemonDetailsScreen(
         y += 14
         val ivLabels = listOf("PS", "At.", "Def.", "At. Esp.", "Def. Esp.", "Vel.")
         entry.ivs.zip(ivLabels).chunked(2).forEach { row ->
-            val text = row.joinToString("    ") { (value, label) -> "$label: $value" }
+            val text = row.joinToString("   ") { (value, label) -> "$label: $value" }
             graphics.drawString(font, Component.literal(text), textX, y, 0xFFE2E8F0.toInt(), false)
             y += 12
         }
@@ -75,8 +76,10 @@ class PokemonDetailsScreen(
         if (entry.moves.isEmpty()) {
             graphics.drawString(font, Component.literal("Sin movimientos"), textX, y, 0xFFA1A6AB.toInt(), false)
         } else {
-            entry.moves.forEach { move ->
-                graphics.drawString(font, Component.literal("• ${friendly(move)}"), textX, y, 0xFFE2E8F0.toInt(), false)
+            entry.moves.take(4).forEach { move ->
+                val name = "• ${friendly(move)}"
+                val fitted = font.plainSubstrByWidth(name, columnW)
+                graphics.drawString(font, Component.literal(fitted), textX, y, 0xFFE2E8F0.toInt(), false)
                 y += 12
             }
         }
@@ -84,7 +87,7 @@ class PokemonDetailsScreen(
         val stack = graphics.pose()
         stack.pushPose()
         try {
-            stack.translate((left + panelW - 105).toDouble(), (top + 100).toDouble(), 100.0)
+            stack.translate((left + panelW - 120).toDouble(), (top + 125).toDouble(), 100.0)
             pose.currentAspects = buildSet {
                 if (entry.shiny) add("shiny")
                 if (entry.alpha) add("alpha")
