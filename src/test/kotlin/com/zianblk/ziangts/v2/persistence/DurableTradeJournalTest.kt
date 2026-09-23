@@ -135,4 +135,20 @@ class DurableTradeJournalTest {
         }
     }
 
+    @Test fun openJournalKeepsExclusiveOwnershipUntilClosed() {
+        val path = dir.resolve("exclusive-lock-v2.wal")
+        val first = DurableTradeJournal(path)
+        try {
+            assertThrows(Exception::class.java) {
+                DurableTradeJournal(path).use { }
+            }
+        } finally {
+            first.close()
+        }
+
+        DurableTradeJournal(path).use {
+            assertFalse(it.blocksTrading())
+        }
+    }
+
 }
