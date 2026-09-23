@@ -9,6 +9,9 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import org.joml.Quaternionf
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * Read-only details surface for a market offer.
@@ -70,6 +73,12 @@ class PokemonDetailsScreen(
             graphics.drawString(font, Component.literal(text), textX, y, 0xFFE2E8F0.toInt(), false)
             y += 12
         }
+
+        // Compact Cobblemon-style IV radar. Values are normalized against the legal IV maximum (31).
+        val radarX = left + panelW - 112
+        val radarY = top + 232
+        drawIvRadar(graphics, radarX, radarY, 46, entry.ivs)
+
         y += 4
         graphics.drawString(font, Component.literal("Movimientos"), textX, y, 0xFFF4D481.toInt(), false)
         y += 14
@@ -105,6 +114,55 @@ class PokemonDetailsScreen(
         }
         // Render widgets explicitly. Calling Screen.render() would invoke the background path again.
         for (renderable in renderables) renderable.render(graphics, mouseX, mouseY, partialTick)
+    }
+
+    private fun drawIvRadar(graphics: GuiGraphics, cx: Int, cy: Int, radius: Int, ivs: List<Int>) {
+        val labels = listOf("PS", "At.", "Def.", "At.E", "Def.E", "Vel.")
+        fun point(index: Int, r: Double): Pair<Int, Int> {
+            val angle = -PI / 2.0 + index * (PI / 3.0)
+            return (cx + cos(angle) * r).toInt() to (cy + sin(angle) * r).toInt()
+        }
+        // Concentric guides make low/high IV distributions readable without adding more text clutter.
+        listOf(0.33, 0.66, 1.0).forEach { scale ->
+            val pts = (0 until 6).map { point(it, radius * scale) }
+            for (i in pts.indices) {
+                val a = pts[i]; val b = pts[(i + 1) % pts.size]
+                drawLine(graphics, a.first, a.second, b.first, b.second, 0xFF4B535C.toInt())
+            }
+        }
+        for (i in 0 until 6) {
+            val edge = point(i, radius.toDouble())
+            drawLine(graphics, cx, cy, edge.first, edge.second, 0xFF3D444C.toInt())
+        }
+        if (ivs.size == 6) {
+            val pts = ivs.mapIndexed { index, value -> point(index, radius * value.coerceIn(0, 31) / 31.0) }
+            for (i in pts.indices) {
+                val a = pts[i]; val b = pts[(i + 1) % pts.size]
+                drawLine(graphics, a.first, a.second, b.first, b.second, 0xFFF4D481.toInt())
+                graphics.fill(a.first - 1, a.second - 1, a.first + 2, a.second + 2, 0xFFF4D481.toInt())
+            }
+        }
+        labels.forEachIndexed { index, label ->
+            val p = point(index, radius + 13.0)
+            graphics.drawCenteredString(font, Component.literal(label), p.first, p.second - 4, 0xFFB8C0C8.toInt())
+        }
+        graphics.drawCenteredString(font, Component.literal("IVs"), cx, cy - radius - 22, 0xFFF4D481.toInt())
+    }
+
+    private fun drawLine(graphics: GuiGraphics, x0: Int, y0: Int, x1: Int, y1: Int, color: Int) {
+        var x = x0; var y = y0
+        val dx = kotlin.math.abs(x1 - x0)
+        val sx = if (x0 < x1) 1 else -1
+        val dy = -kotlin.math.abs(y1 - y0)
+        val sy = if (y0 < y1) 1 else -1
+        var err = dx + dy
+        while (true) {
+            graphics.fill(x, y, x + 1, y + 1, color)
+            if (x == x1 && y == y1) break
+            val e2 = 2 * err
+            if (e2 >= dy) { err += dy; x += sx }
+            if (e2 <= dx) { err += dx; y += sy }
+        }
     }
 
     private fun currencyDisplayName(value: String): String {
