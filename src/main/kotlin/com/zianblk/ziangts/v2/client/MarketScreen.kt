@@ -151,6 +151,8 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             val response = V2MarketClientState.snapshot()
             if (response != null && response.tab == state.tab) {
                 state = state.accept(response)
+                refreshControls()
+                updateNavigationButtons()
                 rebuildEntryButtons()
             }
         }
