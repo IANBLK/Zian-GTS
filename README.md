@@ -1,30 +1,69 @@
 # Zian GTS
 
-Sistema GTS para Cobblemon en Minecraft 1.21.1 / NeoForge.
+Zian GTS es un mercado GTS para Cobblemon en Minecraft 1.21.1, desarrollado con NeoForge y pensado para servidores multijugador.
 
-## Objetivo técnico
-- Java 21
+## Beta 1
+
+La versión actual es **1.0.0 Beta 1 candidate**.
+
+Funciones principales:
+
+- Mercado gráfico con modelos de Pokémon.
+- Publicación de Pokémon directamente desde el Party.
+- Compra y retirada de ofertas.
+- Ganancias pendientes y claim.
+- Historial de transacciones.
+- Filtros por Shiny, Alpha, legendarios y ofertas propias.
+- Ordenación y paginación.
+- Naturaleza, habilidad, movimientos e IVs.
+- Radar visual de IVs.
+- Integración con AVECOINS 2.3.
+- Persistencia durable del mercado, historial y ganancias.
+- Journal de transacciones y recuperación administrativa.
+- Validaciones server-authoritative y protección frente a operaciones concurrentes.
+
+## Requisitos
+
 - Minecraft 1.21.1
-- NeoForge 21.1.228+
+- Java 21
+- NeoForge 21.1.228 o superior
+- Kotlin for Forge 5.10+
 - Cobblemon 1.8+
-- Interfaz principal en español (España)
-- Integración con AVECOINS 2.3
-- Historial persistente de transacciones para moderación
-- Persistencia durable y journal de recuperación
-- Arquitectura V2 server-authoritative
+- AVECOINS 2.3 para la economía integrada
 
-El desarrollo activo se realiza en la rama `rewrite/independent-core-v2`.
-La implementación de producción actual pertenece al árbol V2; el runtime V1
-histórico fue retirado del código compilable.
+Zian GTS también se prueba en Youer 1.21.1.
 
-## Estado de desarrollo
+## Uso
 
-La V2 incluye mercado, publicación desde Party, compra, retirada, ganancias,
-claim, historial, filtros, ordenación, paginación y recuperación ante
-transacciones pendientes. Las mutaciones económicas y de Pokémon se protegen
-mediante journal y recuperación fail-closed.
+Los jugadores pueden abrir el mercado con:
 
-Consulta `docs/DEVELOPMENT_STATUS.md`, `docs/RECOVERY.md`,
-`docs/RESTARTS_AND_JOURNAL.md` y `docs/V2_INDEPENDENT_SPEC.md`.
+`/gtsv2`
 
-La integración con AVECOINS se documenta en `docs/AVECOINS.md`.
+o:
+
+`/gtsv2 open`
+
+La publicación, compra, retirada, claim, historial, filtros y navegación se realizan desde la interfaz.
+
+## Administración y recuperación
+
+Los operadores disponen de:
+
+- `/gtsv2 status`
+- `/gtsv2 recovery`
+- `/gtsv2 recovery resolve <operation-uuid>`
+- `/gtsv2 recovery resolve <operation-uuid> confirm`
+
+Una operación incierta puede bloquear el mercado deliberadamente. Antes de resolver una incidencia deben comprobarse manualmente el estado de AVECOINS, el almacenamiento Pokémon y el estado del GTS. La resolución no entrega Pokémon ni devuelve monedas automáticamente.
+
+## Seguridad
+
+El servidor decide propiedad, precio, moneda, contenido del Pokémon y resultado de cada transacción. El cliente no proporciona valores autoritativos.
+
+Las operaciones económicas y de Pokémon atraviesan sistemas externos distintos, por lo que Zian GTS conserva evidencia durable y falla de forma cerrada cuando no puede determinar con seguridad el resultado de una operación.
+
+## Estado de pruebas
+
+La Beta 1 candidate ha superado pruebas automatizadas de persistencia, concurrencia, journal, rollback, hard-kill y recuperación, además de pruebas multijugador del flujo de mercado.
+
+Antes de publicar Beta 1 se realizará un último smoke test del artefacto candidato en Youer.
