@@ -22,6 +22,7 @@ import java.util.UUID
 class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
     private val gson = Gson()
     private val records = mutableListOf<TradeHistoryRecord>()
+    private val recordsByPlayer = mutableMapOf<UUID, MutableList<TradeHistoryRecord>>()
     private var previousHash = ByteArray(32)
     private val channel: FileChannel
 
@@ -44,10 +45,25 @@ class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
         channel.force(true)
         previousHash = hash
         records += record
+        index(record)
     }
 
     @Synchronized
     override fun all(): List<TradeHistoryRecord> = records.toList()
+
+    @Synchronized
+    override fun forPlayer(playerId: UUID, limit: Int): List<TradeHistoryRecord> {
+        require(limit > 0) { "history limit must be positive" }
+        val indexed = recordsByPlayer[playerId] ?: return emptyList()
+        return indexed.asReversed().asSequence().take(limit).toList()
+    }
+
+    private fun index(record: TradeHistoryRecord) {
+        recordsByPlayer.getOrPut(record.sellerId) { mutableListOf() }.add(record)
+        if (record.buyerId != record.sellerId) {
+            recordsByPlayer.getOrPut(record.buyerId) { mutableListOf() }.add(record)
+        }
+    }
 
     private fun replay() {
         channel.position(0)
@@ -70,6 +86,7 @@ class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
             val record = wire.toRecord()
             require(records.none { it.operationId == record.operationId }) { "duplicate history operation" }
             records += record
+            index(record)
             expectedPrevious = actualHash
         }
         previousHash = expectedPrevious
