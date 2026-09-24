@@ -60,8 +60,8 @@ class PokemonDetailsScreen(
         line("Alpha", if (entry.alpha) "Sí" else "No")
         line("Legendario", if (entry.legendary) "Sí" else "No")
         line("Género", localizedGender(entry.gender))
-        line("Naturaleza", localizedNature(entry.nature))
-        line("Habilidad", localizedAbility(entry.ability))
+        componentLine(graphics, "Naturaleza", localizedNature(entry.nature), textX, y).also { y += 15 }
+        componentLine(graphics, "Habilidad", localizedAbility(entry.ability), textX, y).also { y += 15 }
         line("Vendedor", entry.sellerName)
         line("Precio", "${entry.price} ${currencyDisplayName(entry.currency)}")
         y += 5
@@ -86,9 +86,10 @@ class PokemonDetailsScreen(
             graphics.drawString(font, Component.literal("Sin movimientos"), textX, y, 0xFFA1A6AB.toInt(), false)
         } else {
             entry.moves.take(4).forEach { move ->
-                val name = "• ${localizedMove(move)}"
-                val fitted = font.plainSubstrByWidth(name, columnW)
-                graphics.drawString(font, Component.literal(fitted), textX, y, 0xFFE2E8F0.toInt(), false)
+                val translated = localizedMove(move)
+                val rendered = Component.literal("• ").append(translated)
+                val fitted = font.substrByWidth(rendered, columnW)
+                graphics.drawString(font, fitted, textX, y, 0xFFE2E8F0.toInt(), false)
                 y += 12
             }
         }
@@ -189,33 +190,32 @@ class PokemonDetailsScreen(
         else -> friendly(value)
     }
 
-    private fun localizedNature(value: String): String {
-        val key = value.substringAfter(':').lowercase()
-        val spanish = mapOf(
-            "hardy" to "Fuerte", "lonely" to "Huraña", "brave" to "Audaz", "adamant" to "Firme", "naughty" to "Pícara",
-            "bold" to "Osada", "docile" to "Dócil", "relaxed" to "Plácida", "impish" to "Agitada", "lax" to "Floja",
-            "timid" to "Miedosa", "hasty" to "Activa", "serious" to "Seria", "jolly" to "Alegre", "naive" to "Ingenua",
-            "modest" to "Modesta", "mild" to "Afable", "quiet" to "Mansa", "bashful" to "Tímida", "rash" to "Alocada",
-            "calm" to "Serena", "gentle" to "Amable", "sassy" to "Grosera", "careful" to "Cauta", "quirky" to "Rara"
-        )
-        return spanish[key] ?: friendly(value)
+    private fun componentLine(graphics: GuiGraphics, label: String, value: Component, x: Int, y: Int) {
+        graphics.drawString(font, Component.literal("$label: ").append(value), x, y, 0xFFE2E8F0.toInt(), false)
     }
 
-    private fun localizedAbility(value: String): String {
-        val key = value.substringAfter(':').lowercase()
-        val spanish = mapOf(
-            "superluck" to "Afortunado", "multitype" to "Multitipo"
-        )
-        return spanish[key] ?: friendly(value)
-    }
+    /**
+     * Cobblemon owns these translations. Keeping the value as a Component means Minecraft resolves
+     * it with the client's selected language instead of Zian GTS maintaining hundreds of names.
+     */
+    private fun localizedNature(value: String): Component =
+        cobblemonTranslation("cobblemon.nature.", value)
 
-    private fun localizedMove(value: String): String {
-        val key = value.substringAfter(':').lowercase().replace("_", "").replace("-", "")
-        val spanish = mapOf(
-            "feint" to "Amago", "quickattack" to "Ataque Rápido", "futuresight" to "Premonición", "doubleteam" to "Doble Equipo",
-            "punishment" to "Castigo", "seismictoss" to "Movimiento Sísmico", "refresh" to "Alivio", "naturegift" to "Don Natural"
-        )
-        return spanish[key] ?: friendly(value)
+    private fun localizedAbility(value: String): Component =
+        cobblemonTranslation("cobblemon.ability.", value)
+
+    private fun localizedMove(value: String): Component =
+        cobblemonTranslation("cobblemon.move.", value)
+
+    private fun cobblemonTranslation(prefix: String, value: String): Component {
+        val id = value.substringAfter(':').lowercase().replace("_", "").replace("-", "")
+        if (id.isBlank()) return Component.literal(friendly(value))
+        val key = prefix + id
+        val translated = Component.translatable(key)
+        // Minecraft will render the key itself when a dependency does not provide it. Keep a
+        // readable fallback for unusual addon-provided values while using Cobblemon dynamically.
+        return if (net.minecraft.client.resources.language.I18n.exists(key)) translated
+        else Component.literal(friendly(value))
     }
 
     private fun friendly(value: String): String =
