@@ -175,11 +175,7 @@ object ZianGtsV2Runtime {
     fun historyFor(playerId: java.util.UUID, limit: Int = 50): List<TradeHistoryRecord>? {
         require(limit in 1..500) { "history limit must be between 1 and 500" }
         val history = context?.history ?: return null
-        return history.all().asSequence()
-            .filter { it.sellerId == playerId || it.buyerId == playerId }
-            .sortedByDescending { it.completedAt }
-            .take(limit)
-            .toList()
+        return history.forPlayer(playerId, limit)
     }
 
     /** Read-only pending seller proceeds for UI/commands. */
