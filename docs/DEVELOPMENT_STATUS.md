@@ -1,70 +1,52 @@
-# Development status
+# Zian GTS V2 — development status
 
-## Build fixes
+## Current candidate
 
-- Kotlin compiler 2.2.20 matches the Kotlin 2.2 metadata shipped by Cobblemon
-  1.8.0 and Kotlin for Forge 5.10.0.
-- The mod descriptor uses `${version}`, which is the property exported by
-  processResources; `${file.jarVersion}` was being interpreted by Gradle.
-- Listing UUID serialization explicitly uses `this@Listing.id`, avoiding the
-  `CompoundTag.id` (NBT type byte) receiver inside `apply`.
-- ListingsData captures the overworld RegistryAccess required by Cobblemon,
-  rather than passing SavedData's more general HolderLookup.Provider.
+Version: **1.0.0 Beta 1 candidate**
 
-## Development features
+The active production implementation is Zian GTS V2.
 
-- `/gts` opens the market; `/gts list [page]` provides a text alternative.
-- `/gts sell <party-slot 1..6> <price>` escrows a Pokémon.
-- `/gts buy <listing-uuid>` shows the price; append `confirm` to purchase.
-- `/gts mine` includes expired offers; `/gts cancel <listing-uuid>` returns one.
-- `/gts claim` claims pending item or AVECOINS wallet proceeds, partially if inventory space is limited.
-- `/gts history [player-uuid] [page]` requires `ziangts.admin.history` (OP level 2 by default).
-- `/gts history delete <transaction-uuid> confirm` archives the record, retaining
-  its original contents, actor and timestamp in SavedData. It requires `ziangts.admin.history.archive` (OP level 2 by default).
-- `/gts recovery` lists quarantined incidents with their ids; `/gts recovery resolve <incident-id> confirm`
-  (`ziangts.admin.recovery.resolve`, OP level 2 by default) marks one as resolved after manual reconciliation and keeps an audit copy.
-- UI: six entries per page, all/Shiny/Alpha/legendary/legendary Shiny/own filters,
-  date/price/level sorting, confirmation, claim and withdrawal buttons, Pokémon
-  preview on wider screens. Central details show seller, price, level, gender,
-  Shiny, Alpha, Nature, Ability, stats and IVs; EVs are not shown.
-- Networking uses bounded requests, a per-player request limit and server-side
-  lookups. No client-supplied Pokémon, ownership, price or balance is accepted.
-- Corrupt listings/payouts are retained verbatim and block trading. Corrupt history
-  records are also retained. Expiration never silently destroys an escrowed Pokémon.
-- LICENSE is packaged into the JAR.
+## Implemented
 
-## Test-world gate and remaining work
+- Native market UI.
+- Party publication flow.
+- Purchase and owner withdrawal.
+- Seller proceeds and claim.
+- Transaction history.
+- Filters, sorting and pagination.
+- Pokémon details and IV radar.
+- AVECOINS integration.
+- Durable market, history and transaction journal.
+- Server-authoritative validation.
+- Request sequencing with requestId.
+- Administrative status and recovery commands.
 
-This remains a development build. `tradingEnabled` defaults to false in the
-world's `serverconfig/ziangts-server.toml`. Enable it only in a backed-up test world.
-Browsing is available independently. Currency, listing limit and expiry are also
-world-specific settings. The default is `avecoins:coppercoin`; new offers and
-purchases accept only the supported AVECOINS coin and ticket catalog.
+## Commands
 
-The current item transaction sequence is serialized on the server thread with
-reentrant mutation protection. It is NOT a crash-atomic transaction across
-Minecraft player inventory, Cobblemon asynchronous storage and GTS SavedData.
-The append-only recovery journal now records intent before each market mutation and
-quarantines sessions interrupted without an orderly shutdown marker. It preserves
-evidence; it does not replay money or Pokémon automatically. See
-[RESTARTS_AND_JOURNAL.md](RESTARTS_AND_JOURNAL.md). Before enabling this on a real
-server, validate interruption at each actual mod ownership/payment boundary. Exceptions from Cobblemon
-removal/delivery callbacks quarantine the pre-operation listing snapshot in
-`failedTransfers` and block subsequent trading for manual recovery. This is not
-a substitute for verified cross-store durability. Test these callback failures too. Do not claim crash-safe trading yet.
+Players:
 
-Required in-game validation: dedicated-server startup; simultaneous purchases of
-the same offer; last Pokémon / untradeable / active battle / active trade rejection;
-full party and PC; full inventory with partial claims; seller offline; expiry and
-reclaim; disconnect and restart; multiple dimensions; packet spam; small GUI scales;
-preview models and custom forms. Unit tests cover proceeds persistence, overflow,
-overdraft, and retention/quarantine of malformed and duplicate records.
+- `/gtsv2`
+- `/gtsv2 open`
 
-AVECOINS 2.3 is connected through an optional reflection adapter using its public
-wallet methods. Physical AVECOINS coins also work as item currency. See
-[AVECOINS.md](AVECOINS.md) for configuration, supported denominations, wallet
-capacity, live-test requirements and the cross-store recovery limitation.
-Minecraft stays 1.21.1; NeoForge is now 21.1.228 to satisfy the supplied AVECOINS
-artifact. The external JAR and its decompiled source are not redistributed.
+Operators:
 
-Trade evolution/event behavior, live LuckPerms validation, and crash recovery remain pending. Shiny stays Shiny.
+- `/gtsv2 status`
+- `/gtsv2 recovery`
+- `/gtsv2 recovery resolve <operation-uuid>`
+- `/gtsv2 recovery resolve <operation-uuid> confirm`
+
+## Transaction safety
+
+Zian GTS coordinates its own durable state with external Pokémon and economy systems. Those systems do not share one atomic transaction.
+
+For that reason, uncertain external outcomes are not blindly retried. The transaction journal retains evidence and the runtime can block trading until an administrator reconciles the external stores.
+
+## Validation completed
+
+Automated coverage includes persistence, concurrency, rollback, journal failures, reentrancy, reservation races, hard-kill probes and runtime lifecycle.
+
+Real multiplayer testing has covered publishing, buying, withdrawing, claim, history, filters, pagination, simultaneous buyers, buy-vs-withdraw races, restart persistence and abuse/duplication attempts.
+
+## Release gate
+
+The remaining gate for Beta 1 is a smoke test of the exact release-candidate JAR on the target Youer server, followed by one final artifact audit.
