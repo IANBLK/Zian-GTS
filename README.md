@@ -5,21 +5,26 @@ Sistema GTS para Cobblemon en Minecraft 1.21.1 / NeoForge.
 ## Objetivo técnico
 - Java 21
 - Minecraft 1.21.1
-- NeoForge 21.1.182+
+- NeoForge 21.1.228+
 - Cobblemon 1.8+
 - Interfaz principal en español (España)
-- Integración con AVECOINS
+- Integración con AVECOINS 2.3
 - Historial persistente de transacciones para moderación
+- Persistencia durable y journal de recuperación
+- Arquitectura V2 server-authoritative
 
-El desarrollo actual está en la rama `dev/reconstruction`. El primer hito es
-obtener una compilación reproducible y una implementación base estable antes
-de incorporar los cambios funcionales.
+El desarrollo activo se realiza en la rama `rewrite/independent-core-v2`.
+La implementación de producción actual pertenece al árbol V2; el runtime V1
+histórico fue retirado del código compilable.
 
-Consulta `docs/RECONSTRUCTION.md` y `THIRD_PARTY_NOTICES.md`.
+## Estado de desarrollo
 
+La V2 incluye mercado, publicación desde Party, compra, retirada, ganancias,
+claim, historial, filtros, ordenación, paginación y recuperación ante
+transacciones pendientes. Las mutaciones económicas y de Pokémon se protegen
+mediante journal y recuperación fail-closed.
 
-## Development progress
+Consulta `docs/DEVELOPMENT_STATUS.md`, `docs/RECOVERY.md`,
+`docs/RESTARTS_AND_JOURNAL.md` y `docs/V2_INDEPENDENT_SPEC.md`.
 
-See [development status](docs/DEVELOPMENT_STATUS.md) for implemented commands,
-configuration, validation gates and remaining work. Trading defaults to disabled
-until tested in an isolated world. The optional AVECOINS 2.3 adapter is documented in [AVECOINS integration](docs/AVECOINS.md); AVECOINS is required in practice to trade because new offers accept only its currencies.
+La integración con AVECOINS se documenta en `docs/AVECOINS.md`.
