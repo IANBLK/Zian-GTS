@@ -7,7 +7,7 @@ modId = "ziangts"
 version = "${version}"
 displayName = "Zian GTS"
 authors = "ZIANBLK"
-description = "Sistema GTS para Cobblemon, desarrollado para Aventura."
+description = "Mercado GTS seguro y persistente para Cobblemon, con interfaz nativa, AVECOINS, historial y recuperación de transacciones."
 
 [[dependencies.ziangts]]
 modId = "minecraft"
@@ -29,7 +29,6 @@ mandatory = true
 versionRange = "[1.8.0+1.21.1,)"
 ordering = "AFTER"
 side = "BOTH"
-
 
 [[dependencies.ziangts]]
 modId = "avecoins"
