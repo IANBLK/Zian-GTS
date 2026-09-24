@@ -93,7 +93,7 @@ tasks.test {
 }
 
 tasks.jar {
-    from(listOf("LICENSE", "THIRD_PARTY_NOTICES.md")) { into("META-INF") }
+    from("LICENSE") { into("META-INF") }
     manifest {
         attributes["Implementation-Title"] = project.property("mod_name")
         attributes["Implementation-Version"] = project.version
