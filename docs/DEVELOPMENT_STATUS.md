@@ -11,7 +11,7 @@
 - ListingsData captures the overworld RegistryAccess required by Cobblemon,
   rather than passing SavedData's more general HolderLookup.Provider.
 
-## Reconstructed development features
+## Development features
 
 - `/gts` opens the market; `/gts list [page]` provides a text alternative.
 - `/gts sell <party-slot 1..6> <price>` escrows a Pokémon.
@@ -31,7 +31,7 @@
   lookups. No client-supplied Pokémon, ownership, price or balance is accepted.
 - Corrupt listings/payouts are retained verbatim and block trading. Corrupt history
   records are also retained. Expiration never silently destroys an escrowed Pokémon.
-- LICENSE and THIRD_PARTY_NOTICES are packaged into the JAR.
+- LICENSE is packaged into the JAR.
 
 ## Test-world gate and remaining work
 
@@ -67,5 +67,4 @@ capacity, live-test requirements and the cross-store recovery limitation.
 Minecraft stays 1.21.1; NeoForge is now 21.1.228 to satisfy the supplied AVECOINS
 artifact. The external JAR and its decompiled source are not redistributed.
 
-Visual parity with the reference binary, trade evolution/event behavior, live LuckPerms
-validation, and crash recovery remain pending. Shiny stays Shiny.
+Trade evolution/event behavior, live LuckPerms validation, and crash recovery remain pending. Shiny stays Shiny.
