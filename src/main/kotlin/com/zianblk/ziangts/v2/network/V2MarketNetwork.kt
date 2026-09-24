@@ -4,7 +4,7 @@ import com.zianblk.ziangts.ZianGts
 import com.zianblk.ziangts.v2.runtime.ZianGtsV2Runtime
 import com.zianblk.ziangts.v2.domain.OfferId
 import com.zianblk.ziangts.v2.domain.PaymentSpec
-import com.zianblk.ziangts.economy.AvecoinsWalletProvider
+import com.zianblk.ziangts.v2.runtime.AvecoinsWallet
 import com.zianblk.ziangts.v2.application.TradeResult
 import com.zianblk.ziangts.v2.application.ClaimResult
 import com.zianblk.ziangts.v2.domain.ProceedsKey
@@ -97,7 +97,7 @@ object V2MarketNetwork {
             context.enqueueWork {
                 try {
                     val party = ZianGtsV2Runtime.partyEntries(player.uuid) ?: return@enqueueWork
-                    val currencies = AvecoinsWalletProvider.supportedCurrencies()
+                    val currencies = AvecoinsWallet.supportedCurrencies()
                     val dto = party.map { PartyEntryDto(it.slot, it.pokemonId, it.species, it.level, it.shiny, it.alpha, it.legendary) }
                     PacketDistributor.sendToPlayer(player, PublishOptionsResponsePayload(PublishOptionsResponse(dto, currencies)))
                 } catch (error: Exception) {
@@ -123,7 +123,7 @@ object V2MarketNetwork {
             context.enqueueWork {
                 try {
                     require(payload.amount > 0) { "price must be positive" }
-                    val supported = AvecoinsWalletProvider.supportedCurrencies()
+                    val supported = AvecoinsWallet.supportedCurrencies()
                     require(payload.currency in supported) { "unsupported currency" }
                     val engine = ZianGtsV2Runtime.engineOrNull()
                     if (engine == null) {
@@ -197,7 +197,7 @@ object V2MarketNetwork {
             context.enqueueWork {
                 try {
                     require(payload.adapter == "avecoins_wallet") { "unsupported proceeds adapter" }
-                    require(payload.currency in AvecoinsWalletProvider.supportedCurrencies()) { "unsupported currency" }
+                    require(payload.currency in AvecoinsWallet.supportedCurrencies()) { "unsupported currency" }
                     val engine = ZianGtsV2Runtime.engineOrNull()
                     if (engine == null) {
                         PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, "GTS no disponible"))
