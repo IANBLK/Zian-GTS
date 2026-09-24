@@ -88,7 +88,7 @@ class PokemonDetailsScreen(
             entry.moves.take(4).forEach { move ->
                 val translated = localizedMove(move)
                 val rendered = Component.literal("• ").append(translated)
-                val fitted = font.substrByWidth(rendered, columnW)
+                val fitted = font.split(rendered, columnW).firstOrNull() ?: rendered.visualOrderText
                 graphics.drawString(font, fitted, textX, y, 0xFFE2E8F0.toInt(), false)
                 y += 12
             }
