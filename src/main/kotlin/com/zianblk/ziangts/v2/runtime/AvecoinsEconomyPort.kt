@@ -6,9 +6,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /** V2 economy adapter. TradeEngine stays independent from AVECOINS implementation details. */
-class AvecoinsEconomyPort(
-    private val providerFactory: (String) -> AvecoinsWallet = ::AvecoinsWallet
-) : EconomyPort {
+class AvecoinsEconomyPort : EconomyPort {
     private val providers = ConcurrentHashMap<String, AvecoinsWallet>()
 
     override fun canWithdraw(playerId: UUID, currency: String, amount: Long): Boolean {
@@ -28,7 +26,7 @@ class AvecoinsEconomyPort(
     }
 
     private fun provider(currency: String): AvecoinsWallet =
-        providers.computeIfAbsent(currency, providerFactory)
+        providers.computeIfAbsent(currency, ::AvecoinsWallet)
 
     private inline fun mutate(currency: String, action: (AvecoinsWallet) -> AvecoinsWallet.Mutation): EconomyResult =
         try {
