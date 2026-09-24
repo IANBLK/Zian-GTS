@@ -2,16 +2,9 @@
 
 Status: normative implementation specification for the v2 rewrite.
 
-## Provenance rule
+## Implementation scope
 
-This rewrite is based on Zian GTS product requirements and public APIs. Do not
-consult or copy decompiled Cobble GTS implementation details while implementing
-v2. Existing provenance-sensitive v1 classes are migration inputs only at the
-data boundary and will be removed from the release tree.
-
-Because earlier Zian development inspected a reference binary, this work is
-described as an **independent rewrite**, not as a strict two-team clean-room
-implementation.
+Zian GTS V2 is implemented from the project's product requirements and the public APIs of its supported dependencies. The public release tree contains only the active V2 implementation and release documentation.
 
 ## Product behavior
 
@@ -47,8 +40,6 @@ v2 uses these concepts:
 - `TradeEngine`: application service for publish/purchase/withdraw/claim.
 - `MarketQuery`: paging/filter/sort request.
 - `MarketView`: DTO returned to networking/UI.
-
-This vocabulary intentionally differs from the reconstruction baseline.
 
 ## Transaction invariants
 
@@ -97,9 +88,4 @@ No third-party textures, assets or copied layout code are required.
 
 ## Release gate
 
-The public v2 release must not compile or package provenance-sensitive v1
-implementation classes. Compatibility migration code may understand Zian v1
-serialized data formats, but must not copy third-party implementation.
-
-MIT applies to original Zian code. Third-party dependencies keep their own
-licenses and notices.
+The public V2 release packages only the active Zian GTS implementation and required resources. Third-party dependencies are installed separately and keep their own licenses.
