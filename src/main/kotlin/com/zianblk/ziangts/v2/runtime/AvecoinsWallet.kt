@@ -10,7 +10,7 @@ import java.util.UUID
  * implementation classes and only relies on the inspected WalletStore/WalletData
  * contract. A failed save is treated as an uncertain external mutation.
  */
-internal class AvecoinsWallet(private val currencyId: String) {
+class AvecoinsWallet(private val currencyId: String) {
     sealed interface Mutation {
         data object Applied : Mutation
         data class Rejected(val reason: String) : Mutation
