@@ -30,7 +30,7 @@ class PokemonDetailsScreen(
         val layout = DetailsLayout.calculate(width, height)
         addRenderableWidget(
             Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
-                .bounds(layout.left + 12, layout.buttonY + 18, 92, 16).build()
+                .bounds(layout.left + 18, layout.buttonY - 4, 80, 18).build()
         )
     }
 
@@ -98,7 +98,6 @@ class PokemonDetailsScreen(
             graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), mx + 4, my + 2, 0xFFE2E8F0.toInt(), false)
         }
         if (moves.isEmpty()) graphics.drawString(font, Component.literal("Sin movimientos"), movesX + 8, bottomY + 20, 0xFFA1A6AB.toInt(), false)
-        renderFooterPrice(graphics, layout, controlsX, bottomY, controlsW)
     }
 
     private fun renderCompactDetails(graphics: GuiGraphics, layout: DetailsLayout, speciesName: String) {
@@ -114,7 +113,6 @@ class PokemonDetailsScreen(
         entry.moves.take(2).forEach { move ->
             graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), x, y, 0xFFE2E8F0.toInt(), false); y += 11
         }
-        renderFooterPrice(graphics, layout)
     }
 
     private fun drawPanel(graphics: GuiGraphics, x: Int, y: Int, w: Int, h: Int) {
@@ -136,27 +134,18 @@ class PokemonDetailsScreen(
         }
     }
 
-    private fun renderFooterPrice(graphics: GuiGraphics, layout: DetailsLayout, x: Int = layout.left + 116, y: Int = layout.buttonY, w: Int = (layout.width - 128).coerceAtLeast(90)) {
-        val h = 16
-        graphics.fill(x, y, x + w, y + h, 0xB00D151D.toInt())
-        graphics.renderOutline(x, y, w, h, 0xFFF4D481.toInt())
-        val label = "Precio: " + entry.price + " " + currencyDisplayName(entry.currency)
-        val visible = font.plainSubstrByWidth(label, (w - 12).coerceAtLeast(20))
-        graphics.drawString(font, Component.literal(visible), x + 6, y + 4, 0xFFF4D481.toInt(), false)
-    }
-
     private fun expiryLabel(): String {
         val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
         return if (seconds >= 3600) "Expira en: " + seconds / 3600 + "h " + (seconds % 3600) / 60 + "m" else "Expira en: " + seconds / 60 + "m"
     }
 
     private fun renderPokemonModel(graphics: GuiGraphics, layout: DetailsLayout, partialTick: Float) {
-        val modelScale = if (layout.compact) 27f else 34f
+        val modelScale = if (layout.compact) 30f else 37.5f
         val modelX = if (layout.compact) layout.left + layout.width - 55 else layout.left + 12 + (layout.width * 0.27).toInt().coerceIn(82, 105) / 2
         val stack = graphics.pose()
         stack.pushPose()
         try {
-            stack.translate(modelX.toDouble(), layout.modelY.toDouble(), 100.0)
+            stack.translate(modelX.toDouble(), (layout.modelY + 6).toDouble(), 100.0)
             pose.currentAspects = buildSet {
                 if (entry.shiny) add("shiny")
                 if (entry.alpha) add("alpha")
