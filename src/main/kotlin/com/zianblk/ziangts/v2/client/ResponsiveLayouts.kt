@@ -21,22 +21,22 @@ internal data class MarketLayout(
 
     companion object {
         fun calculate(width: Int, height: Int): MarketLayout {
-            val margin = if (width < 520) 10 else 20
-            val gap = if (width < 520) 6 else 8
-            val available = (width - margin * 2).coerceAtLeast(138)
-            val usableHeight = (height - 118).coerceAtLeast(118)
+            val margin = 10
+            val gap = 7
+            val available = (width - margin * 2).coerceAtLeast(132)
+            val usableHeight = (height - 112).coerceAtLeast(112)
 
-            // Prefer a denser grid as logical resolution grows. This prevents the x1/x2
-            // screenshots from showing two huge cards floating in an otherwise empty screen.
+            // Keep cards deliberately small and nearly fixed. GUI scaling already changes
+            // the logical canvas, so a conservative component size is more stable than
+            // continuously stretching cards to fill whatever space happens to exist.
             val columns = when {
-                available >= 690 -> 3
-                available >= 330 -> 2
+                available >= 480 -> 3
+                available >= 315 -> 2
                 else -> 1
             }
-            val cardWidth = ((available - gap * (columns - 1)) / columns)
-                .coerceIn(142, 196)
-            val rows = if (usableHeight >= 250) 2 else 1
-            val cardHeight = if (rows == 2) minOf(132, (usableHeight - gap) / 2) else minOf(132, usableHeight)
+            val desiredCardWidth = 152
+            val cardWidth = minOf(desiredCardWidth, (available - gap * (columns - 1)) / columns).coerceAtLeast(132)
+            val cardHeight = minOf(116, usableHeight)
             val gridWidth = cardWidth * columns + gap * (columns - 1)
             val left = (width - gridWidth) / 2
             val top = if (height < 330) 70 else 78
@@ -69,17 +69,17 @@ internal data class DetailsLayout(
 ) {
     companion object {
         fun calculate(screenWidth: Int, screenHeight: Int): DetailsLayout {
-            val marginX = if (screenWidth < 500) 8 else maxOf(18, screenWidth / 12)
-            val marginY = if (screenHeight < 360) 8 else maxOf(16, screenHeight / 14)
-            // Cap both dimensions proportionally. The previous fixed 560x350 panel became
-            // almost full-screen at one scale and a tiny island at another.
-            val targetWidth = (screenWidth * 0.82).toInt().coerceIn(300, 680)
-            val targetHeight = (screenHeight * 0.78).toInt().coerceIn(245, 390)
+            val marginX = 10
+            val marginY = 10
+            // Deliberately conservative fixed targets. Only shrink when the logical canvas
+            // cannot fit them. This keeps details visually consistent across x1/x2/x3/Auto.
+            val targetWidth = 500
+            val targetHeight = 290
             val panelWidth = minOf(targetWidth, screenWidth - marginX * 2).coerceAtLeast(250)
             val panelHeight = minOf(targetHeight, screenHeight - marginY * 2).coerceAtLeast(230)
             val left = (screenWidth - panelWidth) / 2
             val top = (screenHeight - panelHeight) / 2
-            val compact = panelWidth < 500 || panelHeight < 315
+            val compact = panelWidth < 470 || panelHeight < 270
             return DetailsLayout(
                 left = left,
                 top = top,
