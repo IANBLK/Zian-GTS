@@ -61,7 +61,7 @@ class PokemonDetailsScreen(
         val infoX = previewX + previewW + 10
         val radarX = layout.left + layout.width - pad - radarW
         val infoW = (radarX - infoX - 8).coerceAtLeast(130)
-        val topH = (layout.height * 0.52).toInt().coerceIn(92, 112)
+        val topH = (layout.height * 0.50).toInt().coerceIn(108, 126)
         drawPanel(graphics, previewX, top, previewW, topH)
         drawPanel(graphics, infoX, top, infoW, topH)
         drawPanel(graphics, radarX, top, radarW, topH)
@@ -69,7 +69,7 @@ class PokemonDetailsScreen(
         var y = top + 10
         graphics.drawString(font, Component.literal(speciesName), infoX + 8, y, 0xFFF4D481.toInt(), false); y += 13
         graphics.drawString(font, Component.literal("Nv. " + entry.level), infoX + 8, y, 0xFFB8C0C8.toInt(), false); y += 14
-        drawTraitRow(graphics, infoX + 8, y, infoW - 16); y += 34
+        drawTraitRow(graphics, infoX + 8, y, infoW - 16); y += 33
         componentLine(graphics, "Naturaleza", localizedNature(entry.nature), infoX + 8, y); y += 12
         componentLine(graphics, "Habilidad", localizedAbility(entry.ability), infoX + 8, y); y += 12
         graphics.drawString(font, Component.literal("Género: " + localizedGender(entry.gender)), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 12
@@ -79,7 +79,7 @@ class PokemonDetailsScreen(
         drawIvRadar(graphics, radarX + radarW / 2, top + topH / 2 + 7, minOf(25, radarW / 3), entry.ivs)
 
         val movesY = top + topH + 7
-        val movesH = (layout.buttonY - 10 - movesY).coerceAtLeast(42)
+        val movesH = (layout.buttonY - 8 - movesY).coerceAtLeast(48)
         val movesX = layout.left + pad
         val movesW = layout.width - pad * 2
         drawPanel(graphics, movesX, movesY, movesW, movesH)
@@ -145,7 +145,7 @@ class PokemonDetailsScreen(
     }
 
     private fun renderPokemonModel(graphics: GuiGraphics, layout: DetailsLayout, partialTick: Float) {
-        val modelScale = if (layout.compact) 28f else 36f
+        val modelScale = if (layout.compact) 27f else 34f
         val modelX = if (layout.compact) layout.left + layout.width - 55 else layout.left + 12 + (layout.width * 0.27).toInt().coerceIn(82, 105) / 2
         val stack = graphics.pose()
         stack.pushPose()
