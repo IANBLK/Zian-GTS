@@ -79,7 +79,7 @@ class PokemonDetailsScreen(
         drawIvRadar(graphics, radarX + radarW / 2, top + topH / 2 + 7, minOf(25, radarW / 3), entry.ivs)
 
         val movesY = top + topH + 7
-        val movesH = (layout.buttonY - 8 - movesY).coerceAtLeast(48)
+        val movesH = (layout.buttonY - 6 - movesY).coerceAtLeast(42)
         val movesX = layout.left + pad
         val movesW = layout.width - pad * 2
         drawPanel(graphics, movesX, movesY, movesW, movesH)
@@ -88,9 +88,9 @@ class PokemonDetailsScreen(
         val cellW = (movesW - 24) / 2
         moves.forEachIndexed { index, move ->
             val mx = movesX + 8 + (index % 2) * (cellW + 8)
-            val my = movesY + 18 + (index / 2) * 15
-            graphics.fill(mx, my, mx + cellW, my + 13, 0xA0212931.toInt())
-            graphics.renderOutline(mx, my, cellW, 13, 0xFF3F5261.toInt())
+            val my = movesY + 16 + (index / 2) * 14
+            graphics.fill(mx, my, mx + cellW, my + 12, 0xA0212931.toInt())
+            graphics.renderOutline(mx, my, cellW, 12, 0xFF3F5261.toInt())
             graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), mx + 4, my + 2, 0xFFE2E8F0.toInt(), false)
         }
         if (moves.isEmpty()) graphics.drawString(font, Component.literal("Sin movimientos"), movesX + 8, movesY + 20, 0xFFA1A6AB.toInt(), false)
