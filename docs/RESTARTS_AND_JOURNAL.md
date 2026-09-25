@@ -1,96 +1,95 @@
-# Reinicios y diario de Zian GTS
+# Reinicios y journal de Zian GTS V2
 
 ## Alcance real
 
-El diario conserva evidencia en disco antes de mover Pokémon o dinero. No es una
-transacción atómica con los archivos de Minecraft, Cobblemon y AVECOINS. Un crash
-puede requerir conciliación manual: no se promete devolución automática ni ausencia
-absoluta de pérdida ante fallos del disco, eliminación de archivos o backups parciales.
+Zian GTS V2 usa un journal append-only para conservar evidencia durable de las operaciones sensibles. No existe una transacción atómica compartida entre Minecraft, Cobblemon, AVECOINS y los archivos de Zian GTS. Ante un resultado externo incierto, el mercado falla de forma conservadora y puede requerir conciliación manual.
 
-El archivo del mundo `ziangts-journal/transactions.wal` contiene registros encadenados
-con SHA-256, versión y secuencia. Cada escritura usa `FileChannel.force(true)`;
-la creación fuerza también el directorio. Si el sistema de archivos no permite
-estas operaciones, el mercado se bloquea. Solo un proceso puede abrir el diario
-para escribir. No se recortan colas incompletas ni se sobrescribe evidencia dañada.
+El estado V2 se guarda bajo el directorio del mundo:
 
-Venta, compra, retirada y cada moneda reclamada registran intención antes de la
-primera mutación. Se conserva el snapshot NBT del Pokémon/anuncio o del pago,
-el actor, moneda/proveedor, importe, transacción de compra y una copia previa del
-almacenamiento GTS. Se registran las fronteras de cobro, entrega, devolución,
-acreditación e historial. El fin de la operación guarda una copia posterior del GTS.
-Estas copias son evidencia independiente, no se cargan automáticamente sobre datos vivos.
+- `ziangts-v2/market-v2.state`
+- `ziangts-v2/history-v2.wal`
+- `ziangts-v2/transactions-v2.wal`
 
-## Reinicios programados cada 6 horas
+`transactions-v2.wal` contiene frames encadenados mediante SHA-256. Cada evento incluye versión y secuencia. El journal actual usa formato **V2** y un máximo de **8 MiB por frame**. Cada append ejecuta `FileChannel.force(true)`.
 
-El programador externo debe enviar `stop` y esperar a que el proceso termine antes
-de arrancarlo de nuevo. No usar kill forzado, reinicio del contenedor inmediato ni
-un timeout menor que el tiempo de guardado real de los mods. Respaldar todo el mundo,
-datos de jugadores, Cobblemon, AVECOINS y diario como un conjunto consistente.
+El journal registra evidencia de la operación, su sujeto y las etapas alcanzadas. Los eventos actuales son `begin`, `stage`, `complete`, `abort`, `quarantine` y `resolve`. El journal V2 **no almacena snapshots NBT/SNBT completos** de Pokémon, wallets o del mercado.
 
-Al recibir ServerStopping el mod deja de aceptar operaciones y solicita guardar sus
-SavedData. Solo si también recibe ServerStopped y no hay operaciones incompletas,
-incidentes o errores, escribe un marcador de cierre ordenado con un checkpoint.
-Al iniciar compara el checkpoint de cierre con los SavedData GTS y bloquea si difieren.
-Un cierre correcto permite reiniciar sin resolver manualmente cada compra.
+## Reinicios programados
 
-El marcador demuestra la secuencia de eventos, no que cada mod haya confirmado fsync:
-Cobblemon usa guardado asíncrono y su API pública de almacenamiento no proporciona
-una confirmación transaccional común con AVECOINS. Un fallo silencioso de guardado
-externo durante stop aún requiere revisión. Esta limitación debe validarse en el
-servidor exacto antes de uso real.
+Para reinicios normales, enviar `stop` y permitir que el proceso termine antes de iniciarlo otra vez. No sustituir un cierre normal por un kill forzado en producción.
 
-## Tras un crash
+Al detenerse, el runtime deja de estar disponible y cierra sus recursos persistentes. Al arrancar, abre el mercado y el journal. Una operación que llegó durablemente a `RUNTIME_COMPLETE` puede reconciliarse automáticamente; cualquier otra evidencia pendiente mantiene el mercado bloqueado.
 
-Si falta el marcador de cierre, las operaciones desde el último cierre ordenado
-quedan retenidas, incluso las que terminaron en memoria. El mercado se bloquea;
-no se vuelve a cobrar, reembolsar ni entregar automáticamente. Esto evita asumir
-que el guardado asíncrono terminó antes del crash.
+Los reinicios automáticos STOP -> espera -> START usados por el servidor son compatibles con este modelo siempre que el proceso anterior haya terminado realmente antes del nuevo START.
 
-- `/gts recovery`: incidentes existentes y resumen del diario.
-- `/gts recovery journal`: estado y últimas diez operaciones retenidas.
-- `/gts recovery journal resolve <uuid> confirm`: registra nombre/UUID del
-  administrador y fecha; libera solo esa operación después de la conciliación manual.
-  Requiere `ziangts.use`, `ziangts.admin.recovery` y `ziangts.admin.recovery.resolve`.
-- Los incidentes de SavedData se resuelven por separado con el comando existente.
-  Resolver el diario no borra esos incidentes ni inventa pagos.
+## Recovery después de un crash
 
-Un diario corrupto o un checkpoint que no coincide no se desbloquean con resolve:
-conservar los originales y reparar/restaurar un conjunto coherente antes de reiniciar.
-No borrar el diario para evitar el bloqueo: se perdería la evidencia independiente.
+Consultar el estado:
 
-Para inspección sin Minecraft, trabajar sobre una copia con el servidor detenido:
-`python tools/inspect_journal.py transactions.wal --export inspeccion-gts`.
-El directorio de salida debe ser nuevo. Exporta registros JSON y snapshots SNBT;
-verifica hashes y secuencia y se detiene ante daño, sin tocar el archivo original.
-La exportación permite encontrar ids anteriores a los diez mostrados en el comando.
+```
+/gtsv2 status
+/gtsv2 recovery
+```
 
-El archivo crece y no se poda automáticamente en esta versión. Las copias completas
-del GTS por operación favorecen la recuperación inicial pero tienen coste de disco
-y latencia en el hilo del servidor. Hay límite de 32 MiB por registro y fallo cerrado.
-Retención/compactación y pruebas de rendimiento siguen pendientes.
+Estos comandos administrativos requieren actualmente nivel de permiso **2** mediante `CommandSourceStack.hasPermission(2)`. La versión V2 no depende de nodos LuckPerms para autorizar recovery.
+
+`/gtsv2 recovery` muestra hasta diez operaciones no resueltas con operation ID, tipo, subject, etapa, estado de quarantine y motivo.
+
+Antes de resolver una operación, comprobar manualmente:
+
+1. estado del anuncio;
+2. Pokémon del comprador/vendedor;
+3. saldo/cartera AVECOINS;
+4. ganancias pendientes;
+5. historial relevante.
+
+Para iniciar la resolución:
+
+```
+/gtsv2 recovery resolve <operation-uuid>
+```
+
+El comando muestra una advertencia y exige confirmación explícita:
+
+```
+/gtsv2 recovery resolve <operation-uuid> confirm
+```
+
+La resolución elimina únicamente esa evidencia pendiente del journal. No cobra, devuelve, entrega ni reconstruye automáticamente Pokémon o moneda. Cuando se resuelva la última operación, **reiniciar el servidor** antes de reabrir el mercado.
+
+No borrar ni editar manualmente `transactions-v2.wal` para saltarse un bloqueo.
+
+## Inspector offline
+
+Con el servidor detenido, trabajar preferiblemente sobre una copia:
+
+```
+python tools/inspect_journal.py transactions-v2.wal
+python tools/inspect_journal.py transactions-v2.wal --export inspeccion-gts
+```
+
+El inspector es de solo lectura. Valida formato V2, secuencia, tamaño máximo de 8 MiB y la cadena SHA-256. `--export` crea archivos JSON únicamente para el prefijo verificado. No repara, trunca ni reproduce operaciones.
+
+## Límites y mantenimiento
+
+El journal no se compacta automáticamente en Beta 1. El mercado y el historial también utilizan almacenamiento durable propio. Para servidores con gran volumen de operaciones conviene vigilar el crecimiento de estos archivos y conservar backups coherentes del mundo y de los datos externos relacionados.
+
+Rotación/compactación, métricas de latencia y pruebas de carga a gran escala quedan como mejoras posteriores.
 
 ## Youer 1.21.1
 
-Youer combina NeoForge con APIs Paper/Purpur. Se revisó su rama 1.21.1 (propiedades:
-NeoForge 21.1.251, Java 21), no una instalación real ni la build que usará el servidor.
-La compatibilidad sigue sin certificarse. No usar plugins que modifiquen los archivos
-GTS o reemplacen el cierre ordenado mientras se valida esta integración.
+Zian GTS V2 ha sido probado en el entorno objetivo Youer 1.21.1 con operaciones de mercado, persistencia y reinicios. Aun así, cada artefacto de release debe recibir un smoke test final en el servidor objetivo antes de considerarlo candidato publicado.
 
-La integración LuckPerms actual detecta el mod NeoForge. No se ha implementado un
-puente para LuckPerms instalado exclusivamente como plugin Bukkit en Youer; en ese
-caso los nodos no se consultan y se usan los valores predeterminados del mod.
+AVECOINS 2.3 es la economía soportada por esta Beta. La integración valida el contrato esperado y trata un resultado de guardado incierto como una operación que no debe reintentarse automáticamente.
 
-Fuentes inspeccionadas:
-- https://github.com/MohistMC/Youer/blob/1.21.1/gradle.properties
-- https://github.com/MohistMC/Youer/blob/1.21.1/patches/net/minecraft/server/MinecraftServer.java.patch
-- https://github.com/Cobblemon-Global/Cobblemon/blob/main/common/src/main/kotlin/com/cobblemon/mod/common/api/storage/factory/FileBackedPokemonStoreFactory.kt
+## Verificación recomendada antes de una release
 
-## Verificación
-
-Tests del diario: ciclos de cierre/reapertura; proceso hijo terminado con Runtime.halt
-en las fronteras de compra; resolución persistente; múltiples pendientes; corrupción,
-truncamiento y doble escritor. Estas pruebas no ejecutan Minecraft ni simulan fallos
-de los discos o callbacks reales de los mods. Antes de multiplayer: arrancar la build
-exacta de Youer, ensayar stop/reinicio con un mundo de prueba y comprobar saldos,
-anuncios, Pokémon y reclamaciones antes/después. Luego repetir cierres forzados solo
-sobre copias desechables y comprobar la conciliación.
+- ejecutar `./gradlew clean build` sobre el commit exacto;
+- verificar el JAR y su SHA-256;
+- probar ese JAR en Youer 1.21.1;
+- publicar, comprar, retirar y reclamar ganancias;
+- comprobar party/PC y wallet llena;
+- probar reinicio normal;
+- ejecutar recovery sobre un entorno de prueba con evidencia pendiente;
+- ejecutar `tools/inspect_journal.py` sobre un journal V2 real;
+- comprobar que no aparecen duplicaciones de Pokémon o moneda.
