@@ -82,7 +82,7 @@ class PokemonDetailsScreen(
         val bottomH = (layout.top + layout.height - 8 - bottomY).coerceAtLeast(48)
         val controlsX = layout.left + pad
         val controlsW = 104
-        val movesX = controlsX + controlsW + 12
+        val movesX = controlsX + controlsW + 20
         val movesW = layout.left + layout.width - pad - movesX
         drawPanel(graphics, movesX, bottomY, movesW, bottomH)
         graphics.drawString(font, Component.literal("Movimientos"), movesX + 8, bottomY + 5, 0xFFF4D481.toInt(), false)
