@@ -180,10 +180,12 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        renderBackground(graphics, mouseX, mouseY, partialTick)
+        // Custom dark marketplace surface. Avoid menu blur so Pokémon previews and text stay crisp.
+        graphics.fill(0, 0, width, height, 0xE00D1117.toInt())
+        graphics.fill(0, 0, width, 4, 0xFFF0C75E.toInt())
         super.render(graphics, mouseX, mouseY, partialTick)
 
-        graphics.drawCenteredString(font, title, width / 2, 5, 0xFFFFFF)
+        graphics.drawCenteredString(font, title, width / 2, 6, 0xFFF7E4A6.toInt())
         val response = state.response
         if (state.loading && response == null) {
             graphics.drawCenteredString(font, Component.literal("Cargando mercado..."), width / 2, 54, 0xAAAAAA)
@@ -208,21 +210,38 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         response.entries.take(6).forEachIndexed { index, entry ->
             val x = layout.cardX(index)
             val y = layout.cardY(index)
-            graphics.fill(x, y, x + cardW, y + cardH, 0xB0202020.toInt())
-            graphics.fill(x, y, x + cardW, y + 1, 0xFF777777.toInt())
-            renderPokemonPreview(graphics, entry, x + cardW - 36, y + 38, partialTick)
+            // Layered card: border, body, preview well and price footer.
+            graphics.fill(x, y, x + cardW, y + cardH, 0xFF59616B.toInt())
+            graphics.fill(x + 1, y + 1, x + cardW - 1, y + cardH - 1, 0xF0181D24.toInt())
+            graphics.fill(x + 1, y + 1, x + cardW - 1, y + 4, rarityAccent(entry))
+            graphics.fill(x + cardW / 2, y + 6, x + cardW - 7, y + 67, 0x8010161D.toInt())
+            graphics.renderOutline(x + cardW / 2, y + 6, cardW / 2 - 7, 61, 0xFF343D47.toInt())
+
+            renderPokemonPreview(graphics, entry, x + (cardW * 3) / 4, y + 39, partialTick)
             val species = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
-            graphics.drawString(font, Component.literal(species), x + 8, y + 8, 0xFFFFFF)
-            graphics.drawString(font, Component.literal("Nv. " + entry.level), x + 8, y + 21, 0xBBBBBB)
-            val traits = listOfNotNull(if (entry.legendary) "Legendario" else null, if (entry.shiny) "Shiny" else null, if (entry.alpha) "Alpha" else null).joinToString(" · ")
-            if (traits.isNotEmpty()) graphics.drawString(font, Component.literal(traits), x + 8, y + 34, 0xFFD966)
-            val priceLabel = "Precio: " + entry.price
-            graphics.drawString(font, Component.literal(priceLabel), x + 8, y + 51, 0xFFFFFF)
-            renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), y + 47, mouseX, mouseY)
-            graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), x + 8, y + 73, 0xCCCCCC)
+            graphics.drawString(font, Component.literal(species), x + 8, y + 10, 0xFFF4F7FA.toInt())
+            graphics.drawString(font, Component.literal("Nv. " + entry.level), x + 8, y + 23, 0xFF9FAAB5.toInt())
+
+            var badgeY = y + 37
+            listOfNotNull(
+                if (entry.legendary) "LEGENDARIO" else null,
+                if (entry.shiny) "SHINY" else null,
+                if (entry.alpha) "ALPHA" else null
+            ).take(3).forEach { badge ->
+                drawBadge(graphics, badge, x + 8, badgeY, rarityAccent(entry))
+                badgeY += 12
+            }
+
+            val footerTop = y + cardH - 52
+            graphics.fill(x + 1, footerTop, x + cardW - 1, y + cardH - 1, 0xC010141A.toInt())
+            val priceLabel = entry.price.toString()
+            graphics.drawString(font, Component.literal(priceLabel), x + 8, footerTop + 7, 0xFFF7E4A6.toInt())
+            renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), footerTop + 3, mouseX, mouseY)
+            val seller = fitText("Vendedor: " + entry.sellerName, cardW - 16)
+            graphics.drawString(font, Component.literal(seller), x + 8, footerTop + 24, 0xFFB7C0C9.toInt())
             val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
-            val time = if (seconds >= 3600) "Expira: " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira: " + (seconds / 60) + "m"
-            graphics.drawString(font, Component.literal(time), x + 8, y + 88, 0x999999)
+            val time = if (seconds >= 3600) "Expira " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira " + (seconds / 60) + "m"
+            graphics.drawString(font, Component.literal(time), x + cardW - 8 - font.width(time), footerTop + 24, 0xFF7F8A96.toInt())
         }
         actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, MarketLayout.calculate(width, height).footerY - 16, 0xCCCCCC) }
         if (response.entries.isEmpty()) {
@@ -230,6 +249,29 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         }
     }
 
+
+
+    private fun rarityAccent(entry: com.zianblk.ziangts.v2.network.MarketEntryDto): Int = when {
+        entry.legendary && entry.shiny -> 0xFFE6A8FF.toInt()
+        entry.legendary -> 0xFFF0C75E.toInt()
+        entry.shiny -> 0xFF75D7FF.toInt()
+        entry.alpha -> 0xFFFF8B8B.toInt()
+        else -> 0xFF6F7C88.toInt()
+    }
+
+    private fun drawBadge(graphics: GuiGraphics, label: String, x: Int, y: Int, accent: Int) {
+        val badgeW = (font.width(label) + 8).coerceAtMost(72)
+        graphics.fill(x, y, x + badgeW, y + 10, 0xD0202730.toInt())
+        graphics.fill(x, y, x + 2, y + 10, accent)
+        graphics.drawString(font, Component.literal(label), x + 5, y + 1, accent, false)
+    }
+
+    private fun fitText(value: String, maxWidth: Int): String {
+        if (font.width(value) <= maxWidth) return value
+        var result = value
+        while (result.isNotEmpty() && font.width(result + "…") > maxWidth) result = result.dropLast(1)
+        return result + "…"
+    }
 
     private fun renderPokemonPreview(
         graphics: GuiGraphics,
