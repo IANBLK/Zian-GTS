@@ -222,7 +222,17 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             graphics.fill(x + cardW / 2, y + 6, x + cardW - 7, y + 67, 0x8010161D.toInt())
             graphics.renderOutline(x + cardW / 2, y + 6, cardW / 2 - 7, 61, 0xFF343D47.toInt())
 
-            renderPokemonPreview(graphics, entry, x + (cardW * 3) / 4, y + 37, partialTick)
+            val previewLeft = x + cardW / 2
+            val previewRight = x + cardW - 7
+            val previewTop = y + 6
+            val previewBottom = y + 67
+            renderPokemonPreview(
+                graphics,
+                entry,
+                (previewLeft + previewRight) / 2,
+                (previewTop + previewBottom) / 2 + 7,
+                partialTick
+            )
             val species = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
             graphics.drawString(font, Component.literal(species), x + 8, y + 10, 0xFFF4F7FA.toInt())
             graphics.drawString(font, Component.literal("Nv. " + entry.level), x + 8, y + 23, 0xFF9FAAB5.toInt())
