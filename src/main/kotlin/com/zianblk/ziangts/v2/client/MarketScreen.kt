@@ -219,18 +219,17 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             graphics.fill(x, y, x + cardW, y + cardH, 0xFF59616B.toInt())
             graphics.fill(x + 1, y + 1, x + cardW - 1, y + cardH - 1, 0xF0181D24.toInt())
             graphics.fill(x + 1, y + 1, x + cardW - 1, y + 4, rarityAccent(entry))
-            graphics.fill(x + cardW / 2, y + 6, x + cardW - 7, y + 67, 0x8010161D.toInt())
-            graphics.renderOutline(x + cardW / 2, y + 6, cardW / 2 - 7, 61, 0xFF343D47.toInt())
-
             val previewLeft = x + cardW / 2
             val previewRight = x + cardW - 7
-            val previewTop = y + 6
-            val previewBottom = y + 67
+            val previewTop = y + 7
+            val previewBottom = y + 76
+            graphics.fill(previewLeft, previewTop, previewRight, previewBottom, 0x8010161D.toInt())
+            graphics.renderOutline(previewLeft, previewTop, previewRight - previewLeft, previewBottom - previewTop, 0xFF343D47.toInt())
             renderPokemonPreview(
                 graphics,
                 entry,
                 (previewLeft + previewRight) / 2,
-                (previewTop + previewBottom) / 2 + 7,
+                previewBottom - 11,
                 partialTick
             )
             val species = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
@@ -247,7 +246,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 badgeY += 12
             }
 
-            val footerTop = y + cardH - 55
+            val footerTop = y + cardH - 59
             graphics.fill(x + 1, footerTop, x + cardW - 1, y + cardH - 1, 0xC010141A.toInt())
             val priceLabel = "Precio: " + entry.price
             graphics.drawString(font, Component.literal(priceLabel), x + 8, footerTop + 7, 0xFFF7E4A6.toInt())
@@ -257,7 +256,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             graphics.drawString(font, Component.literal(seller), x + 8, footerTop + 22, 0xFFB7C0C9.toInt())
             val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
             val time = if (seconds >= 3600) "Expira " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira " + (seconds / 60) + "m"
-            graphics.drawString(font, Component.literal(time), x + cardW - 8 - font.width(time), footerTop + 33, 0xFF7F8A96.toInt())
+            graphics.drawString(font, Component.literal(time), x + 8, footerTop + 34, 0xFF7F8A96.toInt())
         }
         actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, MarketLayout.calculate(width, height).footerY - 16, 0xCCCCCC) }
         if (response.entries.isEmpty()) {
@@ -310,7 +309,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 Quaternionf().rotationXYZ(0.08f, 0.45f, 0f),
                 state = pose,
                 partialTicks = partialTick,
-                scale = 21f
+                scale = 18f
             )
         } finally {
             graphics.pose().popPose()
