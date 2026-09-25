@@ -12,6 +12,7 @@ on:
     branches:
       - main
       - dev/reconstruction
+      - 'rewrite/**'
   workflow_dispatch:
 
 permissions:
@@ -43,10 +44,21 @@ jobs:
         if: failure()
         run: find build/test-results/test -name '*.xml' -type f -exec cat {} +
 
-      - name: Upload JARs
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: zian-gts-failure-diagnostics-${{ github.run_number }}
+          path: |
+            build/test-results/**
+            build/reports/tests/**
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload Beta 1 JARs
         if: success()
         uses: actions/upload-artifact@v6
         with:
-          name: zian-gts-dev
+          name: zian-gts-1.0.0-beta.1
           path: build/libs/*.jar
           if-no-files-found: error
