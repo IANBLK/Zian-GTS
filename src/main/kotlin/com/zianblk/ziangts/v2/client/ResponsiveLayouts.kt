@@ -30,13 +30,13 @@ internal data class MarketLayout(
             // the logical canvas, so a conservative component size is more stable than
             // continuously stretching cards to fill whatever space happens to exist.
             val columns = when {
-                available >= 480 -> 3
-                available >= 315 -> 2
+                available >= 545 -> 3
+                available >= 355 -> 2
                 else -> 1
             }
-            val desiredCardWidth = 142
+            val desiredCardWidth = 170
             val cardWidth = minOf(desiredCardWidth, (available - gap * (columns - 1)) / columns).coerceAtLeast(132)
-            val cardHeight = minOf(112, usableHeight)
+            val cardHeight = minOf(136, usableHeight)
             val gridWidth = cardWidth * columns + gap * (columns - 1)
             val left = (width - gridWidth) / 2
             val top = if (height < 330) 70 else 78
@@ -73,13 +73,13 @@ internal data class DetailsLayout(
             val marginY = 10
             // Deliberately conservative fixed targets. Only shrink when the logical canvas
             // cannot fit them. This keeps details visually consistent across x1/x2/x3/Auto.
-            val targetWidth = 350
-            val targetHeight = 203
+            val targetWidth = 430
+            val targetHeight = 245
             val panelWidth = minOf(targetWidth, screenWidth - marginX * 2).coerceAtLeast(250)
-            val panelHeight = minOf(targetHeight, screenHeight - marginY * 2).coerceAtLeast(190)
+            val panelHeight = minOf(targetHeight, screenHeight - marginY * 2).coerceAtLeast(215)
             val left = (screenWidth - panelWidth) / 2
             val top = (screenHeight - panelHeight) / 2
-            val compact = panelWidth < 335 || panelHeight < 195
+            val compact = panelWidth < 390 || panelHeight < 225
             return DetailsLayout(
                 left = left,
                 top = top,
