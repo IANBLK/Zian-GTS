@@ -30,8 +30,7 @@ class PokemonDetailsScreen(
         val layout = DetailsLayout.calculate(width, height)
         addRenderableWidget(
             Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
-                .bounds(width / 2 - 45, layout.buttonY, 90, 20)
-                .build()
+                .bounds(layout.left + 12, layout.buttonY, 92, 20).build()
         )
     }
 
@@ -54,80 +53,99 @@ class PokemonDetailsScreen(
     }
 
     private fun renderWideDetails(graphics: GuiGraphics, layout: DetailsLayout, speciesName: String) {
-        val textX = layout.contentLeft
-        val columnW = (layout.width * 0.48).toInt()
-        var y = layout.contentTop
-        fun line(label: String, value: String, color: Int = 0xFFE2E8F0.toInt()) {
-            graphics.drawString(font, Component.literal("${label}: ${value}"), textX, y, color, false)
-            y += 14
+        val pad = 12
+        val top = layout.top + 32
+        val previewW = (layout.width * 0.28).toInt().coerceIn(118, 170)
+        val radarW = (layout.width * 0.25).toInt().coerceIn(112, 150)
+        val previewX = layout.left + pad
+        val infoX = previewX + previewW + 10
+        val radarX = layout.left + layout.width - pad - radarW
+        val infoW = (radarX - infoX - 8).coerceAtLeast(130)
+        val topH = (layout.height * 0.50).toInt().coerceIn(126, 170)
+        drawPanel(graphics, previewX, top, previewW, topH)
+        drawPanel(graphics, infoX, top, infoW, topH)
+        drawPanel(graphics, radarX, top, radarW, topH)
+
+        var y = top + 10
+        graphics.drawString(font, Component.literal(speciesName), infoX + 8, y, 0xFFF4D481.toInt(), false); y += 13
+        graphics.drawString(font, Component.literal("Nv. " + entry.level), infoX + 8, y, 0xFFB8C0C8.toInt(), false); y += 14
+        drawTraitRow(graphics, infoX + 8, y, infoW - 16); y += 15
+        componentLine(graphics, "Naturaleza", localizedNature(entry.nature), infoX + 8, y); y += 12
+        componentLine(graphics, "Habilidad", localizedAbility(entry.ability), infoX + 8, y); y += 12
+        graphics.drawString(font, Component.literal("Género: " + localizedGender(entry.gender)), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 12
+        graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 12
+        graphics.drawString(font, Component.literal(expiryLabel()), infoX + 8, y, 0xFFF4D481.toInt(), false)
+
+        drawIvRadar(graphics, radarX + radarW / 2, top + topH / 2 + 8, minOf(38, radarW / 3), entry.ivs)
+
+        val movesY = top + topH + 7
+        val movesH = (layout.buttonY - 10 - movesY).coerceAtLeast(42)
+        val movesX = layout.left + pad
+        val movesW = layout.width - pad * 2
+        drawPanel(graphics, movesX, movesY, movesW, movesH)
+        graphics.drawString(font, Component.literal("Movimientos"), movesX + 8, movesY + 5, 0xFFF4D481.toInt(), false)
+        val moves = entry.moves.take(4)
+        val cellW = (movesW - 24) / 2
+        moves.forEachIndexed { index, move ->
+            val mx = movesX + 8 + (index % 2) * (cellW + 8)
+            val my = movesY + 18 + (index / 2) * 15
+            graphics.fill(mx, my, mx + cellW, my + 13, 0x80212931.toInt())
+            graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), mx + 4, my + 2, 0xFFE2E8F0.toInt(), false)
         }
-        line("Pokémon", speciesName, 0xFFF4D481.toInt())
-        line("Nivel", entry.level.toString())
-        val traits = listOfNotNull(if (entry.shiny) "Shiny" else null, if (entry.alpha) "Alpha" else null, if (entry.legendary) "Legendario" else null)
-            .ifEmpty { listOf("Normal") }.joinToString(" · ")
-        line("Rasgos", traits, if (traits == "Normal") 0xFFB8C0C8.toInt() else 0xFFF4D481.toInt())
-        line("Género", localizedGender(entry.gender))
-        componentLine(graphics, "Naturaleza", localizedNature(entry.nature), textX, y).also { y += 14 }
-        componentLine(graphics, "Habilidad", localizedAbility(entry.ability), textX, y).also { y += 14 }
-        line("Vendedor", entry.sellerName)
-        line("Precio", "${entry.price} ${currencyDisplayName(entry.currency)}")
-        y += 3
-        graphics.drawString(font, Component.literal("IVs"), textX, y, 0xFFF4D481.toInt(), false)
-        y += 13
-        val ivLabels = listOf("PS", "At.", "Def.", "At.E", "Def.E", "Vel.")
-        entry.ivs.zip(ivLabels).chunked(3).forEach { row ->
-            graphics.drawString(font, Component.literal(row.joinToString("   ") { (v, l) -> "${l} ${v}" }), textX, y, 0xFFE2E8F0.toInt(), false)
-            y += 12
-        }
-        y += 2
-        graphics.drawString(font, Component.literal("Movimientos"), textX, y, 0xFFF4D481.toInt(), false)
-        y += 13
-        val moves = if (entry.moves.isEmpty()) listOf(Component.literal("Sin movimientos")) else entry.moves.take(4).map(::localizedMove)
-        moves.forEach { move ->
-            val rendered = Component.literal("• ").append(move)
-            val fitted = font.split(rendered, columnW).firstOrNull() ?: rendered.visualOrderText
-            graphics.drawString(font, fitted, textX, y, 0xFFE2E8F0.toInt(), false)
-            y += 11
-        }
-        drawIvRadar(graphics, layout.rightCenterX, layout.radarY, 40, entry.ivs)
+        if (moves.isEmpty()) graphics.drawString(font, Component.literal("Sin movimientos"), movesX + 8, movesY + 20, 0xFFA1A6AB.toInt(), false)
+        renderFooterPrice(graphics, layout)
     }
 
     private fun renderCompactDetails(graphics: GuiGraphics, layout: DetailsLayout, speciesName: String) {
         val x = layout.contentLeft
         var y = layout.contentTop
-        val safeW = (layout.width - 32).coerceAtLeast(120)
-        graphics.drawString(font, Component.literal("${speciesName} · Nv. ${entry.level}"), x, y, 0xFFF4D481.toInt(), false)
-        y += 14
-        val traits = listOfNotNull(if (entry.shiny) "Shiny" else null, if (entry.alpha) "Alpha" else null, if (entry.legendary) "Legendario" else null).joinToString(" · ")
-        if (traits.isNotEmpty()) {
-            graphics.drawString(font, Component.literal(traits), x, y, 0xFFF4D481.toInt(), false)
-            y += 13
-        }
-        graphics.drawString(font, Component.literal("Género: ${localizedGender(entry.gender)}"), x, y, 0xFFE2E8F0.toInt(), false); y += 13
+        graphics.drawString(font, Component.literal(speciesName + " · Nv. " + entry.level), x, y, 0xFFF4D481.toInt(), false); y += 14
+        graphics.drawString(font, Component.literal("Género: " + localizedGender(entry.gender)), x, y, 0xFFE2E8F0.toInt(), false); y += 13
         componentLine(graphics, "Naturaleza", localizedNature(entry.nature), x, y); y += 13
         componentLine(graphics, "Habilidad", localizedAbility(entry.ability), x, y); y += 13
-        graphics.drawString(font, Component.literal("Precio: ${entry.price} ${currencyDisplayName(entry.currency)}"), x, y, 0xFFE2E8F0.toInt(), false); y += 16
-        val ivLabels = listOf("PS", "At", "Def", "AtE", "DfE", "Vel")
-        val ivText = entry.ivs.zip(ivLabels).joinToString("  ") { (v, l) -> "${l}:${v}" }
-        font.split(Component.literal(ivText), safeW).firstOrNull()?.let { graphics.drawString(font, it, x, y, 0xFFF4D481.toInt(), false) }
-        y += 15
+        graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), x, y, 0xFFE2E8F0.toInt(), false); y += 13
+        graphics.drawString(font, Component.literal(expiryLabel()), x, y, 0xFFF4D481.toInt(), false); y += 16
         graphics.drawString(font, Component.literal("Movimientos"), x, y, 0xFFF4D481.toInt(), false); y += 12
-        if (entry.moves.isEmpty()) {
-            graphics.drawString(font, Component.literal("Sin movimientos"), x, y, 0xFFA1A6AB.toInt(), false)
-        } else {
-            entry.moves.take(2).forEach { move ->
-                font.split(Component.literal("• ").append(localizedMove(move)), safeW).firstOrNull()?.let {
-                    graphics.drawString(font, it, x, y, 0xFFE2E8F0.toInt(), false)
-                }
-                y += 11
+        entry.moves.take(2).forEach { move ->
+            graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), x, y, 0xFFE2E8F0.toInt(), false); y += 11
+        }
+        renderFooterPrice(graphics, layout)
+    }
+
+    private fun drawPanel(graphics: GuiGraphics, x: Int, y: Int, w: Int, h: Int) {
+        graphics.fill(x, y, x + w, y + h, 0xB00D151D.toInt())
+        graphics.renderOutline(x, y, w, h, 0xFF334554.toInt())
+    }
+
+    private fun drawTraitRow(graphics: GuiGraphics, x: Int, y: Int, maxW: Int) {
+        val labels = listOf(if (entry.shiny) "SHINY" else "No Shiny", if (entry.alpha) "ALPHA" else "No Alpha", if (entry.legendary) "LEGENDARIO" else "No Legendario")
+        var bx = x
+        labels.forEach { label ->
+            val w = (font.width(label) + 6).coerceAtMost(70)
+            if (bx + w <= x + maxW) {
+                graphics.fill(bx, y, bx + w, y + 11, if (label.startsWith("No ")) 0xA0202A34.toInt() else 0xC02D7D46.toInt())
+                graphics.drawString(font, Component.literal(label), bx + 3, y + 2, 0xFFF4F7FA.toInt(), false)
+                bx += w + 4
             }
-            if (entry.moves.size > 2) graphics.drawString(font, Component.literal("+${entry.moves.size - 2} más"), x, y, 0xFFA1A6AB.toInt(), false)
         }
     }
 
+    private fun renderFooterPrice(graphics: GuiGraphics, layout: DetailsLayout) {
+        val x = layout.left + 116
+        val w = (layout.width - 128).coerceAtLeast(90)
+        graphics.fill(x, layout.buttonY, x + w, layout.buttonY + 20, 0xB00D151D.toInt())
+        graphics.renderOutline(x, layout.buttonY, w, 20, 0xFFF0C75E.toInt())
+        graphics.drawString(font, Component.literal("Precio: " + entry.price + " " + currencyDisplayName(entry.currency)), x + 8, layout.buttonY + 6, 0xFFF4D481.toInt(), false)
+    }
+
+    private fun expiryLabel(): String {
+        val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
+        return if (seconds >= 3600) "Expira en: " + seconds / 3600 + "h " + (seconds % 3600) / 60 + "m" else "Expira en: " + seconds / 60 + "m"
+    }
+
     private fun renderPokemonModel(graphics: GuiGraphics, layout: DetailsLayout, partialTick: Float) {
-        val modelScale = if (layout.compact) 34f else 55.2f
-        val modelX = if (layout.compact) layout.left + layout.width - 55 else layout.rightCenterX
+        val modelScale = if (layout.compact) 34f else 52f
+        val modelX = if (layout.compact) layout.left + layout.width - 55 else layout.left + 12 + (layout.width * 0.28).toInt().coerceIn(118, 170) / 2
         val stack = graphics.pose()
         stack.pushPose()
         try {
