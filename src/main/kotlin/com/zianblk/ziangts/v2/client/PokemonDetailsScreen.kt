@@ -61,19 +61,19 @@ class PokemonDetailsScreen(
         val infoX = previewX + previewW + 10
         val radarX = layout.left + layout.width - pad - radarW
         val infoW = (radarX - infoX - 8).coerceAtLeast(130)
-        val topH = (layout.height * 0.54).toInt().coerceIn(118, 136)
+        val topH = (layout.height * 0.56).toInt().coerceIn(122, 140)
         drawPanel(graphics, previewX, top, previewW, topH)
         drawPanel(graphics, infoX, top, infoW, topH)
         drawPanel(graphics, radarX, top, radarW, topH)
 
         var y = top + 10
-        graphics.drawString(font, Component.literal(speciesName), infoX + 8, y, 0xFFF4D481.toInt(), false); y += 13
-        graphics.drawString(font, Component.literal("Nv. " + entry.level), infoX + 8, y, 0xFFB8C0C8.toInt(), false); y += 14
-        drawTraitRow(graphics, infoX + 8, y, infoW - 16); y += 33
-        componentLine(graphics, "Naturaleza", localizedNature(entry.nature), infoX + 8, y); y += 12
-        componentLine(graphics, "Habilidad", localizedAbility(entry.ability), infoX + 8, y); y += 12
-        graphics.drawString(font, Component.literal("Género: " + localizedGender(entry.gender)), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 12
-        graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 12
+        graphics.drawString(font, Component.literal(speciesName), infoX + 8, y, 0xFFF4D481.toInt(), false); y += 12
+        graphics.drawString(font, Component.literal("Nv. " + entry.level), infoX + 8, y, 0xFFB8C0C8.toInt(), false); y += 12
+        drawTraitRow(graphics, infoX + 8, y, infoW - 16); y += 32
+        componentLine(graphics, "Naturaleza", localizedNature(entry.nature), infoX + 8, y); y += 11
+        componentLine(graphics, "Habilidad", localizedAbility(entry.ability), infoX + 8, y); y += 11
+        graphics.drawString(font, Component.literal("Género: " + localizedGender(entry.gender)), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
+        graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
         graphics.drawString(font, Component.literal(expiryLabel()), infoX + 8, minOf(y, top + topH - 13), 0xFFF4D481.toInt(), false)
 
         drawIvRadar(graphics, radarX + radarW / 2, top + topH / 2 + 7, minOf(25, radarW / 3), entry.ivs)
@@ -89,7 +89,8 @@ class PokemonDetailsScreen(
         moves.forEachIndexed { index, move ->
             val mx = movesX + 8 + (index % 2) * (cellW + 8)
             val my = movesY + 18 + (index / 2) * 15
-            graphics.fill(mx, my, mx + cellW, my + 13, 0x80212931.toInt())
+            graphics.fill(mx, my, mx + cellW, my + 13, 0xA0212931.toInt())
+            graphics.renderOutline(mx, my, cellW, 13, 0xFF3F5261.toInt())
             graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), mx + 4, my + 2, 0xFFE2E8F0.toInt(), false)
         }
         if (moves.isEmpty()) graphics.drawString(font, Component.literal("Sin movimientos"), movesX + 8, movesY + 20, 0xFFA1A6AB.toInt(), false)
@@ -114,7 +115,7 @@ class PokemonDetailsScreen(
 
     private fun drawPanel(graphics: GuiGraphics, x: Int, y: Int, w: Int, h: Int) {
         graphics.fill(x, y, x + w, y + h, 0xB00D151D.toInt())
-        graphics.renderOutline(x, y, w, h, 0xFF334554.toInt())
+        graphics.renderOutline(x, y, w, h, 0xFF526575.toInt())
     }
 
     private fun drawTraitRow(graphics: GuiGraphics, x: Int, y: Int, maxW: Int) {
@@ -135,7 +136,7 @@ class PokemonDetailsScreen(
         val x = layout.left + 116
         val w = (layout.width - 128).coerceAtLeast(90)
         graphics.fill(x, layout.buttonY, x + w, layout.buttonY + 20, 0xB00D151D.toInt())
-        graphics.renderOutline(x, layout.buttonY, w, 20, 0xFFF0C75E.toInt())
+        graphics.renderOutline(x, layout.buttonY, w, 20, 0xFFF4D481.toInt())
         graphics.drawString(font, Component.literal("Precio: " + entry.price + " " + currencyDisplayName(entry.currency)), x + 8, layout.buttonY + 6, 0xFFF4D481.toInt(), false)
     }
 
