@@ -146,7 +146,12 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                             actionButtons.forEach { it.active = false }
                             V2MarketClient.requestAction(entry.offerId, action)
                         }
-                    }.bounds(x + 8, y + cardH - 23, cardW - 16, 17).build()
+                    }.bounds(
+                        if (entry.canWithdraw) x + cardW - 70 else x + 8,
+                        y + cardH - 23,
+                        if (entry.canWithdraw) 62 else cardW - 16,
+                        17
+                    ).build()
                 )
                 actionButton.active = !actionPending
                 actionButtons += actionButton
@@ -217,7 +222,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             graphics.fill(x + cardW / 2, y + 6, x + cardW - 7, y + 67, 0x8010161D.toInt())
             graphics.renderOutline(x + cardW / 2, y + 6, cardW / 2 - 7, 61, 0xFF343D47.toInt())
 
-            renderPokemonPreview(graphics, entry, x + (cardW * 3) / 4, y + 39, partialTick)
+            renderPokemonPreview(graphics, entry, x + (cardW * 3) / 4, y + 37, partialTick)
             val species = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
             graphics.drawString(font, Component.literal(species), x + 8, y + 10, 0xFFF4F7FA.toInt())
             graphics.drawString(font, Component.literal("Nv. " + entry.level), x + 8, y + 23, 0xFF9FAAB5.toInt())
@@ -234,10 +239,11 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
 
             val footerTop = y + cardH - 52
             graphics.fill(x + 1, footerTop, x + cardW - 1, y + cardH - 1, 0xC010141A.toInt())
-            val priceLabel = entry.price.toString()
+            val priceLabel = "Precio: " + entry.price
             graphics.drawString(font, Component.literal(priceLabel), x + 8, footerTop + 7, 0xFFF7E4A6.toInt())
             renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), footerTop + 3, mouseX, mouseY)
-            val seller = fitText("Vendedor: " + entry.sellerName, cardW - 16)
+            val sellerWidth = if (entry.canWithdraw) cardW - 86 else cardW - 16
+            val seller = fitText("Vendedor: " + entry.sellerName, sellerWidth)
             graphics.drawString(font, Component.literal(seller), x + 8, footerTop + 24, 0xFFB7C0C9.toInt())
             val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
             val time = if (seconds >= 3600) "Expira " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira " + (seconds / 60) + "m"
@@ -294,7 +300,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 Quaternionf().rotationXYZ(0.08f, 0.45f, 0f),
                 state = pose,
                 partialTicks = partialTick,
-                scale = 22f
+                scale = 25f
             )
         } finally {
             graphics.pose().popPose()
