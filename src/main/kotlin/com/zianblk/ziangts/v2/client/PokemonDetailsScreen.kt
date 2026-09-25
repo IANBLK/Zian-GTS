@@ -118,13 +118,18 @@ class PokemonDetailsScreen(
     }
 
     private fun drawTraitRow(graphics: GuiGraphics, x: Int, y: Int, maxW: Int) {
-        val labels = listOf(if (entry.shiny) "SHINY" else "No Shiny", if (entry.alpha) "ALPHA" else "No Alpha", if (entry.legendary) "LEGENDARIO" else "No Legendario")
+        val labels = listOf(
+            "Shiny: " + if (entry.shiny) "Sí" else "No",
+            "Alpha: " + if (entry.alpha) "Sí" else "No",
+            "Legendario: " + if (entry.legendary) "Sí" else "No"
+        )
         var bx = x
         labels.forEach { label ->
-            val w = (font.width(label) + 6).coerceAtMost(70)
+            val enabled = label.endsWith("Sí")
+            val w = (font.width(label) + 8).coerceAtMost(86)
             if (bx + w <= x + maxW) {
-                graphics.fill(bx, y, bx + w, y + 11, if (label.startsWith("No ")) 0xA0202A34.toInt() else 0xC02D7D46.toInt())
-                graphics.drawString(font, Component.literal(label), bx + 3, y + 2, 0xFFF4F7FA.toInt(), false)
+                graphics.fill(bx, y, bx + w, y + 11, if (enabled) 0xC02D7D46.toInt() else 0xA0202A34.toInt())
+                graphics.drawString(font, Component.literal(label), bx + 4, y + 2, if (enabled) 0xFFF4F7FA.toInt() else 0xFFB8C0C8.toInt(), false)
                 bx += w + 4
             }
         }
