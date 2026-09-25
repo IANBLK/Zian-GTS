@@ -147,10 +147,10 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                             V2MarketClient.requestAction(entry.offerId, action)
                         }
                     }.bounds(
-                        if (entry.canWithdraw) x + cardW - 70 else x + 8,
-                        y + cardH - 23,
-                        if (entry.canWithdraw) 62 else cardW - 16,
-                        17
+                        if (entry.canWithdraw) x + cardW - 76 else x + 8,
+                        y + cardH - 24,
+                        if (entry.canWithdraw) 68 else cardW - 16,
+                        18
                     ).build()
                 )
                 actionButton.active = !actionPending
