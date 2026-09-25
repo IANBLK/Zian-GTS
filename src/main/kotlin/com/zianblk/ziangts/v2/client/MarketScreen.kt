@@ -147,10 +147,10 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                             V2MarketClient.requestAction(entry.offerId, action)
                         }
                     }.bounds(
-                        if (entry.canWithdraw) x + cardW - 76 else x + 8,
-                        y + cardH - 24,
-                        if (entry.canWithdraw) 68 else cardW - 16,
-                        18
+                        x + 8,
+                        y + cardH - 22,
+                        cardW - 16,
+                        16
                     ).build()
                 )
                 actionButton.active = !actionPending
@@ -247,17 +247,17 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 badgeY += 12
             }
 
-            val footerTop = y + cardH - 52
+            val footerTop = y + cardH - 55
             graphics.fill(x + 1, footerTop, x + cardW - 1, y + cardH - 1, 0xC010141A.toInt())
             val priceLabel = "Precio: " + entry.price
             graphics.drawString(font, Component.literal(priceLabel), x + 8, footerTop + 7, 0xFFF7E4A6.toInt())
             renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), footerTop + 3, mouseX, mouseY)
-            val sellerWidth = if (entry.canWithdraw) cardW - 86 else cardW - 16
+            val sellerWidth = cardW - 16
             val seller = fitText("Vendedor: " + entry.sellerName, sellerWidth)
-            graphics.drawString(font, Component.literal(seller), x + 8, footerTop + 24, 0xFFB7C0C9.toInt())
+            graphics.drawString(font, Component.literal(seller), x + 8, footerTop + 22, 0xFFB7C0C9.toInt())
             val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
             val time = if (seconds >= 3600) "Expira " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira " + (seconds / 60) + "m"
-            graphics.drawString(font, Component.literal(time), x + cardW - 8 - font.width(time), footerTop + 24, 0xFF7F8A96.toInt())
+            graphics.drawString(font, Component.literal(time), x + cardW - 8 - font.width(time), footerTop + 33, 0xFF7F8A96.toInt())
         }
         actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, MarketLayout.calculate(width, height).footerY - 16, 0xCCCCCC) }
         if (response.entries.isEmpty()) {
@@ -310,7 +310,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 Quaternionf().rotationXYZ(0.08f, 0.45f, 0f),
                 state = pose,
                 partialTicks = partialTick,
-                scale = 25f
+                scale = 21f
             )
         } finally {
             graphics.pose().popPose()
