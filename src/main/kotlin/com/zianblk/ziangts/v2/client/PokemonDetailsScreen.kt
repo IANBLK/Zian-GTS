@@ -30,7 +30,7 @@ class PokemonDetailsScreen(
         val layout = DetailsLayout.calculate(width, height)
         addRenderableWidget(
             Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
-                .bounds(layout.left + 18, layout.buttonY - 4, 80, 18).build()
+                .bounds(layout.left + 18, layout.buttonY - 24, 80, 18).build()
         )
     }
 
@@ -82,7 +82,7 @@ class PokemonDetailsScreen(
         val bottomH = (layout.top + layout.height - 8 - bottomY).coerceAtLeast(48)
         val controlsX = layout.left + pad
         val controlsW = 104
-        val movesX = controlsX + controlsW + 8
+        val movesX = controlsX + controlsW + 12
         val movesW = layout.left + layout.width - pad - movesX
         drawPanel(graphics, movesX, bottomY, movesW, bottomH)
         graphics.drawString(font, Component.literal("Movimientos"), movesX + 8, bottomY + 5, 0xFFF4D481.toInt(), false)
