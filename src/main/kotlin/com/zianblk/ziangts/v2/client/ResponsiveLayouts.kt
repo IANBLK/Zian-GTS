@@ -21,23 +21,25 @@ internal data class MarketLayout(
 
     companion object {
         fun calculate(width: Int, height: Int): MarketLayout {
-            val margin = if (width < 520) 12 else 28
+            val margin = if (width < 520) 10 else 20
             val gap = if (width < 520) 6 else 8
             val available = (width - margin * 2).coerceAtLeast(138)
+            val usableHeight = (height - 118).coerceAtLeast(118)
 
-            // GUI scale 3/Auto commonly yields a logical width below ~600 px.
-            // Drop columns instead of squeezing three desktop cards until text overlaps.
+            // Prefer a denser grid as logical resolution grows. This prevents the x1/x2
+            // screenshots from showing two huge cards floating in an otherwise empty screen.
             val columns = when {
-                available >= 520 -> 3
+                available >= 690 -> 3
                 available >= 330 -> 2
                 else -> 1
             }
             val cardWidth = ((available - gap * (columns - 1)) / columns)
-                .coerceIn(138, 176)
-            val cardHeight = if (height < 330) 118 else 126
+                .coerceIn(142, 196)
+            val rows = if (usableHeight >= 250) 2 else 1
+            val cardHeight = if (rows == 2) minOf(132, (usableHeight - gap) / 2) else minOf(132, usableHeight)
             val gridWidth = cardWidth * columns + gap * (columns - 1)
             val left = (width - gridWidth) / 2
-            val top = if (height < 330) 72 else 80
+            val top = if (height < 330) 70 else 78
             return MarketLayout(
                 columns = columns,
                 cardWidth = cardWidth,
@@ -67,13 +69,17 @@ internal data class DetailsLayout(
 ) {
     companion object {
         fun calculate(screenWidth: Int, screenHeight: Int): DetailsLayout {
-            val marginX = if (screenWidth < 500) 8 else 15
-            val marginY = if (screenHeight < 360) 8 else 20
-            val panelWidth = minOf(560, screenWidth - marginX * 2).coerceAtLeast(250)
-            val panelHeight = minOf(350, screenHeight - marginY * 2).coerceAtLeast(230)
+            val marginX = if (screenWidth < 500) 8 else maxOf(18, screenWidth / 12)
+            val marginY = if (screenHeight < 360) 8 else maxOf(16, screenHeight / 14)
+            // Cap both dimensions proportionally. The previous fixed 560x350 panel became
+            // almost full-screen at one scale and a tiny island at another.
+            val targetWidth = (screenWidth * 0.82).toInt().coerceIn(300, 680)
+            val targetHeight = (screenHeight * 0.78).toInt().coerceIn(245, 390)
+            val panelWidth = minOf(targetWidth, screenWidth - marginX * 2).coerceAtLeast(250)
+            val panelHeight = minOf(targetHeight, screenHeight - marginY * 2).coerceAtLeast(230)
             val left = (screenWidth - panelWidth) / 2
             val top = (screenHeight - panelHeight) / 2
-            val compact = panelWidth < 470 || panelHeight < 300
+            val compact = panelWidth < 500 || panelHeight < 315
             return DetailsLayout(
                 left = left,
                 top = top,
