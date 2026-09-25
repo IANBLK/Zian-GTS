@@ -32,7 +32,7 @@ side = "BOTH"
 
 [[dependencies.ziangts]]
 modId = "avecoins"
-mandatory = true
+type = "optional"
 versionRange = "[2.3,2.4)"
 ordering = "AFTER"
 side = "BOTH"
