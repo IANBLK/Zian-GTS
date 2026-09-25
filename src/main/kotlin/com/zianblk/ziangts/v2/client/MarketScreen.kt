@@ -40,36 +40,36 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
 
     override fun init() {
         super.init()
-        // Action feedback belongs to this screen session only. A newly opened
-        // market must not replay the previous buy/withdraw result.
         observedActionRevision = V2MarketClientState.actionRevision()
         actionMessage = null
         actionPending = false
+
+        val compact = width < 600
+        val row1Y = 18
+        val row2Y = if (compact) 41 else 41
+        val primaryW = if (compact) 86 else 100
+        val smallW = if (compact) 68 else 75
+        val primaryGap = 5
+        val row1Total = primaryW * 2 + smallW + primaryGap * 2
+        val row1X = (width - row1Total) / 2
+
         addRenderableWidget(
-            Button.builder(Component.literal("Mercado")) {
-                switchTab(MarketTab.MARKET)
-            }.bounds(width / 2 - 105, 18, 100, 20).build()
+            Button.builder(Component.literal("Mercado")) { switchTab(MarketTab.MARKET) }
+                .bounds(row1X, row1Y, primaryW, 20).build()
         )
         addRenderableWidget(
-            Button.builder(Component.literal("Mis anuncios")) {
-                switchTab(MarketTab.MY_OFFERS)
-            }.bounds(width / 2 + 5, 18, 100, 20).build()
+            Button.builder(Component.literal("Mis anuncios")) { switchTab(MarketTab.MY_OFFERS) }
+                .bounds(row1X + primaryW + primaryGap, row1Y, primaryW, 20).build()
         )
         addRenderableWidget(
-            Button.builder(Component.literal("Publicar")) {
-                minecraft?.setScreen(PublishOfferScreen(this))
-            }.bounds(width / 2 + 115, 18, 75, 20).build()
+            Button.builder(Component.literal("Publicar")) { minecraft?.setScreen(PublishOfferScreen(this)) }
+                .bounds(row1X + primaryW * 2 + primaryGap * 2, row1Y, smallW, 20).build()
         )
-        addRenderableWidget(
-            Button.builder(Component.literal("Ganancias")) {
-                minecraft?.setScreen(ProceedsScreen(this))
-            }.bounds(width / 2 + 115, 41, 75, 18).build()
-        )
-        addRenderableWidget(
-            Button.builder(Component.literal("Historial")) {
-                minecraft?.setScreen(HistoryScreen(this))
-            }.bounds(width / 2 + 200, 41, 75, 18).build()
-        )
+
+        val secondWidths = if (compact) listOf(78, 78, 68, 68) else listOf(100, 100, 75, 75)
+        val secondGap = 5
+        val secondTotal = secondWidths.sum() + secondGap * 3
+        var secondX = (width - secondTotal) / 2
         filterButton = addRenderableWidget(
             Button.builder(Component.literal(filterLabel())) {
                 if (state.tab == MarketTab.MARKET) {
@@ -77,16 +77,29 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                     refreshControls()
                     requestCurrent()
                 }
-            }.bounds(width / 2 - 105, 41, 100, 18).build()
+            }.bounds(secondX, row2Y, secondWidths[0], 18).build()
         )
+        secondX += secondWidths[0] + secondGap
         sortButton = addRenderableWidget(
             Button.builder(Component.literal(sortLabel())) {
                 state = state.copy(sort = nextSort(state.sort), page = 1)
                 refreshControls()
                 requestCurrent()
-            }.bounds(width / 2 + 5, 41, 100, 18).build()
+            }.bounds(secondX, row2Y, secondWidths[1], 18).build()
         )
+        secondX += secondWidths[1] + secondGap
+        addRenderableWidget(
+            Button.builder(Component.literal("Ganancias")) { minecraft?.setScreen(ProceedsScreen(this)) }
+                .bounds(secondX, row2Y, secondWidths[2], 18).build()
+        )
+        secondX += secondWidths[2] + secondGap
+        addRenderableWidget(
+            Button.builder(Component.literal("Historial")) { minecraft?.setScreen(HistoryScreen(this)) }
+                .bounds(secondX, row2Y, secondWidths[3], 18).build()
+        )
+
         refreshControls()
+        val layout = MarketLayout.calculate(width, height)
         previousButton = addRenderableWidget(
             Button.builder(Component.literal("<")) {
                 val next = state.previousPage()
@@ -94,7 +107,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                     state = next
                     requestCurrent()
                 }
-            }.bounds(width / 2 - 65, height - 34, 30, 20).build()
+            }.bounds(width / 2 - 65, layout.footerY, 30, 20).build()
         )
         nextButton = addRenderableWidget(
             Button.builder(Component.literal(">")) {
@@ -103,7 +116,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                     state = next
                     requestCurrent()
                 }
-            }.bounds(width / 2 + 35, height - 34, 30, 20).build()
+            }.bounds(width / 2 + 35, layout.footerY, 30, 20).build()
         )
         updateNavigationButtons()
         requestCurrent()
@@ -113,14 +126,12 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         actionButtons.forEach { removeWidget(it) }
         actionButtons.clear()
         val response = state.response ?: return
-        val gap = 8
-        val cardW = minOf(176, (width - 96 - gap * 2) / 3).coerceAtLeast(138)
-        val cardH = 126
-        val left = width / 2 - (cardW * 3 + gap * 2) / 2
-        val top = 80
+        val layout = MarketLayout.calculate(width, height)
+        val cardW = layout.cardWidth
+        val cardH = layout.cardHeight
         response.entries.take(6).forEachIndexed { index, entry ->
-            val x = left + (index % 3) * (cardW + gap)
-            val y = top + (index / 3) * (cardH + gap)
+            val x = layout.cardX(index)
+            val y = layout.cardY(index)
             val action = when {
                 entry.canWithdraw -> MarketAction.WITHDRAW
                 entry.canBuy -> MarketAction.BUY
@@ -191,14 +202,12 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             0xCCCCCC
         )
 
-        val gap = 8
-        val cardW = minOf(176, (width - 96 - gap * 2) / 3).coerceAtLeast(138)
-        val cardH = 126
-        val left = width / 2 - (cardW * 3 + gap * 2) / 2
-        val top = 80
+        val layout = MarketLayout.calculate(width, height)
+        val cardW = layout.cardWidth
+        val cardH = layout.cardHeight
         response.entries.take(6).forEachIndexed { index, entry ->
-            val x = left + (index % 3) * (cardW + gap)
-            val y = top + (index / 3) * (cardH + gap)
+            val x = layout.cardX(index)
+            val y = layout.cardY(index)
             graphics.fill(x, y, x + cardW, y + cardH, 0xB0202020.toInt())
             graphics.fill(x, y, x + cardW, y + 1, 0xFF777777.toInt())
             renderPokemonPreview(graphics, entry, x + cardW - 36, y + 38, partialTick)
@@ -215,7 +224,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             val time = if (seconds >= 3600) "Expira: " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira: " + (seconds / 60) + "m"
             graphics.drawString(font, Component.literal(time), x + 8, y + 88, 0x999999)
         }
-        actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, height - 52, 0xCCCCCC) }
+        actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, MarketLayout.calculate(width, height).footerY - 16, 0xCCCCCC) }
         if (response.entries.isEmpty()) {
             graphics.drawCenteredString(font, Component.literal("No hay anuncios en esta página"), width / 2, 86, 0xAAAAAA)
         }
@@ -254,14 +263,12 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         if (super.mouseClicked(mouseX, mouseY, button)) return true
         if (button != 0) return false
         val response = state.response ?: return false
-        val gap = 8
-        val cardW = minOf(176, (width - 96 - gap * 2) / 3).coerceAtLeast(138)
-        val cardH = 126
-        val left = width / 2 - (cardW * 3 + gap * 2) / 2
-        val top = 80
+        val layout = MarketLayout.calculate(width, height)
+        val cardW = layout.cardWidth
+        val cardH = layout.cardHeight
         response.entries.take(6).forEachIndexed { index, entry ->
-            val x = left + (index % 3) * (cardW + gap)
-            val y = top + (index / 3) * (cardH + gap)
+            val x = layout.cardX(index)
+            val y = layout.cardY(index)
             if (mouseX >= x && mouseX < x + cardW && mouseY >= y && mouseY < y + cardH - 25) {
                 minecraft?.setScreen(PokemonDetailsScreen(entry, this))
                 return true
