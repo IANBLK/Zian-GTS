@@ -61,7 +61,7 @@ class PokemonDetailsScreen(
         val infoX = previewX + previewW + 10
         val radarX = layout.left + layout.width - pad - radarW
         val infoW = (radarX - infoX - 8).coerceAtLeast(130)
-        val topH = (layout.height * 0.50).toInt().coerceIn(108, 126)
+        val topH = (layout.height * 0.54).toInt().coerceIn(118, 136)
         drawPanel(graphics, previewX, top, previewW, topH)
         drawPanel(graphics, infoX, top, infoW, topH)
         drawPanel(graphics, radarX, top, radarW, topH)
@@ -74,7 +74,7 @@ class PokemonDetailsScreen(
         componentLine(graphics, "Habilidad", localizedAbility(entry.ability), infoX + 8, y); y += 12
         graphics.drawString(font, Component.literal("Género: " + localizedGender(entry.gender)), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 12
         graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 12
-        graphics.drawString(font, Component.literal(expiryLabel()), infoX + 8, y, 0xFFF4D481.toInt(), false)
+        graphics.drawString(font, Component.literal(expiryLabel()), infoX + 8, minOf(y, top + topH - 13), 0xFFF4D481.toInt(), false)
 
         drawIvRadar(graphics, radarX + radarW / 2, top + topH / 2 + 7, minOf(25, radarW / 3), entry.ivs)
 
