@@ -30,7 +30,7 @@ class PokemonDetailsScreen(
         val layout = DetailsLayout.calculate(width, height)
         addRenderableWidget(
             Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
-                .bounds(layout.left + 12, layout.buttonY, 92, 20).build()
+                .bounds(layout.left + 12, layout.buttonY + 18, 92, 16).build()
         )
     }
 
@@ -78,23 +78,27 @@ class PokemonDetailsScreen(
 
         drawIvRadar(graphics, radarX + radarW / 2, top + topH / 2 + 7, minOf(25, radarW / 3), entry.ivs)
 
-        val movesY = top + topH + 7
-        val movesH = (layout.buttonY - 10 - movesY).coerceAtLeast(40)
-        val movesX = layout.left + pad
-        val movesW = layout.width - pad * 2
-        drawPanel(graphics, movesX, movesY, movesW, movesH)
-        graphics.drawString(font, Component.literal("Movimientos"), movesX + 8, movesY + 5, 0xFFF4D481.toInt(), false)
+        val bottomY = top + topH + 7
+        val bottomH = (layout.top + layout.height - 8 - bottomY).coerceAtLeast(48)
+        val controlsX = layout.left + pad
+        val controlsW = 104
+        val movesX = controlsX + controlsW + 8
+        val movesW = layout.left + layout.width - pad - movesX
+        drawPanel(graphics, movesX, bottomY, movesW, bottomH)
+        graphics.drawString(font, Component.literal("Movimientos"), movesX + 8, bottomY + 5, 0xFFF4D481.toInt(), false)
         val moves = entry.moves.take(4)
-        val cellW = (movesW - 24) / 2
+        val cellGap = 8
+        val cellW = (movesW - 24 - cellGap) / 2
+        val cellH = 13
         moves.forEachIndexed { index, move ->
-            val mx = movesX + 8 + (index % 2) * (cellW + 8)
-            val my = movesY + 15 + (index / 2) * 13
-            graphics.fill(mx, my, mx + cellW, my + 11, 0xA0212931.toInt())
-            graphics.renderOutline(mx, my, cellW, 11, 0xFF3F5261.toInt())
+            val mx = movesX + 8 + (index % 2) * (cellW + cellGap)
+            val my = bottomY + 17 + (index / 2) * 16
+            graphics.fill(mx, my, mx + cellW, my + cellH, 0xA0212931.toInt())
+            graphics.renderOutline(mx, my, cellW, cellH, 0xFF526575.toInt())
             graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), mx + 4, my + 2, 0xFFE2E8F0.toInt(), false)
         }
-        if (moves.isEmpty()) graphics.drawString(font, Component.literal("Sin movimientos"), movesX + 8, movesY + 20, 0xFFA1A6AB.toInt(), false)
-        renderFooterPrice(graphics, layout)
+        if (moves.isEmpty()) graphics.drawString(font, Component.literal("Sin movimientos"), movesX + 8, bottomY + 20, 0xFFA1A6AB.toInt(), false)
+        renderFooterPrice(graphics, layout, controlsX, bottomY, controlsW)
     }
 
     private fun renderCompactDetails(graphics: GuiGraphics, layout: DetailsLayout, speciesName: String) {
@@ -132,12 +136,13 @@ class PokemonDetailsScreen(
         }
     }
 
-    private fun renderFooterPrice(graphics: GuiGraphics, layout: DetailsLayout) {
-        val x = layout.left + 116
-        val w = (layout.width - 128).coerceAtLeast(90)
-        graphics.fill(x, layout.buttonY, x + w, layout.buttonY + 20, 0xB00D151D.toInt())
-        graphics.renderOutline(x, layout.buttonY + 1, w, 18, 0xFFF4D481.toInt())
-        graphics.drawString(font, Component.literal("Precio: " + entry.price + " " + currencyDisplayName(entry.currency)), x + 8, layout.buttonY + 6, 0xFFF4D481.toInt(), false)
+    private fun renderFooterPrice(graphics: GuiGraphics, layout: DetailsLayout, x: Int = layout.left + 116, y: Int = layout.buttonY, w: Int = (layout.width - 128).coerceAtLeast(90)) {
+        val h = 16
+        graphics.fill(x, y, x + w, y + h, 0xB00D151D.toInt())
+        graphics.renderOutline(x, y, w, h, 0xFFF4D481.toInt())
+        val label = "Precio: " + entry.price + " " + currencyDisplayName(entry.currency)
+        val visible = font.plainSubstrByWidth(label, (w - 12).coerceAtLeast(20))
+        graphics.drawString(font, Component.literal(visible), x + 6, y + 4, 0xFFF4D481.toInt(), false)
     }
 
     private fun expiryLabel(): String {
