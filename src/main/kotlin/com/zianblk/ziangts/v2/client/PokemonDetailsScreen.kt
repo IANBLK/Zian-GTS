@@ -27,94 +27,119 @@ class PokemonDetailsScreen(
     private val pose = FloatingState()
 
     override fun init() {
+        val layout = DetailsLayout.calculate(width, height)
         addRenderableWidget(
             Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
-                .bounds(width / 2 - 45, height - 34, 90, 20)
+                .bounds(width / 2 - 45, layout.buttonY, 90, 20)
                 .build()
         )
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        // Avoid Screen.renderBackground here: on in-game screens it applies Minecraft's
-        // menu blur, which also softens this custom details surface on some clients.
         graphics.fill(0, 0, width, height, 0xD0101418.toInt())
-        val panelW = minOf(520, width - 30)
-        val panelH = minOf(330, height - 55)
-        val left = (width - panelW) / 2
-        val top = (height - panelH) / 2 - 6
-        graphics.fill(left, top, left + panelW, top + panelH, 0xFF181C20.toInt())
-        graphics.renderOutline(left, top, panelW, panelH, 0xFF666D75.toInt())
-        graphics.drawCenteredString(font, title, width / 2, top + 10, 0xFFFFFF)
+        val layout = DetailsLayout.calculate(width, height)
+        val left = layout.left
+        val top = layout.top
+        graphics.fill(left, top, left + layout.width, top + layout.height, 0xFF181C20.toInt())
+        graphics.renderOutline(left, top, layout.width, layout.height, 0xFF666D75.toInt())
+        graphics.fill(left + 1, top + 1, left + layout.width - 1, top + 3, 0xFFF4D481.toInt())
+        graphics.drawCenteredString(font, title, width / 2, top + 11, 0xFFFFFF)
 
         val speciesName = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
-        val textX = left + 20
-        val columnW = (panelW * 0.50).toInt()
-        var y = top + 42
+        if (layout.compact) renderCompactDetails(graphics, layout, speciesName)
+        else renderWideDetails(graphics, layout, speciesName)
+
+        renderPokemonModel(graphics, layout, partialTick)
+        for (renderable in renderables) renderable.render(graphics, mouseX, mouseY, partialTick)
+    }
+
+    private fun renderWideDetails(graphics: GuiGraphics, layout: DetailsLayout, speciesName: String) {
+        val textX = layout.contentLeft
+        val columnW = (layout.width * 0.48).toInt()
+        var y = layout.contentTop
         fun line(label: String, value: String, color: Int = 0xFFE2E8F0.toInt()) {
-            graphics.drawString(font, Component.literal("$label: $value"), textX, y, color, false)
-            y += 15
+            graphics.drawString(font, Component.literal("${label}: ${value}"), textX, y, color, false)
+            y += 14
         }
         line("Pokémon", speciesName, 0xFFF4D481.toInt())
         line("Nivel", entry.level.toString())
-        line("Shiny", if (entry.shiny) "Sí" else "No")
-        line("Alpha", if (entry.alpha) "Sí" else "No")
-        line("Legendario", if (entry.legendary) "Sí" else "No")
+        val traits = listOfNotNull(if (entry.shiny) "Shiny" else null, if (entry.alpha) "Alpha" else null, if (entry.legendary) "Legendario" else null)
+            .ifEmpty { listOf("Normal") }.joinToString(" · ")
+        line("Rasgos", traits, if (traits == "Normal") 0xFFB8C0C8.toInt() else 0xFFF4D481.toInt())
         line("Género", localizedGender(entry.gender))
-        componentLine(graphics, "Naturaleza", localizedNature(entry.nature), textX, y).also { y += 15 }
-        componentLine(graphics, "Habilidad", localizedAbility(entry.ability), textX, y).also { y += 15 }
+        componentLine(graphics, "Naturaleza", localizedNature(entry.nature), textX, y).also { y += 14 }
+        componentLine(graphics, "Habilidad", localizedAbility(entry.ability), textX, y).also { y += 14 }
         line("Vendedor", entry.sellerName)
         line("Precio", "${entry.price} ${currencyDisplayName(entry.currency)}")
-        y += 5
+        y += 3
         graphics.drawString(font, Component.literal("IVs"), textX, y, 0xFFF4D481.toInt(), false)
-        y += 14
-        val ivLabels = listOf("PS", "At.", "Def.", "At. Esp.", "Def. Esp.", "Vel.")
-        entry.ivs.zip(ivLabels).chunked(2).forEach { row ->
-            val text = row.joinToString("   ") { (value, label) -> "$label: $value" }
-            graphics.drawString(font, Component.literal(text), textX, y, 0xFFE2E8F0.toInt(), false)
+        y += 13
+        val ivLabels = listOf("PS", "At.", "Def.", "At.E", "Def.E", "Vel.")
+        entry.ivs.zip(ivLabels).chunked(3).forEach { row ->
+            graphics.drawString(font, Component.literal(row.joinToString("   ") { (v, l) -> "${l} ${v}" }), textX, y, 0xFFE2E8F0.toInt(), false)
             y += 12
         }
-
-        // Compact Cobblemon-style IV radar. Values are normalized against the legal IV maximum (31).
-        val radarX = left + panelW - 112
-        val radarY = top + 246
-        drawIvRadar(graphics, radarX, radarY, 44, entry.ivs)
-
-        y += 4
+        y += 2
         graphics.drawString(font, Component.literal("Movimientos"), textX, y, 0xFFF4D481.toInt(), false)
-        y += 14
-        if (entry.moves.isEmpty()) {
-            graphics.drawString(font, Component.literal("Sin movimientos"), textX, y, 0xFFA1A6AB.toInt(), false)
-        } else {
-            entry.moves.take(4).forEach { move ->
-                val translated = localizedMove(move)
-                val rendered = Component.literal("• ").append(translated)
-                val fitted = font.split(rendered, columnW).firstOrNull() ?: rendered.visualOrderText
-                graphics.drawString(font, fitted, textX, y, 0xFFE2E8F0.toInt(), false)
-                y += 12
-            }
+        y += 13
+        val moves = if (entry.moves.isEmpty()) listOf(Component.literal("Sin movimientos")) else entry.moves.take(4).map(::localizedMove)
+        moves.forEach { move ->
+            val rendered = Component.literal("• ").append(move)
+            val fitted = font.split(rendered, columnW).firstOrNull() ?: rendered.visualOrderText
+            graphics.drawString(font, fitted, textX, y, 0xFFE2E8F0.toInt(), false)
+            y += 11
         }
+        drawIvRadar(graphics, layout.rightCenterX, layout.radarY, 40, entry.ivs)
+    }
 
+    private fun renderCompactDetails(graphics: GuiGraphics, layout: DetailsLayout, speciesName: String) {
+        val x = layout.contentLeft
+        var y = layout.contentTop
+        val safeW = (layout.width - 32).coerceAtLeast(120)
+        graphics.drawString(font, Component.literal("${speciesName} · Nv. ${entry.level}"), x, y, 0xFFF4D481.toInt(), false)
+        y += 14
+        val traits = listOfNotNull(if (entry.shiny) "Shiny" else null, if (entry.alpha) "Alpha" else null, if (entry.legendary) "Legendario" else null).joinToString(" · ")
+        if (traits.isNotEmpty()) {
+            graphics.drawString(font, Component.literal(traits), x, y, 0xFFF4D481.toInt(), false)
+            y += 13
+        }
+        graphics.drawString(font, Component.literal("Género: ${localizedGender(entry.gender)}"), x, y, 0xFFE2E8F0.toInt(), false); y += 13
+        componentLine(graphics, "Naturaleza", localizedNature(entry.nature), x, y); y += 13
+        componentLine(graphics, "Habilidad", localizedAbility(entry.ability), x, y); y += 13
+        graphics.drawString(font, Component.literal("Precio: ${entry.price} ${currencyDisplayName(entry.currency)}"), x, y, 0xFFE2E8F0.toInt(), false); y += 16
+        val ivLabels = listOf("PS", "At", "Def", "AtE", "DfE", "Vel")
+        val ivText = entry.ivs.zip(ivLabels).joinToString("  ") { (v, l) -> "${l}:${v}" }
+        font.split(Component.literal(ivText), safeW).firstOrNull()?.let { graphics.drawString(font, it, x, y, 0xFFF4D481.toInt(), false) }
+        y += 15
+        graphics.drawString(font, Component.literal("Movimientos"), x, y, 0xFFF4D481.toInt(), false); y += 12
+        if (entry.moves.isEmpty()) {
+            graphics.drawString(font, Component.literal("Sin movimientos"), x, y, 0xFFA1A6AB.toInt(), false)
+        } else {
+            entry.moves.take(2).forEach { move ->
+                font.split(Component.literal("• ").append(localizedMove(move)), safeW).firstOrNull()?.let {
+                    graphics.drawString(font, it, x, y, 0xFFE2E8F0.toInt(), false)
+                }
+                y += 11
+            }
+            if (entry.moves.size > 2) graphics.drawString(font, Component.literal("+${entry.moves.size - 2} más"), x, y, 0xFFA1A6AB.toInt(), false)
+        }
+    }
+
+    private fun renderPokemonModel(graphics: GuiGraphics, layout: DetailsLayout, partialTick: Float) {
+        val modelScale = if (layout.compact) 34f else 55.2f
+        val modelX = if (layout.compact) layout.left + layout.width - 55 else layout.rightCenterX
         val stack = graphics.pose()
         stack.pushPose()
         try {
-            stack.translate((left + panelW - 120).toDouble(), (top + 42).toDouble(), 100.0)
+            stack.translate(modelX.toDouble(), layout.modelY.toDouble(), 100.0)
             pose.currentAspects = buildSet {
                 if (entry.shiny) add("shiny")
                 if (entry.alpha) add("alpha")
             }
-            drawProfilePokemon(
-                ResourceLocation.parse(entry.species),
-                stack,
-                Quaternionf().rotationXYZ(0.08f, 0.45f, 0f),
-                state = pose,
-                partialTicks = partialTick,
-                scale = 55.2f
-            )
+            drawProfilePokemon(ResourceLocation.parse(entry.species), stack, Quaternionf().rotationXYZ(0.08f, 0.45f, 0f), state = pose, partialTicks = partialTick, scale = modelScale)
         } finally {
             stack.popPose()
         }
-        // Render widgets explicitly. Calling Screen.render() would invoke the background path again.
-        for (renderable in renderables) renderable.render(graphics, mouseX, mouseY, partialTick)
     }
 
     private fun drawIvRadar(graphics: GuiGraphics, cx: Int, cy: Int, radius: Int, ivs: List<Int>) {
