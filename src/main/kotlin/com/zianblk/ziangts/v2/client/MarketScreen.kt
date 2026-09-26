@@ -158,6 +158,13 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         }
     }
 
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        // Intentionally empty. MarketScreen draws its own background before its content.
+        // Letting Screen/NeoForge render its native menu background here applies the blur pass
+        // after the cards have already been drawn and before vanilla widgets are rendered, which
+        // is why the cards/text appeared blurred while buttons stayed sharp.
+    }
+
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         graphics.fill(0, 0, width, height, 0xE00D1117.toInt())
         graphics.fill(0, 0, width, 4, 0xFFF0C75E.toInt())
