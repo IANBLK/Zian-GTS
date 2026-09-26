@@ -158,6 +158,11 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         }
     }
 
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        // MarketScreen paints its own opaque surface. Skipping Screen's default
+        // background prevents NeoForge/Minecraft from blurring the cards and text.
+    }
+
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         graphics.fill(0, 0, width, height, 0xE00D1117.toInt())
         graphics.fill(0, 0, width, 4, 0xFFF0C75E.toInt())
