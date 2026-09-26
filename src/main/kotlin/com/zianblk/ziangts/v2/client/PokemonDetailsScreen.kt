@@ -18,8 +18,12 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
 
     override fun init() {
         val layout = DetailsLayout.calculate(width, height)
+        val previewW = (layout.width * 0.27).toInt().coerceIn(82, 105)
+        val previewX = layout.left + 12
+        val buttonW = 80
+        val buttonX = previewX + (previewW - buttonW) / 2
         addRenderableWidget(Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
-            .bounds(layout.left + 18, layout.buttonY - 24, 80, 18).build())
+            .bounds(buttonX, layout.buttonY - 24, buttonW, 18).build())
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
@@ -41,12 +45,10 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         val pad = 12
         val top = layout.top + 32
         val previewW = (layout.width * 0.27).toInt().coerceIn(82, 105)
-        // Give the IV section more horizontal room without enlarging the radar itself.
         val radarW = (layout.width * 0.38).toInt().coerceIn(126, 154)
         val previewX = layout.left + pad
         val infoX = previewX + previewW + 10
         val radarX = layout.left + layout.width - pad - radarW
-        // The central data panel yields space to IVs but keeps enough width for its existing labels.
         val infoW = (radarX - infoX - 8).coerceAtLeast(108)
         val topH = (layout.height * 0.56).toInt().coerceIn(122, 140)
         drawPanel(graphics, previewX, top, previewW, topH)
@@ -63,7 +65,6 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
         graphics.drawString(font, Component.literal(expiryLabel()), infoX + 8, minOf(y, top + topH - 13), 0xFFF4D481.toInt(), false)
 
-        // Numeric IVs occupy the new left column; the approved radar size remains unchanged.
         drawIvNumbers(graphics, radarX + 8, top + 27, entry.ivs)
         val radarRadius = 25
         val radarCx = radarX + radarW - 42
@@ -74,7 +75,6 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         val bottomH = (layout.top + layout.height - 8 - bottomY).coerceAtLeast(48)
         val controlsX = layout.left + pad
         val controlsW = 104
-        // Move the whole movements section slightly left, matching the requested blue guide.
         val movesX = controlsX + controlsW + 12
         val movesW = layout.left + layout.width - pad - movesX
         drawPanel(graphics, movesX, bottomY, movesW, bottomH)
@@ -119,7 +119,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
     }
 
     private fun drawIvNumbers(graphics: GuiGraphics, x: Int, y: Int, ivs: List<Int>) {
-        val labels = listOf("PS", "Ataque", "Defensa", "At. Esp.", "Def. Esp.", "Velocidad")
+        val labels = listOf("PS", "At", "Def", "At.E", "Def.E", "Vel")
         labels.forEachIndexed { index, label ->
             val value = ivs.getOrNull(index)?.coerceIn(0, 31) ?: 0
             graphics.drawString(font, Component.literal("$label: ${value.toString().padStart(2, '0')}/31"), x, y + index * 13, 0xFFE2E8F0.toInt(), false)
