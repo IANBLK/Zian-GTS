@@ -1,5 +1,7 @@
 package com.zianblk.ziangts.v2.client
 
+import java.util.Collections
+import java.util.IdentityHashMap
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.Button
 import net.neoforged.api.distmarker.Dist
@@ -10,9 +12,12 @@ import net.neoforged.neoforge.client.event.ScreenEvent
 /**
  * Static visual skin for Zian GTS buttons.
  *
- * Important: no hover color shift and no NeoForge background manipulation lives here. The market
- * screen disables its native blur in renderBackground(), and this skin only repaints the vanilla
- * button after Screen.render has finished. Hitboxes, clicks, focus and narration remain vanilla.
+ * Vanilla buttons are hidden only for the screen render pass, then restored immediately in
+ * Render.Post and painted once with the Zian style. This keeps the real Button instances alive
+ * for hitboxes, clicks, keyboard focus and narration while avoiding the duplicate vanilla/custom
+ * labels that can otherwise render on top of each other.
+ *
+ * The skin does not touch screen backgrounds or blur state.
  */
 @EventBusSubscriber(modid = "ziangts", value = [Dist.CLIENT])
 object ZianButtonSkin {
@@ -23,6 +28,22 @@ object ZianButtonSkin {
     private const val TEXT = 0xFFF1F3F5.toInt()
     private const val TEXT_DISABLED = 0xFF707880.toInt()
 
+    private val hiddenForFrame = Collections.newSetFromMap(IdentityHashMap<Button, Boolean>())
+
+    @SubscribeEvent
+    fun onRenderPre(event: ScreenEvent.Render.Pre) {
+        val screen = event.screen
+        if (!screen.javaClass.name.startsWith(SCREEN_PACKAGE)) return
+
+        hiddenForFrame.clear()
+        screen.children().filterIsInstance<Button>().forEach { button ->
+            if (button.visible) {
+                hiddenForFrame += button
+                button.visible = false
+            }
+        }
+    }
+
     @SubscribeEvent
     fun onRenderPost(event: ScreenEvent.Render.Post) {
         val screen = event.screen
@@ -31,8 +52,9 @@ object ZianButtonSkin {
         val graphics = event.guiGraphics
         val font = Minecraft.getInstance().font
 
-        screen.children().filterIsInstance<Button>().forEach { button ->
-            if (!button.visible || button.width <= 2 || button.height <= 2) return@forEach
+        hiddenForFrame.forEach { button ->
+            button.visible = true
+            if (button.width <= 2 || button.height <= 2) return@forEach
 
             val x = button.x
             val y = button.y
@@ -47,5 +69,6 @@ object ZianButtonSkin {
             val labelY = y + (h - font.lineHeight) / 2
             graphics.drawCenteredString(font, button.message, x + w / 2, labelY, text)
         }
+        hiddenForFrame.clear()
     }
 }
