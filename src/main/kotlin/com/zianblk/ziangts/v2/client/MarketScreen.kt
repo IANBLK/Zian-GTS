@@ -18,13 +18,6 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 
-/**
- * First native Minecraft screen for Zian GTS V2.
- *
- * This slice intentionally renders only server-projected text data. Pokemon
- * models/icons and mutating actions are added after the screen lifecycle and
- * paging path are verified on NeoForge/Youer.
- */
 class MarketScreen : Screen(Component.literal("Zian GTS")) {
     private var state = MarketUiState()
     private var observedRevision = -1L
@@ -46,25 +39,16 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
 
         val compact = width < 600
         val row1Y = 18
-        val row2Y = if (compact) 41 else 41
+        val row2Y = 41
         val primaryW = if (compact) 86 else 100
         val smallW = if (compact) 68 else 75
         val primaryGap = 5
         val row1Total = primaryW * 2 + smallW + primaryGap * 2
         val row1X = (width - row1Total) / 2
 
-        addRenderableWidget(
-            Button.builder(Component.literal("Mercado")) { switchTab(MarketTab.MARKET) }
-                .bounds(row1X, row1Y, primaryW, 20).build()
-        )
-        addRenderableWidget(
-            Button.builder(Component.literal("Mis anuncios")) { switchTab(MarketTab.MY_OFFERS) }
-                .bounds(row1X + primaryW + primaryGap, row1Y, primaryW, 20).build()
-        )
-        addRenderableWidget(
-            Button.builder(Component.literal("Publicar")) { minecraft?.setScreen(PublishOfferScreen(this)) }
-                .bounds(row1X + primaryW * 2 + primaryGap * 2, row1Y, smallW, 20).build()
-        )
+        addRenderableWidget(Button.builder(Component.literal("Mercado")) { switchTab(MarketTab.MARKET) }.bounds(row1X, row1Y, primaryW, 20).build())
+        addRenderableWidget(Button.builder(Component.literal("Mis anuncios")) { switchTab(MarketTab.MY_OFFERS) }.bounds(row1X + primaryW + primaryGap, row1Y, primaryW, 20).build())
+        addRenderableWidget(Button.builder(Component.literal("Publicar")) { minecraft?.setScreen(PublishOfferScreen(this)) }.bounds(row1X + primaryW * 2 + primaryGap * 2, row1Y, smallW, 20).build())
 
         val secondWidths = if (compact) listOf(78, 78, 68, 68) else listOf(100, 100, 75, 75)
         val secondGap = 5
@@ -88,15 +72,9 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             }.bounds(secondX, row2Y, secondWidths[1], 18).build()
         )
         secondX += secondWidths[1] + secondGap
-        addRenderableWidget(
-            Button.builder(Component.literal("Ganancias")) { minecraft?.setScreen(ProceedsScreen(this)) }
-                .bounds(secondX, row2Y, secondWidths[2], 18).build()
-        )
+        addRenderableWidget(Button.builder(Component.literal("Ganancias")) { minecraft?.setScreen(ProceedsScreen(this)) }.bounds(secondX, row2Y, secondWidths[2], 18).build())
         secondX += secondWidths[2] + secondGap
-        addRenderableWidget(
-            Button.builder(Component.literal("Historial")) { minecraft?.setScreen(HistoryScreen(this)) }
-                .bounds(secondX, row2Y, secondWidths[3], 18).build()
-        )
+        addRenderableWidget(Button.builder(Component.literal("Historial")) { minecraft?.setScreen(HistoryScreen(this)) }.bounds(secondX, row2Y, secondWidths[3], 18).build())
 
         refreshControls()
         val layout = MarketLayout.calculate(width, height)
@@ -138,7 +116,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 else -> null
             }
             if (action != null) {
-                val buttonWidth = 66
+                val buttonWidth = 62
                 val actionButton = addRenderableWidget(
                     Button.builder(Component.literal(if (action == MarketAction.BUY) "Comprar" else "Retirar")) {
                         if (!actionPending) {
@@ -147,12 +125,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                             actionButtons.forEach { it.active = false }
                             V2MarketClient.requestAction(entry.offerId, action)
                         }
-                    }.bounds(
-                        x + cardW - buttonWidth - 8,
-                        y + cardH - 21,
-                        buttonWidth,
-                        16
-                    ).build()
+                    }.bounds(x + cardW - buttonWidth - 7, y + cardH - 19, buttonWidth, 15).build()
                 )
                 actionButton.active = !actionPending
                 actionButtons += actionButton
@@ -186,29 +159,23 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        // Custom dark marketplace surface. Avoid menu blur so Pokémon previews and text stay crisp.
         graphics.fill(0, 0, width, height, 0xE00D1117.toInt())
         graphics.fill(0, 0, width, 4, 0xFFF0C75E.toInt())
-        super.render(graphics, mouseX, mouseY, partialTick)
 
         graphics.drawCenteredString(font, title, width / 2, 6, 0xFFF7E4A6.toInt())
         val response = state.response
         if (state.loading && response == null) {
             graphics.drawCenteredString(font, Component.literal("Cargando mercado..."), width / 2, 54, 0xAAAAAA)
+            super.render(graphics, mouseX, mouseY, partialTick)
             return
         }
         if (response == null) {
             graphics.drawCenteredString(font, Component.literal("Sin datos del mercado"), width / 2, 54, 0xAAAAAA)
+            super.render(graphics, mouseX, mouseY, partialTick)
             return
         }
 
-        graphics.drawCenteredString(
-            font,
-            Component.literal("Página ${response.page}/${response.totalPages.coerceAtLeast(1)}"),
-            width / 2,
-            61,
-            0xCCCCCC
-        )
+        graphics.drawCenteredString(font, Component.literal("Página ${response.page}/${response.totalPages.coerceAtLeast(1)}"), width / 2, 61, 0xCCCCCC)
 
         val layout = MarketLayout.calculate(width, height)
         val cardW = layout.cardWidth
@@ -216,23 +183,18 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         response.entries.take(6).forEachIndexed { index, entry ->
             val x = layout.cardX(index)
             val y = layout.cardY(index)
-            // Layered card: border, body, preview well and price footer.
             graphics.fill(x, y, x + cardW, y + cardH, 0xFF59616B.toInt())
             graphics.fill(x + 1, y + 1, x + cardW - 1, y + cardH - 1, 0xF0181D24.toInt())
             graphics.fill(x + 1, y + 1, x + cardW - 1, y + 4, rarityAccent(entry))
+
             val previewLeft = x + cardW / 2
             val previewRight = x + cardW - 7
             val previewTop = y + 7
-            val previewBottom = y + 70
+            val previewBottom = y + 68
             graphics.fill(previewLeft, previewTop, previewRight, previewBottom, 0x8010161D.toInt())
             graphics.renderOutline(previewLeft, previewTop, previewRight - previewLeft, previewBottom - previewTop, 0xFF343D47.toInt())
-            renderPokemonPreview(
-                graphics,
-                entry,
-                (previewLeft + previewRight) / 2,
-                (previewTop + previewBottom) / 2 + 8,
-                partialTick
-            )
+            renderPokemonPreview(graphics, entry, (previewLeft + previewRight) / 2, (previewTop + previewBottom) / 2, partialTick)
+
             val species = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
             graphics.drawString(font, Component.literal(species), x + 8, y + 10, 0xFFF4F7FA.toInt())
             graphics.drawString(font, Component.literal("Nv. " + entry.level), x + 8, y + 23, 0xFF9FAAB5.toInt())
@@ -247,25 +209,27 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 badgeY += 12
             }
 
-            val footerTop = y + 72
+            val footerTop = y + 70
             graphics.fill(x + 1, footerTop, x + cardW - 1, y + cardH - 1, 0xC010141A.toInt())
             val priceLabel = "Precio: " + entry.price
-            graphics.drawString(font, Component.literal(priceLabel), x + 8, footerTop + 7, 0xFFF7E4A6.toInt())
-            renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), footerTop + 3, mouseX, mouseY)
+            graphics.drawString(font, Component.literal(priceLabel), x + 8, footerTop + 5, 0xFFF7E4A6.toInt())
+            renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), footerTop + 1, mouseX, mouseY)
             val sellerWidth = cardW - 16
             val seller = fitText("Vendedor: " + entry.sellerName, sellerWidth)
-            graphics.drawString(font, Component.literal(seller), x + 8, footerTop + 22, 0xFFB7C0C9.toInt())
+            graphics.drawString(font, Component.literal(seller), x + 8, footerTop + 20, 0xFFB7C0C9.toInt())
             val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
             val time = if (seconds >= 3600) "Expira " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira " + (seconds / 60) + "m"
-            graphics.drawString(font, Component.literal(time), x + 8, footerTop + 36, 0xFF7F8A96.toInt())
+            graphics.drawString(font, Component.literal(time), x + 8, footerTop + 34, 0xFF7F8A96.toInt())
         }
-        actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, MarketLayout.calculate(width, height).footerY - 16, 0xCCCCCC) }
+
+        // Render widgets last so the real Comprar/Retirar buttons stay above the custom cards.
+        super.render(graphics, mouseX, mouseY, partialTick)
+
+        actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, layout.footerY - 16, 0xCCCCCC) }
         if (response.entries.isEmpty()) {
             graphics.drawCenteredString(font, Component.literal("No hay anuncios en esta página"), width / 2, 86, 0xAAAAAA)
         }
     }
-
-
 
     private fun rarityAccent(entry: com.zianblk.ziangts.v2.network.MarketEntryDto): Int = when {
         entry.legendary && entry.shiny -> 0xFFE6A8FF.toInt()
@@ -310,7 +274,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 Quaternionf().rotationXYZ(0.08f, 0.45f, 0f),
                 state = pose,
                 partialTicks = partialTick,
-                scale = 15f
+                scale = 17.25f
             )
         } finally {
             graphics.pose().popPose()
@@ -327,7 +291,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         response.entries.take(6).forEachIndexed { index, entry ->
             val x = layout.cardX(index)
             val y = layout.cardY(index)
-            if (mouseX >= x && mouseX < x + cardW && mouseY >= y && mouseY < y + cardH - 25) {
+            if (mouseX >= x && mouseX < x + cardW && mouseY >= y && mouseY < y + cardH - 22) {
                 minecraft?.setScreen(PokemonDetailsScreen(entry, this))
                 return true
             }
@@ -364,7 +328,6 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             .filter { it.isNotBlank() }
             .joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     }
-
 
     private fun refreshControls() {
         filterButton?.message = Component.literal(filterLabel())
@@ -421,17 +384,8 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         refreshControls()
         updateNavigationButtons()
         when (state.tab) {
-            MarketTab.MARKET -> V2MarketClient.requestMarket(
-                page = state.page,
-                pageSize = state.pageSize,
-                filter = state.filter,
-                sort = state.sort
-            )
-            MarketTab.MY_OFFERS -> V2MarketClient.requestMyOffers(
-                page = state.page,
-                pageSize = state.pageSize,
-                sort = state.sort
-            )
+            MarketTab.MARKET -> V2MarketClient.requestMarket(page = state.page, pageSize = state.pageSize, filter = state.filter, sort = state.sort)
+            MarketTab.MY_OFFERS -> V2MarketClient.requestMyOffers(page = state.page, pageSize = state.pageSize, sort = state.sort)
         }
     }
 }
