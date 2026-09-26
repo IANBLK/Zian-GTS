@@ -2,18 +2,18 @@ package com.zianblk.ziangts.v2.client
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.Button
+import net.minecraft.network.chat.Component
 import net.neoforged.api.distmarker.Dist
 import net.neoforged.bus.api.SubscribeEvent
 import net.neoforged.fml.common.EventBusSubscriber
 import net.neoforged.neoforge.client.event.ScreenEvent
 
 /**
- * Visual skin for every vanilla Button used by Zian GTS screens.
+ * AVESHOP-inspired visual skin for vanilla Buttons used by Zian GTS screens.
  *
- * This deliberately does not replace or move widgets. The original Button remains responsible
- * for hitboxes, narration, keyboard focus and click handling; we only paint the Zian GTS skin
- * over it after the screen has rendered. That keeps the already-tested market/detail layouts and
- * actions intact while giving every screen one consistent AVESHOP-inspired visual language.
+ * The vanilla widget is still responsible for input, focus, narration and its label. We only
+ * repaint the frame/background in Render.Post. Keeping the text in one renderer avoids the
+ * doubled/overprinted labels that appeared when the skin drew the message a second time.
  */
 @EventBusSubscriber(modid = "ziangts", value = [Dist.CLIENT])
 object ZianButtonSkin {
@@ -24,10 +24,24 @@ object ZianButtonSkin {
     private const val BG = 0xFF252B31.toInt()
     private const val BG_HOVER = 0xFF343C44.toInt()
     private const val BG_DISABLED = 0xFF1B2025.toInt()
-    private const val TEXT = 0xFFF1F3F5.toInt()
-    private const val TEXT_HOVER = 0xFFFFE39A.toInt()
-    private const val TEXT_DISABLED = 0xFF707880.toInt()
     private const val ACCENT = 0xFFF0C75E.toInt()
+
+    @SubscribeEvent
+    fun onOpening(event: ScreenEvent.Opening) {
+        val screen = event.newScreen ?: return
+        if (!screen.javaClass.name.startsWith(SCREEN_PACKAGE)) return
+
+        // NeoForge/Minecraft can blur the already-rendered world behind menu screens. Zian GTS
+        // deliberately uses its own opaque/translucent backgrounds, so the post-processing blur
+        // only makes the market/cards look smeared. Reset it whenever one of our screens opens.
+        runCatching {
+            val gameRenderer = Minecraft.getInstance().gameRenderer
+            val method = gameRenderer.javaClass.methods.firstOrNull {
+                it.name == "shutdownEffect" && it.parameterCount == 0
+            }
+            method?.invoke(gameRenderer)
+        }
+    }
 
     @SubscribeEvent
     fun onRenderPost(event: ScreenEvent.Render.Post) {
@@ -35,7 +49,6 @@ object ZianButtonSkin {
         if (!screen.javaClass.name.startsWith(SCREEN_PACKAGE)) return
 
         val graphics = event.guiGraphics
-        val font = Minecraft.getInstance().font
 
         screen.children().filterIsInstance<Button>().forEach { button ->
             if (!button.visible) return@forEach
@@ -55,24 +68,27 @@ object ZianButtonSkin {
                 hovered -> BG_HOVER
                 else -> BG
             }
-            val text = when {
-                !button.active -> TEXT_DISABLED
-                hovered -> TEXT_HOVER
-                else -> TEXT
-            }
 
-            // Crisp one-pixel frame, intentionally texture-free so GUI scale does not distort it.
+            // Repaint only the frame/background. The vanilla Button already rendered its message,
+            // so drawing button.message here would render every label twice.
             graphics.fill(x, y, x + w, y + h, border)
             graphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, background)
 
-            // AVESHOP-like interaction accent. It appears only on hover/focus and never changes
-            // the widget dimensions, so Comprar/Retirar and pagination keep their exact hitboxes.
             if (hovered && h >= 8) {
                 graphics.fill(x + 1, y + 1, x + 3, y + h - 1, ACCENT)
             }
 
+            // Render one clean label after repainting the background. We intentionally blank the
+            // widget only for this draw pass conceptually: at this stage vanilla text is covered by
+            // the background above, so this is the sole visible copy.
+            val font = Minecraft.getInstance().font
+            val textColor = when {
+                !button.active -> 0xFF707880.toInt()
+                hovered -> 0xFFFFE39A.toInt()
+                else -> 0xFFF1F3F5.toInt()
+            }
             val labelY = y + (h - font.lineHeight) / 2
-            graphics.drawCenteredString(font, button.message, x + w / 2, labelY, text)
+            graphics.drawCenteredString(font, Component.literal(button.message.string), x + w / 2, labelY, textColor)
         }
     }
 }
