@@ -24,11 +24,11 @@ internal data class MarketLayout(
             val margin = 10
             val gap = 7
             val available = (width - margin * 2).coerceAtLeast(132)
-            val usableHeight = (height - 112).coerceAtLeast(112)
+            val footerY = height - 30
+            val top = if (height < 330) 70 else 78
 
-            // Keep cards deliberately small and nearly fixed. GUI scaling already changes
-            // the logical canvas, so a conservative component size is more stable than
-            // continuously stretching cards to fill whatever space happens to exist.
+            // Keep the market grid clear of the pagination controls. Cards are deliberately
+            // compact and nearly fixed; GUI scaling already changes the logical canvas.
             val columns = when {
                 available >= 545 -> 3
                 available >= 355 -> 2
@@ -36,10 +36,14 @@ internal data class MarketLayout(
             }
             val desiredCardWidth = 170
             val cardWidth = minOf(desiredCardWidth, (available - gap * (columns - 1)) / columns).coerceAtLeast(132)
-            val cardHeight = minOf(136, usableHeight)
+
+            // Two rows must end above the pagination/status area. 118 px preserves all
+            // current card metadata while noticeably reducing the oversized cards.
+            val paginationClearance = 12
+            val maxTwoRowHeight = ((footerY - paginationClearance - top - gap) / 2).coerceAtLeast(108)
+            val cardHeight = minOf(118, maxTwoRowHeight).coerceAtLeast(108)
             val gridWidth = cardWidth * columns + gap * (columns - 1)
             val left = (width - gridWidth) / 2
-            val top = if (height < 330) 70 else 78
             return MarketLayout(
                 columns = columns,
                 cardWidth = cardWidth,
@@ -48,7 +52,7 @@ internal data class MarketLayout(
                 left = left,
                 top = top,
                 headerTop = 18,
-                footerY = height - 30
+                footerY = footerY
             )
         }
     }
