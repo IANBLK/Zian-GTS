@@ -149,7 +149,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                             actionButtons.forEach { it.active = false }
                             V2MarketClient.requestAction(entry.offerId, action)
                         }
-                    }.bounds(x + cardW - buttonWidth - 7, y + cardH - 19, buttonWidth, 15).build()
+                    }.bounds(x + cardW - buttonWidth - 7, y + cardH - 17, buttonWidth, 15).build()
                 )
                 button.active = !actionPending
                 actionButtons += button
@@ -278,8 +278,6 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
 
         super.render(graphics, mouseX, mouseY, partialTick)
 
-        // Status belongs in the reserved strip immediately above pagination. The previous -16
-        // offset placed the text inside the second card row on x3/Auto GUI scales.
         actionMessage?.let {
             graphics.drawCenteredString(
                 font,
