@@ -66,7 +66,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         graphics.drawString(font, Component.literal(expiryLabel()), infoX + 8, minOf(y, top + topH - 13), 0xFFF4D481.toInt(), false)
 
         drawIvNumbers(graphics, radarX + 8, top + 27, entry.ivs)
-        val radarRadius = 25
+        val radarRadius = 22
         val radarCx = radarX + radarW - 42
         val radarCy = top + topH / 2 + 8
         drawIvRadar(graphics, radarCx, radarCy, radarRadius, entry.ivs)
@@ -148,8 +148,8 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         listOf(0.33, 0.66, 1.0).forEach { scale -> val pts = (0 until 6).map { point(it, radius * scale) }; for (i in pts.indices) { val a = pts[i]; val b = pts[(i + 1) % pts.size]; drawLine(graphics, a.first, a.second, b.first, b.second, 0xFF4B535C.toInt()) } }
         for (i in 0 until 6) { val edge = point(i, radius.toDouble()); drawLine(graphics, cx, cy, edge.first, edge.second, 0xFF3D444C.toInt()) }
         if (ivs.size == 6) { val pts = ivs.mapIndexed { index, value -> point(index, radius * value.coerceIn(0, 31) / 31.0) }; for (i in pts.indices) { val a = pts[i]; val b = pts[(i + 1) % pts.size]; drawLine(graphics, a.first, a.second, b.first, b.second, 0xFFF4D481.toInt()); graphics.fill(a.first - 1, a.second - 1, a.first + 2, a.second + 2, 0xFFF4D481.toInt()) } }
-        labels.forEachIndexed { index, label -> val p = point(index, radius + 13.0); graphics.drawCenteredString(font, Component.literal(label), p.first, p.second - 4, 0xFFB8C0C8.toInt()) }
-        graphics.drawCenteredString(font, Component.literal("IVs"), cx, cy - radius - 30, 0xFFF4D481.toInt())
+        labels.forEachIndexed { index, label -> val p = point(index, radius + 11.0); graphics.drawCenteredString(font, Component.literal(label), p.first, p.second - 4, 0xFFB8C0C8.toInt()) }
+        graphics.drawCenteredString(font, Component.literal("IVs"), cx, cy - radius - 27, 0xFFF4D481.toInt())
     }
 
     private fun drawLine(graphics: GuiGraphics, x0: Int, y0: Int, x1: Int, y1: Int, color: Int) {
