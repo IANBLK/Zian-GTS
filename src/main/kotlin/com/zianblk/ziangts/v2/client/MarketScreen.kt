@@ -33,359 +33,47 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
 
     override fun init() {
         super.init()
-        observedActionRevision = V2MarketClientState.actionRevision()
-        actionMessage = null
-        actionPending = false
-
-        val compact = width < 600
-        val row1Y = 18
-        val row2Y = 41
-        val primaryW = if (compact) 86 else 100
-        val smallW = if (compact) 68 else 75
-        val primaryGap = 5
-        val row1Total = primaryW * 2 + smallW + primaryGap * 2
-        val row1X = (width - row1Total) / 2
-
+        observedActionRevision = V2MarketClientState.actionRevision(); actionMessage = null; actionPending = false
+        val compact = width < 600; val row1Y = 18; val row2Y = 41; val primaryW = if (compact) 86 else 100; val smallW = if (compact) 68 else 75; val primaryGap = 5
+        val row1Total = primaryW * 2 + smallW + primaryGap * 2; val row1X = (width - row1Total) / 2
         addRenderableWidget(Button.builder(Component.literal("Mercado")) { switchTab(MarketTab.MARKET) }.bounds(row1X, row1Y, primaryW, 20).build())
         addRenderableWidget(Button.builder(Component.literal("Mis anuncios")) { switchTab(MarketTab.MY_OFFERS) }.bounds(row1X + primaryW + primaryGap, row1Y, primaryW, 20).build())
         addRenderableWidget(Button.builder(Component.literal("Publicar")) { minecraft?.setScreen(PublishOfferScreen(this)) }.bounds(row1X + primaryW * 2 + primaryGap * 2, row1Y, smallW, 20).build())
-
-        val secondWidths = if (compact) listOf(78, 78, 68, 68) else listOf(100, 100, 75, 75)
-        val secondGap = 5
-        val secondTotal = secondWidths.sum() + secondGap * 3
-        var secondX = (width - secondTotal) / 2
-        filterButton = addRenderableWidget(
-            Button.builder(Component.literal(filterLabel())) {
-                if (state.tab == MarketTab.MARKET) {
-                    state = state.copy(filter = nextFilter(state.filter), page = 1)
-                    refreshControls()
-                    requestCurrent()
-                }
-            }.bounds(secondX, row2Y, secondWidths[0], 18).build()
-        )
-        secondX += secondWidths[0] + secondGap
-        sortButton = addRenderableWidget(
-            Button.builder(Component.literal(sortLabel())) {
-                state = state.copy(sort = nextSort(state.sort), page = 1)
-                refreshControls()
-                requestCurrent()
-            }.bounds(secondX, row2Y, secondWidths[1], 18).build()
-        )
-        secondX += secondWidths[1] + secondGap
-        addRenderableWidget(Button.builder(Component.literal("Ganancias")) { minecraft?.setScreen(ProceedsScreen(this)) }.bounds(secondX, row2Y, secondWidths[2], 18).build())
-        secondX += secondWidths[2] + secondGap
-        addRenderableWidget(Button.builder(Component.literal("Historial")) { minecraft?.setScreen(HistoryScreen(this)) }.bounds(secondX, row2Y, secondWidths[3], 18).build())
-
-        refreshControls()
-        val layout = MarketLayout.calculate(width, height)
-        previousButton = addRenderableWidget(
-            Button.builder(Component.literal("<")) {
-                val next = state.previousPage()
-                if (next !== state) {
-                    state = next
-                    requestCurrent()
-                }
-            }.bounds(width / 2 - 65, layout.footerY, 30, 20).build()
-        )
-        nextButton = addRenderableWidget(
-            Button.builder(Component.literal(">")) {
-                val next = state.nextPage()
-                if (next !== state) {
-                    state = next
-                    requestCurrent()
-                }
-            }.bounds(width / 2 + 35, layout.footerY, 30, 20).build()
-        )
-        updateNavigationButtons()
-        requestCurrent()
+        val secondWidths = if (compact) listOf(78,78,68,68) else listOf(100,100,75,75); val secondGap=5; val secondTotal=secondWidths.sum()+secondGap*3; var secondX=(width-secondTotal)/2
+        filterButton=addRenderableWidget(Button.builder(Component.literal(filterLabel())) { if(state.tab==MarketTab.MARKET){state=state.copy(filter=nextFilter(state.filter),page=1);refreshControls();requestCurrent()} }.bounds(secondX,row2Y,secondWidths[0],18).build()); secondX+=secondWidths[0]+secondGap
+        sortButton=addRenderableWidget(Button.builder(Component.literal(sortLabel())) { state=state.copy(sort=nextSort(state.sort),page=1);refreshControls();requestCurrent() }.bounds(secondX,row2Y,secondWidths[1],18).build()); secondX+=secondWidths[1]+secondGap
+        addRenderableWidget(Button.builder(Component.literal("Ganancias")){minecraft?.setScreen(ProceedsScreen(this))}.bounds(secondX,row2Y,secondWidths[2],18).build());secondX+=secondWidths[2]+secondGap
+        addRenderableWidget(Button.builder(Component.literal("Historial")){minecraft?.setScreen(HistoryScreen(this))}.bounds(secondX,row2Y,secondWidths[3],18).build())
+        refreshControls(); val layout=MarketLayout.calculate(width,height)
+        previousButton=addRenderableWidget(Button.builder(Component.literal("<")){val next=state.previousPage();if(next!==state){state=next;requestCurrent()}}.bounds(width/2-65,layout.footerY,30,20).build())
+        nextButton=addRenderableWidget(Button.builder(Component.literal(">")){val next=state.nextPage();if(next!==state){state=next;requestCurrent()}}.bounds(width/2+35,layout.footerY,30,20).build());updateNavigationButtons();requestCurrent()
     }
 
-    private fun rebuildEntryButtons() {
-        actionButtons.forEach { removeWidget(it) }
-        actionButtons.clear()
-        val response = state.response ?: return
-        val layout = MarketLayout.calculate(width, height)
-        val cardW = layout.cardWidth
-        val cardH = layout.cardHeight
-        response.entries.take(6).forEachIndexed { index, entry ->
-            val x = layout.cardX(index)
-            val y = layout.cardY(index)
-            val action = when {
-                entry.canWithdraw -> MarketAction.WITHDRAW
-                entry.canBuy -> MarketAction.BUY
-                else -> null
-            }
-            if (action != null) {
-                val buttonWidth = 62
-                val actionButton = addRenderableWidget(
-                    Button.builder(Component.literal(if (action == MarketAction.BUY) "Comprar" else "Retirar")) {
-                        if (!actionPending) {
-                            actionPending = true
-                            actionMessage = "Procesando..."
-                            actionButtons.forEach { it.active = false }
-                            V2MarketClient.requestAction(entry.offerId, action)
-                        }
-                    }.bounds(x + cardW - buttonWidth - 7, y + cardH - 19, buttonWidth, 15).build()
-                )
-                actionButton.active = !actionPending
-                actionButtons += actionButton
-            }
-        }
+    private fun rebuildEntryButtons(){actionButtons.forEach{removeWidget(it)};actionButtons.clear();val response=state.response?:return;val layout=MarketLayout.calculate(width,height);val cardW=layout.cardWidth;val cardH=layout.cardHeight;response.entries.take(6).forEachIndexed{index,entry->val x=layout.cardX(index);val y=layout.cardY(index);val action=when{entry.canWithdraw->MarketAction.WITHDRAW;entry.canBuy->MarketAction.BUY;else->null};if(action!=null){val bw=62;val b=addRenderableWidget(Button.builder(Component.literal(if(action==MarketAction.BUY)"Comprar" else "Retirar")){if(!actionPending){actionPending=true;actionMessage="Procesando...";actionButtons.forEach{it.active=false};V2MarketClient.requestAction(entry.offerId,action)}}.bounds(x+cardW-bw-7,y+cardH-19,bw,15).build());b.active=!actionPending;actionButtons+=b}}}
+    override fun tick(){super.tick();val r=V2MarketClientState.revision();if(r!=observedRevision){observedRevision=r;val response=V2MarketClientState.snapshot();if(response!=null&&response.tab==state.tab){state=state.accept(response);refreshControls();updateNavigationButtons();rebuildEntryButtons()}};val ar=V2MarketClientState.actionRevision();if(ar!=observedActionRevision){observedActionRevision=ar;val result=V2MarketClientState.actionSnapshot();if(result!=null){actionPending=false;actionMessage=result.message;requestCurrent()}}}
+    override fun renderBackground(graphics:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float){}
+
+    override fun render(graphics:GuiGraphics,mouseX:Int,mouseY:Int,partialTick:Float){
+        graphics.fill(0,0,width,height,0xE00D1117.toInt());graphics.fill(0,0,width,4,0xFFF0C75E.toInt());graphics.drawCenteredString(font,title,width/2,6,0xFFF7E4A6.toInt());val response=state.response
+        if(state.loading&&response==null){graphics.drawCenteredString(font,Component.literal("Cargando mercado..."),width/2,54,0xAAAAAA);super.render(graphics,mouseX,mouseY,partialTick);return};if(response==null){graphics.drawCenteredString(font,Component.literal("Sin datos del mercado"),width/2,54,0xAAAAAA);super.render(graphics,mouseX,mouseY,partialTick);return}
+        graphics.drawCenteredString(font,Component.literal("Página ${response.page}/${response.totalPages.coerceAtLeast(1)}"),width/2,61,0xCCCCCC);val layout=MarketLayout.calculate(width,height);val cardW=layout.cardWidth;val cardH=layout.cardHeight
+        response.entries.take(6).forEachIndexed{index,entry->val x=layout.cardX(index);val y=layout.cardY(index);graphics.fill(x,y,x+cardW,y+cardH,0xFF59616B.toInt());graphics.fill(x+1,y+1,x+cardW-1,y+cardH-1,0xF0181D24.toInt());graphics.fill(x+1,y+1,x+cardW-1,y+4,rarityAccent(entry));val pl=x+cardW/2;val pr=x+cardW-7;val pt=y+7;val pb=y+68;graphics.fill(pl,pt,pr,pb,0x8010161D.toInt());graphics.renderOutline(pl,pt,pr-pl,pb-pt,0xFF343D47.toInt());renderPokemonPreview(graphics,entry,(pl+pr)/2,(pt+pb)/2-14,partialTick)
+            val species=entry.species.substringAfter(':').replaceFirstChar{it.uppercase()};graphics.drawString(font,Component.literal(species),x+8,y+10,0xFFF4F7FA.toInt());graphics.drawString(font,Component.literal("Nv. "+entry.level),x+8,y+23,0xFF9FAAB5.toInt());var badgeY=y+37;listOfNotNull(if(entry.legendary)"LEGENDARIO" else null,if(entry.shiny)"SHINY" else null,if(entry.alpha)"ALPHA" else null).take(3).forEach{badge->drawBadge(graphics,badge,x+8,badgeY,rarityAccent(entry));badgeY+=12};val ft=y+70;graphics.fill(x+1,ft,x+cardW-1,y+cardH-1,0xC010141A.toInt());val price="Precio: "+entry.price;graphics.drawString(font,Component.literal(price),x+8,ft+5,0xFFF7E4A6.toInt());renderCurrencyIcon(graphics,entry.currency,x+12+font.width(price),ft+1,mouseX,mouseY);val seller=fitText("Vendedor: "+entry.sellerName,cardW-16);graphics.drawString(font,Component.literal(seller),x+8,ft+20,0xFFB7C0C9.toInt());val sec=((entry.expiresAtEpochMilli-System.currentTimeMillis())/1000).coerceAtLeast(0);val time=if(sec>=3600)"Expira "+(sec/3600)+"h "+((sec%3600)/60)+"m" else "Expira "+(sec/60)+"m";graphics.drawString(font,Component.literal(time),x+8,ft+34,0xFF7F8A96.toInt())}
+        super.render(graphics,mouseX,mouseY,partialTick);actionMessage?.let{graphics.drawCenteredString(font,Component.literal(it),width/2,layout.footerY-16,0xCCCCCC)};if(response.entries.isEmpty())graphics.drawCenteredString(font,Component.literal("No hay anuncios en esta página"),width/2,86,0xAAAAAA)
     }
-
-    override fun tick() {
-        super.tick()
-        val revision = V2MarketClientState.revision()
-        if (revision != observedRevision) {
-            observedRevision = revision
-            val response = V2MarketClientState.snapshot()
-            if (response != null && response.tab == state.tab) {
-                state = state.accept(response)
-                refreshControls()
-                updateNavigationButtons()
-                rebuildEntryButtons()
-            }
-        }
-        val actionRev = V2MarketClientState.actionRevision()
-        if (actionRev != observedActionRevision) {
-            observedActionRevision = actionRev
-            val result = V2MarketClientState.actionSnapshot()
-            if (result != null) {
-                actionPending = false
-                actionMessage = result.message
-                requestCurrent()
-            }
-        }
-    }
-
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        graphics.fill(0, 0, width, height, 0xE00D1117.toInt())
-        graphics.fill(0, 0, width, 4, 0xFFF0C75E.toInt())
-
-        graphics.drawCenteredString(font, title, width / 2, 6, 0xFFF7E4A6.toInt())
-        val response = state.response
-        if (state.loading && response == null) {
-            graphics.drawCenteredString(font, Component.literal("Cargando mercado..."), width / 2, 54, 0xAAAAAA)
-            super.render(graphics, mouseX, mouseY, partialTick)
-            return
-        }
-        if (response == null) {
-            graphics.drawCenteredString(font, Component.literal("Sin datos del mercado"), width / 2, 54, 0xAAAAAA)
-            super.render(graphics, mouseX, mouseY, partialTick)
-            return
-        }
-
-        graphics.drawCenteredString(font, Component.literal("Página ${response.page}/${response.totalPages.coerceAtLeast(1)}"), width / 2, 61, 0xCCCCCC)
-
-        val layout = MarketLayout.calculate(width, height)
-        val cardW = layout.cardWidth
-        val cardH = layout.cardHeight
-        response.entries.take(6).forEachIndexed { index, entry ->
-            val x = layout.cardX(index)
-            val y = layout.cardY(index)
-            graphics.fill(x, y, x + cardW, y + cardH, 0xFF59616B.toInt())
-            graphics.fill(x + 1, y + 1, x + cardW - 1, y + cardH - 1, 0xF0181D24.toInt())
-            graphics.fill(x + 1, y + 1, x + cardW - 1, y + 4, rarityAccent(entry))
-
-            val previewLeft = x + cardW / 2
-            val previewRight = x + cardW - 7
-            val previewTop = y + 7
-            val previewBottom = y + 68
-            graphics.fill(previewLeft, previewTop, previewRight, previewBottom, 0x8010161D.toInt())
-            graphics.renderOutline(previewLeft, previewTop, previewRight - previewLeft, previewBottom - previewTop, 0xFF343D47.toInt())
-            renderPokemonPreview(graphics, entry, (previewLeft + previewRight) / 2, (previewTop + previewBottom) / 2, partialTick)
-
-            val species = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
-            graphics.drawString(font, Component.literal(species), x + 8, y + 10, 0xFFF4F7FA.toInt())
-            graphics.drawString(font, Component.literal("Nv. " + entry.level), x + 8, y + 23, 0xFF9FAAB5.toInt())
-
-            var badgeY = y + 37
-            listOfNotNull(
-                if (entry.legendary) "LEGENDARIO" else null,
-                if (entry.shiny) "SHINY" else null,
-                if (entry.alpha) "ALPHA" else null
-            ).take(3).forEach { badge ->
-                drawBadge(graphics, badge, x + 8, badgeY, rarityAccent(entry))
-                badgeY += 12
-            }
-
-            val footerTop = y + 70
-            graphics.fill(x + 1, footerTop, x + cardW - 1, y + cardH - 1, 0xC010141A.toInt())
-            val priceLabel = "Precio: " + entry.price
-            graphics.drawString(font, Component.literal(priceLabel), x + 8, footerTop + 5, 0xFFF7E4A6.toInt())
-            renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), footerTop + 1, mouseX, mouseY)
-            val sellerWidth = cardW - 16
-            val seller = fitText("Vendedor: " + entry.sellerName, sellerWidth)
-            graphics.drawString(font, Component.literal(seller), x + 8, footerTop + 20, 0xFFB7C0C9.toInt())
-            val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
-            val time = if (seconds >= 3600) "Expira " + (seconds / 3600) + "h " + ((seconds % 3600) / 60) + "m" else "Expira " + (seconds / 60) + "m"
-            graphics.drawString(font, Component.literal(time), x + 8, footerTop + 34, 0xFF7F8A96.toInt())
-        }
-
-        // Render widgets last so the real Comprar/Retirar buttons stay above the custom cards.
-        super.render(graphics, mouseX, mouseY, partialTick)
-
-        actionMessage?.let { graphics.drawCenteredString(font, Component.literal(it), width / 2, layout.footerY - 16, 0xCCCCCC) }
-        if (response.entries.isEmpty()) {
-            graphics.drawCenteredString(font, Component.literal("No hay anuncios en esta página"), width / 2, 86, 0xAAAAAA)
-        }
-    }
-
-    private fun rarityAccent(entry: com.zianblk.ziangts.v2.network.MarketEntryDto): Int = when {
-        entry.legendary && entry.shiny -> 0xFFE6A8FF.toInt()
-        entry.legendary -> 0xFFF0C75E.toInt()
-        entry.shiny -> 0xFF75D7FF.toInt()
-        entry.alpha -> 0xFFFF8B8B.toInt()
-        else -> 0xFF6F7C88.toInt()
-    }
-
-    private fun drawBadge(graphics: GuiGraphics, label: String, x: Int, y: Int, accent: Int) {
-        val badgeW = (font.width(label) + 8).coerceAtMost(72)
-        graphics.fill(x, y, x + badgeW, y + 10, 0xD0202730.toInt())
-        graphics.fill(x, y, x + 2, y + 10, accent)
-        graphics.drawString(font, Component.literal(label), x + 5, y + 1, accent, false)
-    }
-
-    private fun fitText(value: String, maxWidth: Int): String {
-        if (font.width(value) <= maxWidth) return value
-        var result = value
-        while (result.isNotEmpty() && font.width(result + "…") > maxWidth) result = result.dropLast(1)
-        return result + "…"
-    }
-
-    private fun renderPokemonPreview(
-        graphics: GuiGraphics,
-        entry: com.zianblk.ziangts.v2.network.MarketEntryDto,
-        centerX: Int,
-        centerY: Int,
-        partialTick: Float
-    ) {
-        val pose = previewStates.getOrPut(entry.offerId) { FloatingState() }
-        pose.currentAspects = buildSet {
-            if (entry.shiny) add("shiny")
-            if (entry.alpha) add("alpha")
-        }
-        graphics.pose().pushPose()
-        try {
-            graphics.pose().translate(centerX.toDouble(), centerY.toDouble(), 90.0)
-            drawProfilePokemon(
-                ResourceLocation.parse(entry.species),
-                graphics.pose(),
-                Quaternionf().rotationXYZ(0.08f, 0.45f, 0f),
-                state = pose,
-                partialTicks = partialTick,
-                scale = 17.25f
-            )
-        } finally {
-            graphics.pose().popPose()
-        }
-    }
-
-    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (super.mouseClicked(mouseX, mouseY, button)) return true
-        if (button != 0) return false
-        val response = state.response ?: return false
-        val layout = MarketLayout.calculate(width, height)
-        val cardW = layout.cardWidth
-        val cardH = layout.cardHeight
-        response.entries.take(6).forEachIndexed { index, entry ->
-            val x = layout.cardX(index)
-            val y = layout.cardY(index)
-            if (mouseX >= x && mouseX < x + cardW && mouseY >= y && mouseY < y + cardH - 22) {
-                minecraft?.setScreen(PokemonDetailsScreen(entry, this))
-                return true
-            }
-        }
-        return false
-    }
-
-    private fun renderCurrencyIcon(graphics: GuiGraphics, currency: String, x: Int, y: Int, mouseX: Int, mouseY: Int) {
-        val id = ResourceLocation.tryParse(currency) ?: return
-        val item = BuiltInRegistries.ITEM.get(id)
-        if (BuiltInRegistries.ITEM.getKey(item) != id) return
-        graphics.renderItem(ItemStack(item), x, y)
-        if (mouseX in x until (x + 16) && mouseY in y until (y + 16)) {
-            graphics.renderTooltip(font, Component.literal(currencyDisplayName(id.path)), mouseX, mouseY)
-        }
-    }
-
-    private fun currencyDisplayName(path: String): String {
-        val known = mapOf(
-            "coppercoin" to "Moneda de Cobre",
-            "ironcoin" to "Moneda de Hierro",
-            "goldcoin" to "Moneda de Oro",
-            "diamondcoin" to "Moneda de Diamante",
-            "netheritecoin" to "Moneda de Netherita",
-            "goldticket" to "Ticket de Oro",
-            "diamondticket" to "Ticket de Diamante",
-            "netheriteticket" to "Ticket de Netherita"
-        )
-        return known[path] ?: path
-            .replace(Regex("([a-z])([A-Z])"), "$1 $2")
-            .replace('_', ' ')
-            .replace('-', ' ')
-            .split(' ')
-            .filter { it.isNotBlank() }
-            .joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
-    }
-
-    private fun refreshControls() {
-        filterButton?.message = Component.literal(filterLabel())
-        filterButton?.active = state.tab == MarketTab.MARKET
-        sortButton?.message = Component.literal(sortLabel())
-        sortButton?.active = true
-    }
-
-    private fun nextFilter(current: OfferFilter): OfferFilter {
-        val values = listOf(OfferFilter.ALL, OfferFilter.SHINY, OfferFilter.ALPHA, OfferFilter.LEGENDARY, OfferFilter.LEGENDARY_SHINY)
-        val index = values.indexOf(current).coerceAtLeast(0)
-        return values[(index + 1) % values.size]
-    }
-
-    private fun nextSort(current: OfferSort): OfferSort {
-        val values = listOf(OfferSort.NEWEST, OfferSort.OLDEST, OfferSort.PRICE_LOW, OfferSort.PRICE_HIGH, OfferSort.LEVEL_LOW, OfferSort.LEVEL_HIGH)
-        val index = values.indexOf(current).coerceAtLeast(0)
-        return values[(index + 1) % values.size]
-    }
-
-    private fun filterLabel(): String = "Filtro: " + when (state.filter) {
-        OfferFilter.ALL -> "Todos"
-        OfferFilter.SHINY -> "Shiny"
-        OfferFilter.ALPHA -> "Alpha"
-        OfferFilter.LEGENDARY -> "Legendarios"
-        OfferFilter.LEGENDARY_SHINY -> "Legendario Shiny"
-        OfferFilter.OWN -> "Míos"
-    }
-
-    private fun sortLabel(): String = "Orden: " + when (state.sort) {
-        OfferSort.NEWEST -> "Recientes"
-        OfferSort.OLDEST -> "Antiguos"
-        OfferSort.PRICE_LOW -> "Precio ↑"
-        OfferSort.PRICE_HIGH -> "Precio ↓"
-        OfferSort.LEVEL_LOW -> "Nivel ↑"
-        OfferSort.LEVEL_HIGH -> "Nivel ↓"
-    }
-
-    private fun switchTab(tab: MarketTab) {
-        if (state.tab == tab) return
-        state = state.switchTab(tab)
-        refreshControls()
-        updateNavigationButtons()
-        requestCurrent()
-    }
-
-    private fun updateNavigationButtons() {
-        previousButton?.active = !state.loading && state.page > 1
-        nextButton?.active = !state.loading && (state.response?.hasNext == true)
-    }
-
-    private fun requestCurrent() {
-        state = state.beginRequest()
-        refreshControls()
-        updateNavigationButtons()
-        when (state.tab) {
-            MarketTab.MARKET -> V2MarketClient.requestMarket(page = state.page, pageSize = state.pageSize, filter = state.filter, sort = state.sort)
-            MarketTab.MY_OFFERS -> V2MarketClient.requestMyOffers(page = state.page, pageSize = state.pageSize, sort = state.sort)
-        }
-    }
+    private fun rarityAccent(entry:com.zianblk.ziangts.v2.network.MarketEntryDto):Int=when{entry.legendary&&entry.shiny->0xFFE6A8FF.toInt();entry.legendary->0xFFF0C75E.toInt();entry.shiny->0xFF75D7FF.toInt();entry.alpha->0xFFFF8B8B.toInt();else->0xFF6F7C88.toInt()}
+    private fun drawBadge(graphics:GuiGraphics,label:String,x:Int,y:Int,accent:Int){val w=(font.width(label)+8).coerceAtMost(72);graphics.fill(x,y,x+w,y+10,0xD0202730.toInt());graphics.fill(x,y,x+2,y+10,accent);graphics.drawString(font,Component.literal(label),x+5,y+1,accent,false)}
+    private fun fitText(value:String,maxWidth:Int):String{if(font.width(value)<=maxWidth)return value;var r=value;while(r.isNotEmpty()&&font.width(r+"…")>maxWidth)r=r.dropLast(1);return r+"…"}
+    private fun renderPokemonPreview(graphics:GuiGraphics,entry:com.zianblk.ziangts.v2.network.MarketEntryDto,centerX:Int,centerY:Int,partialTick:Float){val pose=previewStates.getOrPut(entry.offerId){FloatingState()};pose.currentAspects=buildSet{if(entry.shiny)add("shiny");if(entry.alpha)add("alpha")};graphics.pose().pushPose();try{graphics.pose().translate(centerX.toDouble(),centerY.toDouble(),90.0);drawProfilePokemon(ResourceLocation.parse(entry.species),graphics.pose(),Quaternionf().rotationXYZ(0.08f,0.45f,0f),state=pose,partialTicks=partialTick,scale=19.0f)}finally{graphics.pose().popPose()}}
+    override fun mouseClicked(mouseX:Double,mouseY:Double,button:Int):Boolean{if(super.mouseClicked(mouseX,mouseY,button))return true;if(button!=0)return false;val response=state.response?:return false;val layout=MarketLayout.calculate(width,height);val cw=layout.cardWidth;val ch=layout.cardHeight;response.entries.take(6).forEachIndexed{index,entry->val x=layout.cardX(index);val y=layout.cardY(index);if(mouseX>=x&&mouseX<x+cw&&mouseY>=y&&mouseY<y+ch-22){minecraft?.setScreen(PokemonDetailsScreen(entry,this));return true}};return false}
+    private fun renderCurrencyIcon(graphics:GuiGraphics,currency:String,x:Int,y:Int,mouseX:Int,mouseY:Int){val id=ResourceLocation.tryParse(currency)?:return;val item=BuiltInRegistries.ITEM.get(id);if(BuiltInRegistries.ITEM.getKey(item)!=id)return;graphics.renderItem(ItemStack(item),x,y);if(mouseX in x until(x+16)&&mouseY in y until(y+16))graphics.renderTooltip(font,Component.literal(currencyDisplayName(id.path)),mouseX,mouseY)}
+    private fun currencyDisplayName(path:String):String{val known=mapOf("coppercoin" to "Moneda de Cobre","ironcoin" to "Moneda de Hierro","goldcoin" to "Moneda de Oro","diamondcoin" to "Moneda de Diamante","netheritecoin" to "Moneda de Netherita","goldticket" to "Ticket de Oro","diamondticket" to "Ticket de Diamante","netheriteticket" to "Ticket de Netherita");return known[path]?:path.replace('_',' ').replace('-',' ').split(' ').filter{it.isNotBlank()}.joinToString(" "){it.replaceFirstChar(Char::uppercase)}}
+    private fun refreshControls(){filterButton?.message=Component.literal(filterLabel());filterButton?.active=state.tab==MarketTab.MARKET;sortButton?.message=Component.literal(sortLabel());sortButton?.active=true}
+    private fun nextFilter(current:OfferFilter):OfferFilter{val v=listOf(OfferFilter.ALL,OfferFilter.SHINY,OfferFilter.ALPHA,OfferFilter.LEGENDARY,OfferFilter.LEGENDARY_SHINY);val i=v.indexOf(current).coerceAtLeast(0);return v[(i+1)%v.size]}
+    private fun nextSort(current:OfferSort):OfferSort{val v=listOf(OfferSort.NEWEST,OfferSort.OLDEST,OfferSort.PRICE_LOW,OfferSort.PRICE_HIGH,OfferSort.LEVEL_LOW,OfferSort.LEVEL_HIGH);val i=v.indexOf(current).coerceAtLeast(0);return v[(i+1)%v.size]}
+    private fun filterLabel():String="Filtro: "+when(state.filter){OfferFilter.ALL->"Todos";OfferFilter.SHINY->"Shiny";OfferFilter.ALPHA->"Alpha";OfferFilter.LEGENDARY->"Legendarios";OfferFilter.LEGENDARY_SHINY->"Legendario Shiny";OfferFilter.OWN->"Míos"}
+    private fun sortLabel():String="Orden: "+when(state.sort){OfferSort.NEWEST->"Recientes";OfferSort.OLDEST->"Antiguos";OfferSort.PRICE_LOW->"Precio ↑";OfferSort.PRICE_HIGH->"Precio ↓";OfferSort.LEVEL_LOW->"Nivel ↑";OfferSort.LEVEL_HIGH->"Nivel ↓"}
+    private fun switchTab(tab:MarketTab){if(state.tab==tab)return;state=state.switchTab(tab);refreshControls();updateNavigationButtons();requestCurrent()}
+    private fun updateNavigationButtons(){previousButton?.active=!state.loading&&state.page>1;nextButton?.active=!state.loading&&(state.response?.hasNext==true)}
+    private fun requestCurrent(){state=state.beginRequest();refreshControls();updateNavigationButtons();when(state.tab){MarketTab.MARKET->V2MarketClient.requestMarket(page=state.page,pageSize=state.pageSize,filter=state.filter,sort=state.sort);MarketTab.MY_OFFERS->V2MarketClient.requestMyOffers(page=state.page,pageSize=state.pageSize,sort=state.sort)}}
 }
