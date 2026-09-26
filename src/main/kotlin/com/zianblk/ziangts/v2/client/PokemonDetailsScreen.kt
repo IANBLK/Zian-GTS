@@ -41,12 +41,13 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         val pad = 12
         val top = layout.top + 32
         val previewW = (layout.width * 0.27).toInt().coerceIn(82, 105)
-        // Wider IV panel: it grows leftward, while the radar itself keeps the same radius.
-        val radarW = (layout.width * 0.34).toInt().coerceIn(112, 138)
+        // Give the IV section more horizontal room without enlarging the radar itself.
+        val radarW = (layout.width * 0.38).toInt().coerceIn(126, 154)
         val previewX = layout.left + pad
         val infoX = previewX + previewW + 10
         val radarX = layout.left + layout.width - pad - radarW
-        val infoW = (radarX - infoX - 8).coerceAtLeast(118)
+        // The central data panel yields space to IVs but keeps enough width for its existing labels.
+        val infoW = (radarX - infoX - 8).coerceAtLeast(108)
         val topH = (layout.height * 0.56).toInt().coerceIn(122, 140)
         drawPanel(graphics, previewX, top, previewW, topH)
         drawPanel(graphics, infoX, top, infoW, topH)
@@ -62,8 +63,8 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
         graphics.drawString(font, Component.literal(expiryLabel()), infoX + 8, minOf(y, top + topH - 13), 0xFFF4D481.toInt(), false)
 
-        // Numeric IVs use the new left side of the IV panel. Radar stays the same size on the right.
-        drawIvNumbers(graphics, radarX + 7, top + 27, entry.ivs)
+        // Numeric IVs occupy the new left column; the approved radar size remains unchanged.
+        drawIvNumbers(graphics, radarX + 8, top + 27, entry.ivs)
         val radarRadius = 25
         val radarCx = radarX + radarW - 42
         val radarCy = top + topH / 2 + 8
@@ -73,15 +74,14 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         val bottomH = (layout.top + layout.height - 8 - bottomY).coerceAtLeast(48)
         val controlsX = layout.left + pad
         val controlsW = 104
-        // Keep outer movement panel where approved, but shift its inner content right.
-        val movesX = controlsX + controlsW + 20
+        // Move the whole movements section slightly left, matching the requested blue guide.
+        val movesX = controlsX + controlsW + 12
         val movesW = layout.left + layout.width - pad - movesX
         drawPanel(graphics, movesX, bottomY, movesW, bottomH)
-        val innerShift = 8
-        graphics.drawString(font, Component.literal("Movimientos"), movesX + 8 + innerShift, bottomY + 5, 0xFFF4D481.toInt(), false)
+        graphics.drawString(font, Component.literal("Movimientos"), movesX + 8, bottomY + 5, 0xFFF4D481.toInt(), false)
         val moves = entry.moves.take(4)
         val cellGap = 8
-        val innerLeft = movesX + 8 + innerShift
+        val innerLeft = movesX + 8
         val innerRight = movesX + movesW - 8
         val cellW = ((innerRight - innerLeft - cellGap) / 2).coerceAtLeast(30)
         val cellH = 13
