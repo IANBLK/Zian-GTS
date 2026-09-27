@@ -54,10 +54,14 @@ class HistoryScreen(private val parent: Screen) : Screen(Component.literal("Hist
         next?.active = response?.hasNext == true
     }
 
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        ZianGtsTheme.background(graphics, width, height)
+    }
+
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         renderBackground(graphics, mouseX, mouseY, partialTick)
         super.render(graphics, mouseX, mouseY, partialTick)
-        graphics.drawCenteredString(font, title, width / 2, 18, 0xFFFFFF)
+        graphics.drawCenteredString(font, title, width / 2, 18, ZianGtsTheme.GOLD)
         val data = response
         if (data == null) {
             graphics.drawCenteredString(font, Component.literal("Cargando historial..."), width / 2, 48, 0xAAAAAA)
@@ -97,3 +101,4 @@ class HistoryScreen(private val parent: Screen) : Screen(Component.literal("Hist
         return known[path.lowercase()] ?: path.replace('_', ' ').replace('-', ' ').split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     }
 }
+

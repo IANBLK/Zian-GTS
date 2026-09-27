@@ -189,8 +189,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        graphics.fill(0, 0, width, height, 0xE00D1117.toInt())
-        graphics.fill(0, 0, width, 4, 0xFFF0C75E.toInt())
+        ZianGtsTheme.background(graphics, width, height)
         graphics.drawCenteredString(font, title, width / 2, 6, 0xFFF7E4A6.toInt())
 
         val response = state.response
@@ -482,3 +481,4 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         }
     }
 }
+

@@ -49,6 +49,8 @@ object ZianGtsV2Runtime {
         var journal: DurableTradeJournal? = null
         var history: DurableHistoryStore? = null
         try {
+            // Keep the server running, but do not expose a market on an uninspected wallet version.
+            val avecoinsVersion = AvecoinsWallet.verifyContract()
             val market = DurableMarketStore(root.resolve("market-v2.state"))
             journal = DurableTradeJournal(root.resolve("transactions-v2.wal"))
             if (journal.blocksTrading()) {
@@ -85,7 +87,7 @@ object ZianGtsV2Runtime {
             context = Context(market, journal, engine, history, pokemon)
             blockedJournal = null
             blockedReason = null
-            ZianGts.LOGGER.info("Zian GTS V2 runtime ready at {}", root)
+            ZianGts.LOGGER.info("Zian GTS V2 runtime ready at {} with AVECOINS {}", root, avecoinsVersion)
         } catch (error: Exception) {
             context = null
             // Preserve an opened journal for recovery visibility and to retain single ownership
@@ -103,7 +105,7 @@ object ZianGtsV2Runtime {
                     error.addSuppressed(closeError)
                 }
             }
-            blockedReason = "runtime initialization failed: ${error.javaClass.simpleName}"
+            blockedReason = error.message ?: "runtime initialization failed: ${error.javaClass.simpleName}"
             ZianGts.LOGGER.error("Zian GTS V2 failed closed during startup; trading remains unavailable.", error)
         }
     }
@@ -198,3 +200,4 @@ object ZianGtsV2Runtime {
     fun isReady(): Boolean = context != null
     fun blockedReason(): String? = blockedReason
 }
+
