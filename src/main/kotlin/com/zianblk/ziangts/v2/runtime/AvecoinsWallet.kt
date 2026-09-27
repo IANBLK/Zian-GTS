@@ -4,7 +4,7 @@ import net.neoforged.fml.ModList
 import java.util.UUID
 
 /**
- * Narrow AVECOINS 2.3 interop boundary used by V2.
+ * Narrow AVECOINS interop boundary used by V2.
  *
  * The integration is reflective on purpose: Zian GTS does not package AVECOINS
  * implementation classes and only relies on the inspected WalletStore/WalletData
@@ -17,20 +17,49 @@ class AvecoinsWallet(private val currencyId: String) {
     }
 
     companion object {
+        private val supportedVersions = setOf("2.3", "2.4")
+
+        internal fun supportsVersion(version: String): Boolean = version in supportedVersions
+
         fun supportedCurrencies(): List<String> {
-            verifyVersion()
+            verifyContract()
             val crafting = Class.forName("net.sundggs.avecoins.config.CraftingConfig")
             val managed = crafting.getField("MANAGED_RESULTS").get(null) as Set<*>
             return managed.filterIsInstance<String>().sorted()
         }
 
-        private fun verifyVersion() {
+        /** Refuse uninspected wallet versions before the market accepts any trade. */
+        fun verifyContract(): String {
             val mod = ModList.get().getModContainerById("avecoins").orElseThrow {
                 IllegalStateException("AVECOINS is not installed")
             }
-            check(mod.modInfo.version.toString() == "2.3") {
-                "Only the inspected AVECOINS 2.3 contract is supported"
+            val version = mod.modInfo.version.toString()
+            check(supportsVersion(version)) {
+                "AVECOINS $version is not inspected; supported versions: 2.3, 2.4"
             }
+            val crafting = Class.forName("net.sundggs.avecoins.config.CraftingConfig")
+            val store = Class.forName("net.sundggs.avecoins.shop.WalletStore")
+            val data = Class.forName("net.sundggs.avecoins.shop.WalletData")
+            val managedField = crafting.getField("MANAGED_RESULTS")
+            check(java.lang.reflect.Modifier.isStatic(managedField.modifiers)) { "AVECOINS currencies changed" }
+            val managed = managedField.get(null)
+            check(managed is Set<*> && managed.isNotEmpty() && managed.all { it is String && it.isNotBlank() }) {
+                "AVECOINS currencies changed"
+            }
+            val getMethod = store.getMethod("get")
+            val saveMethod = store.getMethod("save", data)
+            check(java.lang.reflect.Modifier.isStatic(getMethod.modifiers) && getMethod.returnType == data)
+            check(java.lang.reflect.Modifier.isStatic(saveMethod.modifiers)
+                && saveMethod.returnType == Boolean::class.javaPrimitiveType)
+            check(data.getMethod("copy").returnType == data)
+            check(data.getMethod("balance", UUID::class.java, String::class.java).returnType == Long::class.javaPrimitiveType)
+            check(Map::class.java.isAssignableFrom(data.getMethod("balances", UUID::class.java).returnType))
+            check(data.getMethod("credit", UUID::class.java, String::class.java, Long::class.javaPrimitiveType).returnType == Void.TYPE)
+            check(data.getMethod("debit", UUID::class.java, String::class.java, Long::class.javaPrimitiveType).returnType == Boolean::class.javaPrimitiveType)
+            check(data.getField("SLOT_COUNT").getInt(null) == 27 && data.getField("STACK_SIZE").getInt(null) == 64) {
+                "Unexpected AVECOINS wallet layout"
+            }
+            return version
         }
     }
 
@@ -47,7 +76,7 @@ class AvecoinsWallet(private val currencyId: String) {
     private val stackSize: Int
 
     init {
-        verifyVersion()
+        verifyContract()
         store = Class.forName("net.sundggs.avecoins.shop.WalletStore")
         data = Class.forName("net.sundggs.avecoins.shop.WalletData")
         val crafting = Class.forName("net.sundggs.avecoins.config.CraftingConfig")
@@ -104,3 +133,4 @@ class AvecoinsWallet(private val currencyId: String) {
         Mutation.Applied
     }
 }
+

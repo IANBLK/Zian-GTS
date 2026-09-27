@@ -2,9 +2,9 @@
 
 Zian GTS es un mercado GTS para Cobblemon en Minecraft 1.21.1, desarrollado con NeoForge y pensado para servidores multijugador.
 
-## Beta 1
+## Beta 2.2
 
-La versión actual es **1.0.0 Beta 1 candidate**.
+La versión actual es **1.0.0 Beta 2.2**.
 
 Funciones principales:
 
@@ -17,7 +17,7 @@ Funciones principales:
 - Ordenación y paginación.
 - Naturaleza, habilidad, movimientos e IVs.
 - Radar visual de IVs.
-- Integración con AVECOINS 2.3.
+- Integración comprobada con la cartera de AVECOINS 2.3 y 2.4.
 - Persistencia durable del mercado, historial y ganancias.
 - Journal de transacciones y recuperación administrativa.
 - Validaciones server-authoritative y protección frente a operaciones concurrentes.
@@ -29,7 +29,7 @@ Funciones principales:
 - NeoForge 21.1.228 o superior
 - Kotlin for Forge 5.10+
 - Cobblemon 1.8+
-- AVECOINS 2.3 para la economía integrada
+- AVECOINS 2.3 o 2.4 para la economía integrada
 
 Zian GTS también se prueba en Youer 1.21.1.
 
@@ -67,3 +67,4 @@ Las operaciones económicas y de Pokémon atraviesan sistemas externos distintos
 La Beta 1 candidate ha superado pruebas automatizadas de persistencia, concurrencia, journal, rollback, hard-kill y recuperación, además de pruebas multijugador del flujo de mercado.
 
 Antes de publicar Beta 1 se realizará un último smoke test del artefacto candidato en Youer.
+

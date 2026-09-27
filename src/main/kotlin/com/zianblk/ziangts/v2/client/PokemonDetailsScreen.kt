@@ -27,14 +27,14 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
-        graphics.fill(0, 0, width, height, 0xD0101418.toInt())
+        ZianGtsTheme.background(graphics, width, height)
         val layout = DetailsLayout.calculate(width, height)
         val left = layout.left
         val top = layout.top
         graphics.fill(left, top, left + layout.width, top + layout.height, 0xFF181C20.toInt())
         graphics.renderOutline(left, top, layout.width, layout.height, 0xFF666D75.toInt())
-        graphics.fill(left + 1, top + 1, left + layout.width - 1, top + 3, 0xFFF4D481.toInt())
-        graphics.drawCenteredString(font, title, width / 2, top + 11, 0xFFFFFF)
+        graphics.fill(left + 1, top + 1, left + layout.width - 1, top + 3, ZianGtsTheme.GOLD)
+        graphics.drawCenteredString(font, title, width / 2, top + 11, ZianGtsTheme.TEXT)
         val speciesName = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
         if (layout.compact) renderCompactDetails(graphics, layout, speciesName) else renderWideDetails(graphics, layout, speciesName)
         renderPokemonModel(graphics, layout, partialTick)
@@ -171,3 +171,4 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
     private fun friendly(value: String): String = value.substringAfter(':').replace('_', ' ').split(' ').joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
     override fun isPauseScreen() = false
 }
+
