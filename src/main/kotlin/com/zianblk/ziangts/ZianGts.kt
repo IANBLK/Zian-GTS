@@ -2,6 +2,7 @@ package com.zianblk.ziangts
 
 import com.zianblk.ziangts.v2.runtime.ZianGtsV2Runtime
 import com.zianblk.ziangts.v2.runtime.V2Commands
+import com.zianblk.ziangts.v2.runtime.YouerPermissionBridge
 import net.neoforged.fml.ModContainer
 import net.neoforged.fml.common.Mod
 import net.neoforged.neoforge.common.NeoForge
@@ -17,7 +18,10 @@ class ZianGts(container: ModContainer, bus: net.neoforged.bus.api.IEventBus) {
         NeoForge.EVENT_BUS.addListener { event: RegisterCommandsEvent ->
             V2Commands.register(event.dispatcher)
         }
-        NeoForge.EVENT_BUS.addListener { event: ServerStartedEvent -> ZianGtsV2Runtime.start(event.server) }
+        NeoForge.EVENT_BUS.addListener { event: ServerStartedEvent ->
+            YouerPermissionBridge.registerPlayerAccess()
+            ZianGtsV2Runtime.start(event.server)
+        }
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST) { event: ServerStoppingEvent ->
             ZianGtsV2Runtime.stop(event.server)
         }
