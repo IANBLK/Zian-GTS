@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.0.0 Beta 2.1
+
+Hotfix de permisos para servidores híbridos basados en Youer/Bukkit.
+
+### Permisos
+- `/gtsv2` y `/gtsv2 open` ahora pueden ser usados por jugadores normales sin OP.
+- Se añade un puente de permisos compatible con Youer/Bukkit para registrar `minecraft.command.gtsv2` con acceso por defecto para jugadores.
+- En NeoForge puro el puente no añade una dependencia obligatoria de Bukkit.
+- Los comandos administrativos continúan protegidos:
+  - `/gtsv2 status`
+  - `/gtsv2 recovery`
+  - `/gtsv2 recovery resolve ...`
+- No se modificó la lógica de compra, venta, persistencia, economía ni recuperación.
+
+### Compatibilidad
+- Minecraft 1.21.1
+- Java 21
+- NeoForge 21.1.228+
+- Cobblemon 1.8+
+- AVECOINS 2.3
+- Youer 1.21.1
+
 ## 1.0.0 Beta 1
 
 Primera beta pública candidata de Zian GTS V2.
