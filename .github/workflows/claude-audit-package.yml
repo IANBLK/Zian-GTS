@@ -1,0 +1,40 @@
+name: Claude Audit Source Package
+
+on:
+  push:
+    branches:
+      - audit/claude-package
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@v5
+
+      - name: Prepare source package
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf audit-package
+          mkdir -p audit-package/Zian-GTS
+          rsync -a \
+            --exclude '.git' \
+            --exclude 'build' \
+            --exclude '.gradle' \
+            --exclude '.idea' \
+            --exclude '.github/workflows/claude-audit-package.yml' \
+            ./ audit-package/Zian-GTS/
+          printf '%s\n' 'Repository: IANBLK/Zian-GTS' 'Source branch audited: main' 'Main HEAD at package preparation: 51a00fd461da2f68626702abc872b0225e327d5b' > audit-package/REPOSITORY_SNAPSHOT.txt
+
+      - name: Upload source package
+        uses: actions/upload-artifact@v6
+        with:
+          name: zian-gts-claude-audit-source
+          path: audit-package/**
+          if-no-files-found: error
+          retention-days: 7
