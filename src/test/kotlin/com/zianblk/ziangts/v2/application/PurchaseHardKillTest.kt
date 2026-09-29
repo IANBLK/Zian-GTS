@@ -3,6 +3,7 @@ package com.zianblk.ziangts.v2.application
 import com.zianblk.ziangts.v2.port.TradeStage
 import com.zianblk.ziangts.v2.testadapter.DurableFileEconomyPort
 import com.zianblk.ziangts.v2.testadapter.DurableFilePokemonPort
+import com.zianblk.ziangts.v2.testadapter.launchCrashProbe
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -16,11 +17,7 @@ class PurchaseHardKillTest {
     private val pokemon = UUID.fromString("33333333-3333-3333-3333-333333333333")
 
     private fun crashAt(stage: TradeStage): Int {
-        val java = Path.of(System.getProperty("java.home"), "bin",
-            if (System.getProperty("os.name").startsWith("Windows")) "java.exe" else "java")
-        val p = ProcessBuilder(java.toString(), "-cp", System.getProperty("java.class.path"),
-            PurchaseCrashProbe::class.java.name, dir.toString(), stage.name)
-            .redirectErrorStream(true).start()
+        val p = launchCrashProbe(dir, PurchaseCrashProbe::class.java, dir.toString(), stage.name)
         assertTrue(p.waitFor(20, TimeUnit.SECONDS), "purchase probe timed out")
         return p.exitValue()
     }

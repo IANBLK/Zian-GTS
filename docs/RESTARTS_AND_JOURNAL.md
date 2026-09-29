@@ -31,7 +31,7 @@ Consultar el estado:
 /gtsv2 recovery
 ```
 
-Estos comandos administrativos requieren actualmente nivel de permiso **2** mediante `CommandSourceStack.hasPermission(2)`. La versión V2 no depende de nodos LuckPerms para autorizar recovery.
+Sin LuckPerms, estos comandos requieren nivel de operador **2**. Con LuckPerms para NeoForge instalado, también se consultan `ziangts.use` y `ziangts.admin.recovery`; la confirmación de resolución requiere además `ziangts.admin.recovery.resolve`. Una denegación explícita afecta incluso a operadores.
 
 `/gtsv2 recovery` muestra hasta diez operaciones no resueltas con operation ID, tipo, subject, etapa, estado de quarantine y motivo.
 

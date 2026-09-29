@@ -35,6 +35,7 @@ object ZianGtsV2Runtime {
     @Volatile private var context: Context? = null
     @Volatile private var blockedJournal: DurableTradeJournal? = null
     @Volatile private var blockedReason: String? = "V2 runtime not started"
+    @Volatile private var ownerServer: MinecraftServer? = null
 
     @Synchronized
     fun start(server: MinecraftServer) {
@@ -45,10 +46,13 @@ object ZianGtsV2Runtime {
             return
         }
         check(server.isSameThread) { "Zian GTS V2 runtime must start on the server thread" }
+        ownerServer = server
         val root = server.getWorldPath(LevelResource.ROOT).resolve("ziangts-v2")
         var journal: DurableTradeJournal? = null
         var history: DurableHistoryStore? = null
         try {
+            // Keep the server running, but do not expose a market on an uninspected wallet version.
+            val avecoinsVersion = AvecoinsWallet.verifyContract()
             val market = DurableMarketStore(root.resolve("market-v2.state"))
             journal = DurableTradeJournal(root.resolve("transactions-v2.wal"))
             if (journal.blocksTrading()) {
@@ -85,7 +89,7 @@ object ZianGtsV2Runtime {
             context = Context(market, journal, engine, history, pokemon)
             blockedJournal = null
             blockedReason = null
-            ZianGts.LOGGER.info("Zian GTS V2 runtime ready at {}", root)
+            ZianGts.LOGGER.info("Zian GTS V2 runtime ready at {} with AVECOINS {}", root, avecoinsVersion)
         } catch (error: Exception) {
             context = null
             // Preserve an opened journal for recovery visibility and to retain single ownership
@@ -103,7 +107,7 @@ object ZianGtsV2Runtime {
                     error.addSuppressed(closeError)
                 }
             }
-            blockedReason = "runtime initialization failed: ${error.javaClass.simpleName}"
+            blockedReason = error.message ?: "runtime initialization failed: ${error.javaClass.simpleName}"
             ZianGts.LOGGER.error("Zian GTS V2 failed closed during startup; trading remains unavailable.", error)
         }
     }
@@ -116,6 +120,7 @@ object ZianGtsV2Runtime {
         context = null
         blockedJournal = null
         blockedReason = "V2 runtime stopped"
+        ownerServer = null
         if (current != null) {
             val closeFailure = closeRuntimeResources(current.history, current.journal)
             if (closeFailure == null) {
@@ -186,6 +191,7 @@ object ZianGtsV2Runtime {
 
     @Synchronized
     fun resolveBlockedTransaction(operationId: java.util.UUID, note: String): Boolean {
+        check(ownerServer?.isSameThread == true) { "Recovery resolution requires the server thread" }
         check(context == null) { "recovery resolution is only allowed while V2 trading is blocked" }
         val journal = blockedJournal ?: return false
         if (journal.unresolved().none { it.ticket.operationId == operationId }) return false
