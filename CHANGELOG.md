@@ -1,11 +1,14 @@
 # Changelog
 
-## 1.0.0 Beta 2.2
+## 1.0.0 Beta 2.3
 
 - Los permisos documentados del GTS se comprueban en el servidor para comandos, consultas y acciones de la interfaz. Si LuckPerms está instalado pero no puede responder, la operación se deniega.
 - La resolución del journal exige ejecutarse en el hilo del servidor.
 - La documentación aclara el alcance real del journal y de los permisos administrativos.
 - Las pruebas de cierre forzado usan archivos de argumentos de Java para ejecutarse con classpaths largos en Windows.
+
+## 1.0.0 Beta 2.2
+
 - AVECOINS 2.4 ya no bloquea el arranque del servidor: GTS comprueba la estructura de la cartera antes de abrir el mercado.
 - Una futura versión de AVECOINS no verificada mantiene el servidor encendido y deja el mercado deshabilitado hasta revisar su contrato.
 - Los botones y las pantallas secundarias comparten la paleta oscura, el borde dorado y el fondo sin blur duplicado de Zian Utilities.

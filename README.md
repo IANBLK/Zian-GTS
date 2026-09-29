@@ -2,9 +2,9 @@
 
 Zian GTS es un mercado GTS para Cobblemon en Minecraft 1.21.1, desarrollado con NeoForge y pensado para servidores multijugador.
 
-## Beta 2.2
+## Beta 2.3
 
-La versión actual es **1.0.0 Beta 2.2**.
+La versión actual es **1.0.0 Beta 2.3**.
 
 Funciones principales:
 
