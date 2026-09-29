@@ -22,12 +22,6 @@ import net.neoforged.neoforge.client.event.ScreenEvent
 @EventBusSubscriber(modid = "ziangts", value = [Dist.CLIENT])
 object ZianButtonSkin {
     private const val SCREEN_PACKAGE = "com.zianblk.ziangts.v2.client"
-    private const val BORDER = 0xFF56616B.toInt()
-    private const val BG = 0xFF252B31.toInt()
-    private const val BG_DISABLED = 0xFF1B2025.toInt()
-    private const val TEXT = 0xFFF1F3F5.toInt()
-    private const val TEXT_DISABLED = 0xFF707880.toInt()
-
     private val hiddenForFrame = Collections.newSetFromMap(IdentityHashMap<Button, Boolean>())
 
     @SubscribeEvent
@@ -60,13 +54,18 @@ object ZianButtonSkin {
             val y = button.y
             val w = button.width
             val h = button.height
-            val background = if (button.active) BG else BG_DISABLED
-            val text = if (button.active) TEXT else TEXT_DISABLED
+            val background = if (button.active) ZianGtsTheme.BUTTON_BACKGROUND else ZianGtsTheme.BUTTON_DISABLED
+            val border = when {
+                !button.active -> ZianGtsTheme.BUTTON_DISABLED_BORDER
+                event.mouseX >= x && event.mouseX < x + w && event.mouseY >= y && event.mouseY < y + h -> ZianGtsTheme.GOLD
+                else -> ZianGtsTheme.BUTTON_BORDER
+            }
+            val text = if (button.active) ZianGtsTheme.TEXT else ZianGtsTheme.TEXT_DISABLED
 
-            graphics.fill(x, y, x + w, y + h, BORDER)
-            graphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, background)
+            graphics.fill(x, y, x + w, y + h, background)
+            graphics.renderOutline(x, y, w, h, border)
 
-            val labelY = y + (h - font.lineHeight) / 2
+            val labelY = y + (h - 8) / 2
             graphics.drawCenteredString(font, button.message, x + w / 2, labelY, text)
         }
         hiddenForFrame.clear()

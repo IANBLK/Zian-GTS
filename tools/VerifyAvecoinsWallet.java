@@ -1,11 +1,16 @@
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
-/** Run with Java 21 and the separately supplied AVECOINS 2.3 JAR on the classpath. */
+/** Run with Java 21 and a separately supplied AVECOINS JAR on the classpath. */
 public class VerifyAvecoinsWallet {
     public static void main(String[] args) throws Exception {
         Class<?> type = Class.forName("net.sundggs.avecoins.shop.WalletData");
+        Class<?> crafting = Class.forName("net.sundggs.avecoins.config.CraftingConfig");
+        Set<?> managed = (Set<?>) crafting.getField("MANAGED_RESULTS").get(null);
+        require(managed.containsAll(Set.of("avecoins:coppercoin", "avecoins:goldticket",
+            "avecoins:diamondticket", "avecoins:netheriteticket")), "required currencies");
         var balance = type.getMethod("balance", UUID.class, String.class);
         var credit = type.getMethod("credit", UUID.class, String.class, long.class);
         var debit = type.getMethod("debit", UUID.class, String.class, long.class);

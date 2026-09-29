@@ -122,10 +122,14 @@ class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal(
         priceBox?.setEditable(!pending)
     }
 
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        ZianGtsTheme.background(graphics, width, height)
+    }
+
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         renderBackground(graphics, mouseX, mouseY, partialTick)
         super.render(graphics, mouseX, mouseY, partialTick)
-        graphics.drawCenteredString(font, title, width / 2, height / 2 - 92, 0xFFFFFF)
+        graphics.drawCenteredString(font, title, width / 2, height / 2 - 92, ZianGtsTheme.GOLD)
         graphics.drawCenteredString(font, Component.literal("Selecciona un Pokémon de tu equipo"), width / 2, height / 2 - 73, 0xBBBBBB)
         if (message.isNotBlank()) graphics.drawCenteredString(font, Component.literal(message), width / 2, height / 2 + 76, 0xCCCCCC)
     }

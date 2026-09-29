@@ -5,6 +5,8 @@ import com.zianblk.ziangts.v2.runtime.ZianGtsV2Runtime
 import com.zianblk.ziangts.v2.domain.OfferId
 import com.zianblk.ziangts.v2.domain.PaymentSpec
 import com.zianblk.ziangts.v2.runtime.AvecoinsWallet
+import com.zianblk.ziangts.v2.runtime.GtsPermissions
+import com.zianblk.ziangts.v2.domain.MarketTab
 import com.zianblk.ziangts.v2.application.TradeResult
 import com.zianblk.ziangts.v2.application.ClaimResult
 import com.zianblk.ziangts.v2.domain.ProceedsKey
@@ -49,6 +51,14 @@ object V2MarketNetwork {
             val player = context.player()
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
+                val permission = when (payload.action) {
+                    MarketAction.BUY -> "buy"
+                    MarketAction.WITHDRAW -> "cancel"
+                }
+                if (!permitted(player, permission)) {
+                    PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, false, GtsPermissions.denialMessage()))
+                    return@enqueueWork
+                }
                 val engine = ZianGtsV2Runtime.engineOrNull()
                 if (engine == null) {
                     PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, false, "GTS no disponible"))
@@ -95,6 +105,7 @@ object V2MarketNetwork {
             val player = context.player()
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
+                if (!permitted(player, "sell")) return@enqueueWork
                 try {
                     val party = ZianGtsV2Runtime.partyEntries(player.uuid) ?: return@enqueueWork
                     val currencies = AvecoinsWallet.supportedCurrencies()
@@ -121,6 +132,10 @@ object V2MarketNetwork {
             val player = context.player()
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
+                if (!permitted(player, "sell")) {
+                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, GtsPermissions.denialMessage()))
+                    return@enqueueWork
+                }
                 try {
                     require(payload.amount > 0) { "price must be positive" }
                     val supported = AvecoinsWallet.supportedCurrencies()
@@ -164,6 +179,7 @@ object V2MarketNetwork {
             val player = context.player()
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
+                if (!permitted(player, "mine")) return@enqueueWork
                 try {
                     val balances = ZianGtsV2Runtime.proceedsFor(player.uuid)
                     if (balances == null) {
@@ -195,6 +211,10 @@ object V2MarketNetwork {
             val player = context.player()
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
+                if (!permitted(player, "claim")) {
+                    PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, GtsPermissions.denialMessage()))
+                    return@enqueueWork
+                }
                 try {
                     require(payload.adapter == "avecoins_wallet") { "unsupported proceeds adapter" }
                     require(payload.currency in AvecoinsWallet.supportedCurrencies()) { "unsupported currency" }
@@ -232,6 +252,7 @@ object V2MarketNetwork {
             val player = context.player()
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
+                if (!permitted(player, "mine")) return@enqueueWork
                 try {
                     require(payload.page >= 1) { "invalid history page" }
                     require(payload.pageSize in 1..20) { "invalid history page size" }
@@ -287,6 +308,7 @@ object V2MarketNetwork {
     }
 
     private fun handlePageRequest(player: ServerPlayer, requestId: Long, request: MarketPageRequest) {
+        if (!permitted(player, if (request.tab == MarketTab.MY_OFFERS) "mine" else "list")) return
         if (!ZianGtsV2Runtime.isReady()) {
             ZianGts.LOGGER.debug("Ignoring V2 market request while runtime is unavailable")
             return
@@ -301,5 +323,11 @@ object V2MarketNetwork {
         } catch (error: Exception) {
             ZianGts.LOGGER.error("Failed to serve V2 market page for {}", player.scoreboardName, error)
         }
+    }
+
+    private fun permitted(player: ServerPlayer, action: String): Boolean {
+        if (GtsPermissions.allows(player, action)) return true
+        GtsPermissions.deny(player)
+        return false
     }
 }

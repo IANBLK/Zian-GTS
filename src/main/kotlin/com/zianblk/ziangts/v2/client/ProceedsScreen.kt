@@ -65,10 +65,14 @@ class ProceedsScreen(private val parent: Screen) : Screen(Component.literal("Mis
         }
     }
 
+    override fun renderBackground(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+        ZianGtsTheme.background(graphics, width, height)
+    }
+
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         renderBackground(graphics, mouseX, mouseY, partialTick)
         super.render(graphics, mouseX, mouseY, partialTick)
-        graphics.drawCenteredString(font, title, width / 2, 24, 0xFFFFFF)
+        graphics.drawCenteredString(font, title, width / 2, 24, ZianGtsTheme.GOLD)
         entries.take(8).forEachIndexed { index, entry ->
             val y = 72 + index * 30
             graphics.drawString(font, Component.literal(friendly(entry.currency)), width / 2 - 170, y, 0xFFF4D481.toInt(), false)
