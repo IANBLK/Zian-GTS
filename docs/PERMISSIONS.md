@@ -1,8 +1,13 @@
 # Permisos de Zian GTS
 
-LuckPerms es opcional y solo se necesita en el servidor, en su versión compatible
-con NeoForge. Zian GTS consulta su API, incluidos grupos, comodines y contextos.
+LuckPerms es opcional y solo se necesita en el servidor, como mod de NeoForge
+o plugin de Bukkit en Youer. Zian GTS consulta los permisos calculados por su API.
 No se incluye LuckPerms dentro del JAR.
+
+El comando es `/ZianGTS` (respeta las mayúsculas). El puente de Youer registra
+`minecraft.command.ziangts` para permitir que se llegue a las comprobaciones
+`ziangts.*`; no reemplaza un permiso de Bukkit ya configurado por el administrador.
+Si utilizabas reglas para el comando anterior, actualiza esas reglas al nuevo nombre.
 
 | Nodo | Acción | Valor predeterminado |
 |---|---|---|

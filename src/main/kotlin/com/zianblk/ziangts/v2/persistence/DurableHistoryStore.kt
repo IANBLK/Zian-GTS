@@ -29,8 +29,13 @@ class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
     init {
         Files.createDirectories(file.parent)
         channel = FileChannel.open(file, CREATE, READ, WRITE)
-        replay()
-        channel.position(channel.size())
+        try {
+            replay()
+            channel.position(channel.size())
+        } catch (error: Exception) {
+            try { channel.close() } catch (closeError: Exception) { error.addSuppressed(closeError) }
+            throw error
+        }
     }
 
     @Synchronized

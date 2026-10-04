@@ -1,10 +1,14 @@
 # Zian GTS
 
+**Beta 2.4:** the command is now `/ZianGTS`, including `open`, `status` and `recovery`.
+The old command is not registered. Existing `ziangts.*` LuckPerms nodes and saved market data are preserved.
+LuckPerms is supported as a NeoForge mod or a Bukkit plugin on Youer.
+
 Zian GTS es un mercado GTS para Cobblemon en Minecraft 1.21.1, desarrollado con NeoForge y pensado para servidores multijugador.
 
-## Beta 2.3
+## Beta 2.4
 
-La versión actual es **1.0.0 Beta 2.3**.
+La versión actual es **1.0.0 Beta 2.4**.
 
 Funciones principales:
 
@@ -38,11 +42,11 @@ Zian GTS también se prueba en Youer 1.21.1.
 
 Los jugadores pueden abrir el mercado con:
 
-`/gtsv2`
+`/ZianGTS`
 
 o:
 
-`/gtsv2 open`
+`/ZianGTS open`
 
 La publicación, compra, retirada, claim, historial, filtros y navegación se realizan desde la interfaz.
 
@@ -50,10 +54,10 @@ La publicación, compra, retirada, claim, historial, filtros y navegación se re
 
 Los operadores disponen de:
 
-- `/gtsv2 status`
-- `/gtsv2 recovery`
-- `/gtsv2 recovery resolve <operation-uuid>`
-- `/gtsv2 recovery resolve <operation-uuid> confirm`
+- `/ZianGTS status`
+- `/ZianGTS recovery`
+- `/ZianGTS recovery resolve <operation-uuid>`
+- `/ZianGTS recovery resolve <operation-uuid> confirm`
 
 Una operación incierta puede bloquear el mercado deliberadamente. Antes de resolver una incidencia deben comprobarse manualmente el estado de AVECOINS, el almacenamiento Pokémon y el estado del GTS. La resolución no entrega Pokémon ni devuelve monedas automáticamente.
 

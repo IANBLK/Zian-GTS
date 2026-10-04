@@ -1,12 +1,9 @@
 package com.zianblk.ziangts.v2.runtime
 
 import com.zianblk.ziangts.ZianGts
-import net.luckperms.api.LuckPermsProvider
-import net.luckperms.api.util.Tristate
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
-import net.neoforged.fml.ModList
 
 /** Server-side gate shared by commands and packets. An unavailable installed provider denies access. */
 object GtsPermissions {
@@ -32,16 +29,12 @@ object GtsPermissions {
     }
 
     fun allows(player: ServerPlayer, action: String, defaultAllowed: Boolean = true): Boolean {
-        if (!ModList.get().isLoaded("luckperms")) return defaultAllowed
         val nodes = if (action == "use") listOf("use") else listOf("use", action)
         return evaluate(defaultAllowed, nodes) { node ->
-            val api = LuckPermsProvider.get()
-            val user = api.userManager.getUser(player.uuid)
-                ?: throw IllegalStateException("LuckPerms user is unavailable")
-            when (user.cachedData.permissionData.checkPermission(node)) {
-                Tristate.TRUE -> Decision.TRUE
-                Tristate.FALSE -> Decision.FALSE
-                Tristate.UNDEFINED -> Decision.UNDEFINED
+            when (LuckPermsLookup.lookup(player, node)) {
+                LuckPermsLookup.Decision.TRUE -> Decision.TRUE
+                LuckPermsLookup.Decision.FALSE -> Decision.FALSE
+                LuckPermsLookup.Decision.ABSENT, LuckPermsLookup.Decision.UNDEFINED -> Decision.UNDEFINED
             }
         }
     }

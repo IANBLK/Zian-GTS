@@ -10,6 +10,17 @@ import java.util.UUID
 class DurableTradeJournalTest {
     @TempDir lateinit var dir: Path
 
+    @Test fun malformedJournalDoesNotLeakItsFileLockOrRewriteEvidence() {
+        val path = dir.resolve("broken.wal")
+        val corrupt = byteArrayOf(1)
+        java.nio.file.Files.write(path, corrupt)
+        assertThrows(IllegalArgumentException::class.java) { DurableTradeJournal(path) }
+        assertArrayEquals(corrupt, java.nio.file.Files.readAllBytes(path))
+        // Simulate a separately verified operator repair, after the failed open has released its handle.
+        java.nio.file.Files.write(path, byteArrayOf())
+        DurableTradeJournal(path).use { assertFalse(it.blocksTrading()) }
+    }
+
     @Test fun completedOperationDoesNotBlockAfterReopen() {
         val path = dir.resolve("transactions-v2.wal")
         DurableTradeJournal(path).use { j ->

@@ -17,7 +17,7 @@ import com.zianblk.ziangts.v2.network.OpenMarketScreenPayload
  */
 object V2Commands {
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
-        val root = Commands.literal("gtsv2")
+        val root = Commands.literal("ZianGTS")
             .executes { ctx -> open(ctx.source) }
             .then(Commands.literal("open").executes { ctx -> open(ctx.source) })
             .then(Commands.literal("status")
@@ -62,7 +62,7 @@ object V2Commands {
                             val id = parseUuid(ctx.source, idText) ?: return@executes 0
                             ctx.source.sendFailure(Component.literal(
                                 "Recovery is destructive. Verify AVECOINS, Pokemon storage and GTS state first. " +
-                                    "To confirm: /gtsv2 recovery resolve $id confirm"
+                                    "To confirm: /ZianGTS recovery resolve $id confirm"
                             ))
                             1
                         }

@@ -15,6 +15,16 @@ import java.util.UUID
 class DurableHistoryStoreTest {
     @TempDir lateinit var dir: Path
 
+    @Test fun failedOpenPreservesEvidenceAndReleasesFileForVerifiedRepair() {
+        val file = dir.resolve("broken-history.wal")
+        val bytes = byteArrayOf(1)
+        Files.write(file, bytes)
+        assertThrows(IllegalArgumentException::class.java) { DurableHistoryStore(file) }
+        org.junit.jupiter.api.Assertions.assertArrayEquals(bytes, Files.readAllBytes(file))
+        Files.write(file, byteArrayOf())
+        DurableHistoryStore(file).use { assertEquals(emptyList<TradeHistoryRecord>(), it.all()) }
+    }
+
     @Test fun appendedHistorySurvivesReopen() {
         val file = dir.resolve("history-v2.wal")
         val record = record()

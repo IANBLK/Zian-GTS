@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0-beta.2.4
+
+- Replace the public command with `/ZianGTS`; remove the `/gtsv2` root and update command help and documentation.
+- Detect LuckPerms installed as a Bukkit plugin on Youer as well as a NeoForge mod. Preserve explicit denials and fail closed when an installed provider is unavailable.
+- Preserve existing permission nodes, AVECOINS integration, journal recovery and saved trade data.
+- Release journal/history file handles when corrupt data prevents opening them, leaving recovery evidence untouched.
+- Add command-registration and reflective LuckPerms API regression tests.
+
 ## 1.0.0 Beta 2.3
 
 - Los permisos documentados del GTS se comprueban en el servidor para comandos, consultas y acciones de la interfaz. Si LuckPerms está instalado pero no puede responder, la operación se deniega.
@@ -19,13 +27,13 @@
 Hotfix de permisos para servidores híbridos basados en Youer/Bukkit.
 
 ### Permisos
-- `/gtsv2` y `/gtsv2 open` ahora pueden ser usados por jugadores normales sin OP.
-- Se añade un puente de permisos compatible con Youer/Bukkit para registrar `minecraft.command.gtsv2` con acceso por defecto para jugadores.
+- `/ZianGTS` y `/ZianGTS open` ahora pueden ser usados por jugadores normales sin OP.
+- Se añade un puente de permisos compatible con Youer/Bukkit para registrar `minecraft.command.ziangts` con acceso por defecto para jugadores.
 - En NeoForge puro el puente no añade una dependencia obligatoria de Bukkit.
 - Los comandos administrativos continúan protegidos:
-  - `/gtsv2 status`
-  - `/gtsv2 recovery`
-  - `/gtsv2 recovery resolve ...`
+  - `/ZianGTS status`
+  - `/ZianGTS recovery`
+  - `/ZianGTS recovery resolve ...`
 - No se modificó la lógica de compra, venta, persistencia, economía ni recuperación.
 
 ### Compatibilidad

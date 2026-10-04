@@ -8,11 +8,11 @@ If the runtime finds unresolved transaction evidence, trading remains blocked in
 
 Operators can use:
 
-`/gtsv2 status`
+`/ZianGTS status`
 
 and:
 
-`/gtsv2 recovery`
+`/ZianGTS recovery`
 
 Recovery output lists unresolved operations and their current stage.
 
@@ -27,11 +27,11 @@ Before resolving anything, manually reconcile:
 
 Then run:
 
-`/gtsv2 recovery resolve <operation-uuid>`
+`/ZianGTS recovery resolve <operation-uuid>`
 
 The command prints the destructive confirmation form:
 
-`/gtsv2 recovery resolve <operation-uuid> confirm`
+`/ZianGTS recovery resolve <operation-uuid> confirm`
 
 Resolution only records that manual reconciliation was completed. It does not automatically refund money or deliver a Pokémon.
 

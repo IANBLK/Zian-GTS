@@ -27,8 +27,13 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
     init {
         Files.createDirectories(path.toAbsolutePath().parent)
         channel = FileChannel.open(path, CREATE, READ, WRITE)
-        lock = channel.tryLock() ?: error("V2 trade journal already in use")
-        replay()
+        try {
+            lock = channel.tryLock() ?: error("V2 trade journal already in use")
+            replay()
+        } catch (error: Exception) {
+            try { channel.close() } catch (closeError: Exception) { error.addSuppressed(closeError) }
+            throw error
+        }
     }
 
     fun unresolved(): List<Pending> = pending.values.toList()

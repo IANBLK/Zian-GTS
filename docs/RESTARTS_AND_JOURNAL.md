@@ -27,13 +27,13 @@ Los reinicios automáticos STOP -> espera -> START usados por el servidor son co
 Consultar el estado:
 
 ```
-/gtsv2 status
-/gtsv2 recovery
+/ZianGTS status
+/ZianGTS recovery
 ```
 
 Sin LuckPerms, estos comandos requieren nivel de operador **2**. Con LuckPerms para NeoForge instalado, también se consultan `ziangts.use` y `ziangts.admin.recovery`; la confirmación de resolución requiere además `ziangts.admin.recovery.resolve`. Una denegación explícita afecta incluso a operadores.
 
-`/gtsv2 recovery` muestra hasta diez operaciones no resueltas con operation ID, tipo, subject, etapa, estado de quarantine y motivo.
+`/ZianGTS recovery` muestra hasta diez operaciones no resueltas con operation ID, tipo, subject, etapa, estado de quarantine y motivo.
 
 Antes de resolver una operación, comprobar manualmente:
 
@@ -46,13 +46,13 @@ Antes de resolver una operación, comprobar manualmente:
 Para iniciar la resolución:
 
 ```
-/gtsv2 recovery resolve <operation-uuid>
+/ZianGTS recovery resolve <operation-uuid>
 ```
 
 El comando muestra una advertencia y exige confirmación explícita:
 
 ```
-/gtsv2 recovery resolve <operation-uuid> confirm
+/ZianGTS recovery resolve <operation-uuid> confirm
 ```
 
 La resolución elimina únicamente esa evidencia pendiente del journal. No cobra, devuelve, entrega ni reconstruye automáticamente Pokémon o moneda. Cuando se resuelva la última operación, **reiniciar el servidor** antes de reabrir el mercado.

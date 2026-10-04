@@ -25,15 +25,15 @@ The active production implementation is Zian GTS V2.
 
 Players:
 
-- `/gtsv2`
-- `/gtsv2 open`
+- `/ZianGTS`
+- `/ZianGTS open`
 
 Operators:
 
-- `/gtsv2 status`
-- `/gtsv2 recovery`
-- `/gtsv2 recovery resolve <operation-uuid>`
-- `/gtsv2 recovery resolve <operation-uuid> confirm`
+- `/ZianGTS status`
+- `/ZianGTS recovery`
+- `/ZianGTS recovery resolve <operation-uuid>`
+- `/ZianGTS recovery resolve <operation-uuid> confirm`
 
 ## Transaction safety
 
