@@ -1,0 +1,44 @@
+<p><strong>🌐 ZIAN GTS — A MARKETPLACE FOR YOUR POKÉMON</strong></p>
+<p>Give your Cobblemon server a dedicated marketplace where players can list Pokémon from their party, browse offers, buy Pokémon, withdraw their own listings, and claim sale proceeds through an in-game interface.</p>
+<p>Built for <strong>Minecraft 1.21.1 and NeoForge</strong>, with testing on <strong>Youer 1.21.1</strong>.</p>
+<p><strong>🔎 BROWSE BEFORE YOU BUY</strong></p>
+<p>View Pokémon models and inspect their gender, nature, ability, moves, and IVs. A visual IV radar helps compare their stats.</p>
+<p>Use filters for <strong>Shiny, Alpha, Legendary, and your own listings</strong>, together with sorting and pagination, to find the offers you want.</p>
+<p><strong>💰 AVECOINS ECONOMY</strong></p>
+<p>Zian GTS integrates with <strong>AVECOINS 2.3 and 2.4</strong>. The server checks the wallet contract, balances, listing ownership, and purchase conditions.</p>
+<p>Seller proceeds are persisted and can be claimed through the interface. A listing is reserved during a purchase to prevent two players from buying the same offer simultaneously.</p>
+<p>An unsupported economy version or an unresolved transaction can leave the market unavailable while the server remains running.</p>
+<p><strong>📜 COMMANDS</strong></p>
+<p><strong>/ZianGTS</strong> — Open the marketplace.</p>
+<p><strong>/ZianGTS open</strong> — Open the marketplace.</p>
+<p><strong>/ZianGTS status</strong> — Administrative status and readiness information.</p>
+<p><strong>/ZianGTS recovery</strong> — Inspect unresolved transaction records.</p>
+<p><strong>/ZianGTS recovery resolve &lt;operation-uuid&gt;</strong> — Show the confirmation required to record a manually reconciled operation.</p>
+<p><strong>/ZianGTS recovery resolve &lt;operation-uuid&gt; confirm</strong> — Confirm that manual reconciliation has been completed.</p>
+<p>The command name is <strong>/ZianGTS</strong>, including its capitalization. The old <strong>/gtsv2</strong> command has been removed. Update scripts and menu buttons that still use it.</p>
+<p><strong>🔐 LUCKPERMS SUPPORT</strong></p>
+<p>LuckPerms is optional and can be installed as a <strong>NeoForge mod</strong> or as a <strong>Bukkit plugin on Youer</strong>.</p>
+<p><strong>ziangts.use</strong> — General access to the commands and interface.</p>
+<p><strong>ziangts.list</strong> — Browse public listings and filters.</p>
+<p><strong>ziangts.mine</strong> — View personal listings, pending proceeds, and personal history.</p>
+<p><strong>ziangts.sell</strong> — Publish Pokémon.</p>
+<p><strong>ziangts.buy</strong> — Purchase Pokémon.</p>
+<p><strong>ziangts.cancel</strong> — Withdraw your own listings.</p>
+<p><strong>ziangts.claim</strong> — Claim sale proceeds.</p>
+<p><strong>ziangts.admin.recovery</strong> — Inspect administrative status and recovery information.</p>
+<p><strong>ziangts.admin.recovery.resolve</strong> — Resolve manually reconciled journal operations.</p>
+<p>Every action also requires <strong>ziangts.use</strong>. Recovery resolution additionally requires <strong>ziangts.admin.recovery</strong>. Explicit denials apply to operators too. If LuckPerms is installed but cannot respond, access is denied.</p>
+<p>Without LuckPerms, player actions are enabled by default and administrative actions require operator level 2. Permissions never bypass ownership, balance, or market safety checks.</p>
+<p>See the <a href="https://github.com/IANBLK/Zian-GTS/blob/fix/command-and-permission-review/docs/PERMISSIONS.md">permission guide</a> for group configuration.</p>
+<p><strong>💾 PERSISTENCE AND RECOVERY</strong></p>
+<p>Market data, transaction history, pending proceeds, and transaction evidence are persisted on the server.</p>
+<p>The market, Cobblemon storage, and AVECOINS are separate systems. If an interrupted operation has an uncertain outcome, trading is blocked for review rather than assuming success or retrying an external mutation.</p>
+<p>Recovery commands <strong>do not automatically refund money or deliver Pokémon</strong>. Administrators must verify the wallet, Pokémon ownership, market state, and pending proceeds before resolving an operation. Restart the server after all unresolved operations have been reconciled.</p>
+<p>Read the <a href="https://github.com/IANBLK/Zian-GTS/blob/fix/command-and-permission-review/docs/RECOVERY.md">recovery guide</a>.</p>
+<p><strong>📦 INSTALLATION</strong></p>
+<p>Requires <strong>Minecraft 1.21.1</strong>, <strong>Java 21</strong>, <strong>NeoForge 21.1.228+</strong>, <strong>Kotlin for Forge 5.10+</strong>, and <strong>Cobblemon 1.8+</strong> for Minecraft 1.21.1.</p>
+<p>Install <strong>AVECOINS 2.3 or 2.4</strong> for the integrated economy. Install the same Zian GTS version on both the server and clients, together with the required dependencies.</p>
+<p><strong>🚧 BETA — ACTIVE DEVELOPMENT</strong></p>
+<p>Zian GTS is in active development. The core has automated coverage for persistence, concurrent purchases, rollback, journaling, and recovery. Live-server testing remains necessary for each release and dependency combination.</p>
+<p>Back up your world before updating. Report issues with your mod versions, server platform, relevant logs, and reproduction steps through <a href="https://github.com/IANBLK/Zian-GTS/issues">GitHub Issues</a>.</p>
+<p><strong>Created by IANBLK • Minecraft 1.21.1 • NeoForge • Youer • MIT License</strong></p>
