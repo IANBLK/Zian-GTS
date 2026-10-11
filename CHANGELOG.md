@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0-beta.2.5 — candidata de almacenamiento
+
+- El historial conserva posiciones y hashes en memoria; lee las filas solicitadas verificando el contenido del WAL.
+- Un historial no disponible bloquea nuevas compras antes de retirar monedas o entregar Pokémon.
+- Herramienta offline para archivar únicamente transacciones resueltas, con gzip verificado del original. Rechaza pendientes y cuarentenas.
+- Historial de compras, mercado y saldos conservan sus formatos; 109 pruebas aprobadas.
+
 ## 1.0.0-beta.2.4
 
 - Replace the public command with `/ZianGTS`; remove the `/gtsv2` root and update command help and documentation.

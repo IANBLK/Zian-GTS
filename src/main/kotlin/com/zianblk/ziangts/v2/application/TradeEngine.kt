@@ -124,6 +124,8 @@ class TradeEngine(
     }
 
     fun purchase(buyerId: UUID, offerId: OfferId): TradeResult = mutate {
+        val historyReady = try { history?.available() ?: true } catch (error: Exception) { false }
+        if (!historyReady) return@mutate TradeResult.Rejected("history unavailable")
         val offer = offers.find(offerId) ?: return@mutate TradeResult.Rejected("offer not found")
         val now = Instant.now(clock)
         if (!offer.purchasableBy(buyerId, now))

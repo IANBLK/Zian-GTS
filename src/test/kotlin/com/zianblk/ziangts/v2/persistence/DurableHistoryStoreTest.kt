@@ -15,6 +15,17 @@ import java.util.UUID
 class DurableHistoryStoreTest {
     @TempDir lateinit var dir: Path
 
+    @Test fun onlyOneWriterCanOwnHistoryAndClosedWriterCannotAppend() {
+        val file=dir.resolve("writer.wal")
+        val store=DurableHistoryStore(file)
+        store.append(record())
+        assertThrows(IllegalStateException::class.java){DurableHistoryStore(file)}
+        store.close()
+        org.junit.jupiter.api.Assertions.assertFalse(store.available())
+        assertThrows(IllegalStateException::class.java){store.append(record().copy(operationId=UUID.randomUUID()))}
+        DurableHistoryStore(file).use { assertEquals(listOf(record()),it.all()) }
+    }
+
     @Test fun failedOpenPreservesEvidenceAndReleasesFileForVerifiedRepair() {
         val file = dir.resolve("broken-history.wal")
         val bytes = byteArrayOf(1)

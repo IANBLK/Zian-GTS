@@ -17,6 +17,7 @@ data class TradeHistoryRecord(
 )
 
 interface HistoryPort {
+    fun available(): Boolean = true
     fun append(record: TradeHistoryRecord)
     fun all(): List<TradeHistoryRecord>
 

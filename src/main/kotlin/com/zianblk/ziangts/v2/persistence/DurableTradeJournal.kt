@@ -19,16 +19,19 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
     data class Pending(val ticket: JournalTicket, val subjectId: UUID, val stage: TradeStage, val quarantined: Boolean, val reason: String?)
     private val gson = Gson()
     private val pending = linkedMapOf<UUID, Pending>()
+    private var healthy = true
     private var sequence = 0L
     private var hash = ByteArray(32)
     private val channel: FileChannel
     private val lock: java.nio.channels.FileLock
 
     init {
+        require(!Files.exists(path.resolveSibling(path.fileName.toString()+".maintenance"))) { "trade storage maintenance in progress" }
         Files.createDirectories(path.toAbsolutePath().parent)
         channel = FileChannel.open(path, CREATE, READ, WRITE)
         try {
             lock = channel.tryLock() ?: error("V2 trade journal already in use")
+            require(!Files.exists(path.resolveSibling(path.fileName.toString()+".maintenance"))) { "trade storage maintenance in progress" }
             replay()
         } catch (error: Exception) {
             try { channel.close() } catch (closeError: Exception) { error.addSuppressed(closeError) }
@@ -37,7 +40,7 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
     }
 
     fun unresolved(): List<Pending> = pending.values.toList()
-    fun blocksTrading(): Boolean = pending.isNotEmpty()
+    fun blocksTrading(): Boolean = !healthy || pending.isNotEmpty()
 
     override fun begin(operation: TradeOperation, subjectId: UUID): JournalTicket {
         check(!blocksTrading()) { "V2 journal requires reconciliation" }
@@ -105,6 +108,7 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
     }
 
     private fun append(kind: String, data: JsonObject) {
+        check(healthy) { "trade journal write failed; requires restart/review" }
         val event = JsonObject().apply {
             addProperty("version", 2); addProperty("sequence", sequence + 1)
             addProperty("kind", kind); add("data", data)
@@ -114,9 +118,11 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
         val digest = digest(hash, bytes)
         val frame = ByteBuffer.allocate(4 + bytes.size + 32).putInt(bytes.size).put(bytes).put(digest)
         frame.flip(); channel.position(channel.size())
-        while (frame.hasRemaining()) channel.write(frame)
-        channel.force(true)
-        apply(event); sequence++; hash = digest
+        try {
+            while (frame.hasRemaining()) channel.write(frame)
+            channel.force(true)
+            apply(event); sequence++; hash = digest
+        } catch (error: Exception) { healthy = false; throw error }
     }
 
     private fun replay() {
@@ -160,7 +166,27 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
         while (buffer.hasRemaining()) require(channel.read(buffer) > 0) { "truncated V2 journal" }
     }
 
-    override fun close() { try { lock.release() } finally { channel.close() } }
+    fun archiveClosed(target: Path) {
+        check(!blocksTrading()) { "unresolved trades cannot be compacted" }
+        val original = MessageDigest.getInstance("SHA-256")
+        val size = channel.size();var offset = 0L
+        val buffer = ByteBuffer.allocate(65536)
+        java.util.zip.GZIPOutputStream(Files.newOutputStream(target, CREATE_NEW)).use { output ->
+            while (offset < size) {
+                buffer.clear();val read = channel.read(buffer, offset);require(read > 0)
+                original.update(buffer.array(),0,read);output.write(buffer.array(),0,read);offset += read
+            }
+        }
+        FileChannel.open(target, WRITE).use { it.force(true) }
+        val recovered=MessageDigest.getInstance("SHA-256");var count=0L
+        java.util.zip.GZIPInputStream(Files.newInputStream(target)).use { input ->
+            val bytes=ByteArray(65536)
+            while(true){val read=input.read(bytes);if(read<0)break;count+=read;require(count<=size);recovered.update(bytes,0,read)}
+        }
+        require(count==size && MessageDigest.isEqual(original.digest(),recovered.digest())) { "trade archive differs from original" }
+    }
+
+    override fun close() { healthy = false; try { if(lock.isValid) lock.release() } finally { channel.close() } }
 
     companion object {
         private const val MAX_FRAME = 8 * 1024 * 1024

@@ -13,6 +13,25 @@ class TradeEngineJournalFailureTest {
     private val clock = Clock.fixed(Instant.parse("2026-09-22T16:00:00Z"), ZoneOffset.UTC)
     private val payment = PaymentSpec("avecoins_wallet", "avecoins:coppercoin", 8)
 
+    @Test fun purchaseDoesNotChargeOrDeliverWhenHistoryIsUnavailable() {
+        val seller=UUID.randomUUID();val buyer=UUID.randomUUID()
+        val offers=InMemoryOfferBook()
+        val offer=TradeOffer(OfferId(UUID.randomUUID()),OfferOwner(seller,"Seller"),payment,
+            PokemonEnvelope(UUID.randomUUID(),"cobblemon:ditto",1,false,false,"{test:true}"),
+            Instant.now(clock),Instant.now(clock).plusSeconds(3600))
+        offers.add(offer)
+        val economy=CountingEconomy();val pokemon=CountingPokemon()
+        val unavailable=object:HistoryPort {
+            override fun available()=false
+            override fun append(record:TradeHistoryRecord)=error("must not append")
+            override fun all()=emptyList<TradeHistoryRecord>()
+        }
+        val engine=TradeEngine(offers,pokemon,economy,InMemoryProceedsStore(),BeginFailJournal(),clock,history=unavailable)
+        assertEquals(TradeResult.Rejected("history unavailable"),engine.purchase(buyer,offer.id))
+        assertEquals(0,economy.withdrawCalls);assertEquals(0,pokemon.deliverCalls)
+        assertNotNull(offers.find(offer.id))
+    }
+
     @Test fun purchaseDoesNotMutateWhenJournalBeginFails() {
         val seller = UUID.randomUUID()
         val buyer = UUID.randomUUID()
