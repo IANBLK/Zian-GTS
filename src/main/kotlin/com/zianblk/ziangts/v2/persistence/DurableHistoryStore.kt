@@ -22,6 +22,7 @@ import java.util.UUID
 class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
     private val gson = Gson()
     private val records = mutableListOf<TradeHistoryRecord>()
+    private val operationIds = hashSetOf<UUID>()
     private val recordsByPlayer = mutableMapOf<UUID, MutableList<TradeHistoryRecord>>()
     private var previousHash = ByteArray(32)
     private val channel: FileChannel
@@ -40,7 +41,7 @@ class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
 
     @Synchronized
     override fun append(record: TradeHistoryRecord) {
-        require(records.none { it.operationId == record.operationId }) { "duplicate history operation" }
+        require(record.operationId !in operationIds) { "duplicate history operation" }
         val payload = gson.toJson(Wire.from(record)).toByteArray(StandardCharsets.UTF_8)
         val hash = digest(previousHash, payload)
         val frame = ByteBuffer.allocate(4 + payload.size + hash.size)
@@ -50,6 +51,7 @@ class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
         channel.force(true)
         previousHash = hash
         records += record
+        operationIds += record.operationId
         index(record)
     }
 
@@ -89,8 +91,9 @@ class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
             require(MessageDigest.isEqual(actualHash, expectedHash)) { "history checksum mismatch" }
             val wire = gson.fromJson(String(payload, StandardCharsets.UTF_8), Wire::class.java)
             val record = wire.toRecord()
-            require(records.none { it.operationId == record.operationId }) { "duplicate history operation" }
+            require(record.operationId !in operationIds) { "duplicate history operation" }
             records += record
+            operationIds += record.operationId
             index(record)
             expectedPrevious = actualHash
         }

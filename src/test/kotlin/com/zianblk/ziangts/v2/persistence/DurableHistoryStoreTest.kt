@@ -41,6 +41,28 @@ class DurableHistoryStoreTest {
         assertThrows(IllegalArgumentException::class.java) { DurableHistoryStore(file) }
     }
 
+    @Test fun duplicateOperationRejectedBeforeWriteAndAfterReopen() {
+        val file=dir.resolve("indexed-history.wal");val record=record()
+        DurableHistoryStore(file).use { store ->
+            store.append(record);val size=Files.size(file)
+            assertThrows(IllegalArgumentException::class.java){store.append(record)}
+            assertEquals(size,Files.size(file));assertEquals(listOf(record),store.forPlayer(record.sellerId,20))
+        }
+        DurableHistoryStore(file).use { store ->
+            val size=Files.size(file)
+            assertThrows(IllegalArgumentException::class.java){store.append(record)}
+            assertEquals(size,Files.size(file));assertEquals(listOf(record),store.forPlayer(record.buyerId,20))
+        }
+    }
+    @Test fun indexedHistoryReplaysLargeSetWithoutDroppingRecords() {
+        val file=dir.resolve("large-history.wal");val baseline=record()
+        val entries=(0 until 10000).map { baseline.copy(operationId=UUID(0,it.toLong()+1)) }
+        DurableHistoryStore(file).use { store -> entries.forEach(store::append) }
+        DurableHistoryStore(file).use { store ->
+            assertEquals(entries,store.all());assertEquals(entries.takeLast(20).reversed(),store.forPlayer(baseline.sellerId,20))
+            assertThrows(IllegalArgumentException::class.java){store.append(entries.first())}
+        }
+    }
     private fun record() = TradeHistoryRecord(
         UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
         OfferId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")),
