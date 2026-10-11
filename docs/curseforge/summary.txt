@@ -1,0 +1,1 @@
+A persistent Cobblemon Pokémon marketplace with an in-game interface, AVECOINS integration, transaction history, and LuckPerms permissions.

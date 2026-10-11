@@ -7,6 +7,7 @@ import com.zianblk.ziangts.v2.persistence.DurableTradeJournal
 import com.zianblk.ziangts.v2.port.TradeStage
 import com.zianblk.ziangts.v2.testadapter.DurableFileEconomyPort
 import com.zianblk.ziangts.v2.testadapter.DurableFilePokemonPort
+import com.zianblk.ziangts.v2.testadapter.launchCrashProbe
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -17,11 +18,7 @@ class FullPurchaseCrashIntegrationTest {
     @TempDir lateinit var dir: Path
 
     private fun crashAt(stage: TradeStage) {
-        val java = Path.of(System.getProperty("java.home"), "bin",
-            if (System.getProperty("os.name").startsWith("Windows")) "java.exe" else "java")
-        val p = ProcessBuilder(java.toString(), "-cp", System.getProperty("java.class.path"),
-            FullPurchaseCrashProbe::class.java.name, dir.toString(), stage.name)
-            .redirectErrorStream(true).start()
+        val p = launchCrashProbe(dir, FullPurchaseCrashProbe::class.java, dir.toString(), stage.name)
         assertTrue(p.waitFor(20, TimeUnit.SECONDS), "full purchase probe timed out")
         assertEquals(29, p.exitValue())
     }

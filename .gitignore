@@ -25,6 +25,7 @@ replay_pid*
 
 # Gradle / NeoForge / IDE
 .gradle/
+.gradle-user/
 build/
 run/
 out/
@@ -32,3 +33,4 @@ out/
 *.iml
 .vscode/
 !gradle/wrapper/gradle-wrapper.jar
+!artifacts/*.jar

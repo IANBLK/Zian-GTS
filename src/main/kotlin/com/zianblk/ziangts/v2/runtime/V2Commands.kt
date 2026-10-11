@@ -12,16 +12,16 @@ import com.zianblk.ziangts.v2.network.OpenMarketScreenPayload
  * Production-facing V2 commands.
  *
  * Player access is intentionally limited to opening the native market UI.
- * Recovery/status remain operator-only because recovery resolution is a destructive
- * administrative action backed by the durable transaction journal.
+ * Recovery/status use server-side administrative permissions; without LuckPerms
+ * the default remains operator level 2.
  */
 object V2Commands {
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
-        val root = Commands.literal("gtsv2")
+        val root = Commands.literal("ZianGTS")
             .executes { ctx -> open(ctx.source) }
             .then(Commands.literal("open").executes { ctx -> open(ctx.source) })
             .then(Commands.literal("status")
-                .requires { it.hasPermission(2) }
+                .requires { GtsPermissions.allows(it, "admin.recovery", defaultAdmin = true) }
                 .executes { ctx ->
                     val ready = ZianGtsV2Runtime.isReady()
                     val detail = ZianGtsV2Runtime.blockedReason() ?: "ready"
@@ -32,7 +32,7 @@ object V2Commands {
                     1
                 })
             .then(Commands.literal("recovery")
-                .requires { it.hasPermission(2) }
+                .requires { GtsPermissions.allows(it, "admin.recovery", defaultAdmin = true) }
                 .executes { ctx ->
                     val pending = ZianGtsV2Runtime.unresolvedTransactions()
                     if (pending.isEmpty()) {
@@ -55,13 +55,14 @@ object V2Commands {
                     1
                 }
                 .then(Commands.literal("resolve")
+                    .requires { GtsPermissions.allows(it, "admin.recovery.resolve", defaultAdmin = true) }
                     .then(Commands.argument("operation", StringArgumentType.word())
                         .executes { ctx ->
                             val idText = StringArgumentType.getString(ctx, "operation")
                             val id = parseUuid(ctx.source, idText) ?: return@executes 0
                             ctx.source.sendFailure(Component.literal(
                                 "Recovery is destructive. Verify AVECOINS, Pokemon storage and GTS state first. " +
-                                    "To confirm: /gtsv2 recovery resolve $id confirm"
+                                    "To confirm: /ZianGTS recovery resolve $id confirm"
                             ))
                             1
                         }
@@ -99,6 +100,10 @@ object V2Commands {
             source.playerOrException
         } catch (_: Exception) {
             source.sendFailure(Component.literal("This command must be used by a player."))
+            return 0
+        }
+        if (!GtsPermissions.allows(player, "use")) {
+            source.sendFailure(Component.literal(GtsPermissions.denialMessage()))
             return 0
         }
         if (!ZianGtsV2Runtime.isReady()) {

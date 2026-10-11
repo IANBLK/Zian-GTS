@@ -4,18 +4,18 @@ import com.zianblk.ziangts.ZianGts
 
 /**
  * Youer/Paper wraps Brigadier commands with Bukkit's VanillaCommandWrapper.
- * That wrapper assigns the root command the permission `minecraft.command.gtsv2`,
+ * That wrapper assigns the root command the permission `minecraft.command.ziangts`,
  * which is OP-only by default when the permission is not registered.
  *
  * On a hybrid Bukkit server we register only that root permission with default TRUE
- * so ordinary players can execute /gtsv2 and /gtsv2 open. Administrative children
+ * so ordinary players can execute /ZianGTS and /ZianGTS open. Administrative children
  * remain protected by their Brigadier permission-level checks.
  *
  * Everything is reflective so pure NeoForge installations do not gain a hard Bukkit
  * dependency and simply skip this bridge.
  */
 object YouerPermissionBridge {
-    private const val ROOT_PERMISSION = "minecraft.command.gtsv2"
+    private const val ROOT_PERMISSION = "minecraft.command.ziangts"
 
     fun registerPlayerAccess() {
         try {

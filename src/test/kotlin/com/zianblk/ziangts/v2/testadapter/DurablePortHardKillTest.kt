@@ -11,11 +11,7 @@ class DurablePortHardKillTest {
     @TempDir lateinit var dir: Path
 
     private fun runProbe(scenario: String): Int {
-        val java = Path.of(System.getProperty("java.home"), "bin", if (System.getProperty("os.name").startsWith("Windows")) "java.exe" else "java")
-        val process = ProcessBuilder(
-            java.toString(), "-cp", System.getProperty("java.class.path"),
-            DurablePortCrashProbe::class.java.name, dir.toString(), scenario
-        ).redirectErrorStream(true).start()
+        val process = launchCrashProbe(dir, DurablePortCrashProbe::class.java, dir.toString(), scenario)
         assertTrue(process.waitFor(20, TimeUnit.SECONDS), "probe timed out")
         return process.exitValue()
     }

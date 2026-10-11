@@ -52,11 +52,11 @@ Zian GTS añade un mercado GTS para servidores de Cobblemon. Los jugadores puede
 
 ### Comando
 
-`/gtsv2`
+`/ZianGTS`
 
 También puede utilizarse:
 
-`/gtsv2 open`
+`/ZianGTS open`
 
 ### Estado de Beta
 

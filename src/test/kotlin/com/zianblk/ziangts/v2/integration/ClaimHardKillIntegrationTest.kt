@@ -4,6 +4,7 @@ import com.zianblk.ziangts.v2.persistence.DurableMarketStore
 import com.zianblk.ziangts.v2.persistence.DurableTradeJournal
 import com.zianblk.ziangts.v2.port.TradeStage
 import com.zianblk.ziangts.v2.testadapter.DurableFileEconomyPort
+import com.zianblk.ziangts.v2.testadapter.launchCrashProbe
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -14,11 +15,7 @@ class ClaimHardKillIntegrationTest {
     @TempDir lateinit var dir: Path
 
     private fun crashAt(stage: TradeStage) {
-        val java = Path.of(System.getProperty("java.home"), "bin",
-            if (System.getProperty("os.name").startsWith("Windows")) "java.exe" else "java")
-        val p = ProcessBuilder(java.toString(), "-cp", System.getProperty("java.class.path"),
-            ClaimCrashProbe::class.java.name, dir.toString(), stage.name)
-            .redirectErrorStream(true).start()
+        val p = launchCrashProbe(dir, ClaimCrashProbe::class.java, dir.toString(), stage.name)
         assertTrue(p.waitFor(20, TimeUnit.SECONDS), "claim probe timed out")
         assertEquals(29, p.exitValue())
     }
