@@ -23,7 +23,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         val previewX = layout.left + 12
         val buttonW = 80
         val buttonX = previewX + (previewW - buttonW) / 2
-        addRenderableWidget(Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
+        addRenderableWidget(GtsButton.create(Component.literal("Volver")) { minecraft?.setScreen(parent) }
             .bounds(buttonX, layout.buttonY - 24, buttonW, 18).build())
     }
 
@@ -39,6 +39,9 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         val speciesName = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
         if (layout.compact) renderCompactDetails(graphics, layout, speciesName) else renderWideDetails(graphics, layout, speciesName)
         renderPokemonModel(graphics, layout, partialTick)
+        if(mouseX in layout.left+125 until layout.left+layout.width-175 && mouseY in layout.top+32 until layout.top+170){
+            queueTooltip(listOf(Component.literal(speciesName),Component.literal("Género: "+localizedGender(entry.gender)),Component.literal("Naturaleza: ").append(localizedNature(entry.nature)),Component.literal("Habilidad: ").append(localizedAbility(entry.ability)),Component.literal("Vendedor: "+entry.sellerName)))
+        }
         for (renderable in renderables) renderable.render(graphics, mouseX, mouseY, partialTick)
     }
 
@@ -57,13 +60,13 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         drawPanel(graphics, radarX, top, radarW, topH)
 
         var y = top + 10
-        graphics.drawString(font, Component.literal(speciesName), infoX + 8, y, 0xFFF4D481.toInt(), false); y += 12
+        graphics.drawString(font, font.plainSubstrByWidth(speciesName,infoW-16), infoX + 8, y, 0xFFF4D481.toInt(), false); y += 12
         graphics.drawString(font, Component.literal("Nv. " + entry.level), infoX + 8, y, 0xFFB8C0C8.toInt(), false); y += 12
         drawTraitRow(graphics, infoX + 8, y); y += 32
         componentLine(graphics, "Naturaleza", localizedNature(entry.nature), infoX + 8, y); y += 11
         componentLine(graphics, "Habilidad", localizedAbility(entry.ability), infoX + 8, y); y += 11
-        graphics.drawString(font, Component.literal("Género: " + localizedGender(entry.gender)), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
-        graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
+        graphics.drawString(font, font.plainSubstrByWidth("Género: "+localizedGender(entry.gender),infoW-16), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
+        graphics.drawString(font, font.plainSubstrByWidth("Vendedor: "+entry.sellerName,infoW-16), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
         graphics.drawString(font, Component.literal(expiryLabel()), infoX + 8, minOf(y, top + topH - 13), 0xFFF4D481.toInt(), false)
 
         drawIvNumbers(graphics, radarX + 8, top + 27, entry.ivs)
@@ -159,7 +162,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
     }
 
     private fun localizedGender(value: String): String = when (value.substringAfter(':').uppercase()) { "MALE" -> "Macho"; "FEMALE" -> "Hembra"; "GENDERLESS" -> "Sin género"; else -> friendly(value) }
-    private fun componentLine(graphics: GuiGraphics, label: String, value: Component, x: Int, y: Int) { graphics.drawString(font, Component.literal("$label: ").append(value), x, y, 0xFFE2E8F0.toInt(), false) }
+    private fun componentLine(graphics: GuiGraphics, label: String, value: Component, x: Int, y: Int) { graphics.drawString(font, font.plainSubstrByWidth("$label: "+value.string,108), x, y, 0xFFE2E8F0.toInt(), false) }
     private fun localizedNature(value: String): Component = cobblemonTranslation("cobblemon.nature.", value)
     private fun localizedAbility(value: String): Component = cobblemonTranslation("cobblemon.ability.", value)
     private fun localizedMove(value: String): Component = cobblemonTranslation("cobblemon.move.", value)

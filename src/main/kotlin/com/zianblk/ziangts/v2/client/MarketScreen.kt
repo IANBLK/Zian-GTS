@@ -19,6 +19,7 @@ import net.minecraft.world.item.ItemStack
 import org.joml.Quaternionf
 
 class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
+    private var initialized=false
     private var state = MarketUiState()
     private var observedRevision = -1L
     private var previousButton: Button? = null
@@ -32,12 +33,15 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
     private val previewStates = mutableMapOf<UUID, FloatingState>()
 
     override fun init() {
-        fitViewport(600,390)
+        fitViewport(640,440)
         super.init()
-        observedActionRevision = V2MarketClientState.actionRevision()
-        actionMessage = null
-        actionPending = false
+        if(!initialized){
+            observedActionRevision=V2MarketClientState.actionRevision()
+            initialized=true
+        }
+        actionButtons.clear()
 
+        addRenderableWidget(GtsButton.create(Component.literal("Cerrar")){onClose()}.bounds(width-76,18,64,20).build())
         val compact = width < 600
         val row1Y = 18
         val row2Y = 41
@@ -48,17 +52,17 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         val row1X = (width - row1Total) / 2
 
         addRenderableWidget(
-            Button.builder(Component.literal("Mercado")) { switchTab(MarketTab.MARKET) }
+            GtsButton.create(Component.literal("Mercado")) { switchTab(MarketTab.MARKET) }
                 .bounds(row1X, row1Y, primaryW, 20)
                 .build()
         )
         addRenderableWidget(
-            Button.builder(Component.literal("Mis anuncios")) { switchTab(MarketTab.MY_OFFERS) }
+            GtsButton.create(Component.literal("Mis anuncios")) { switchTab(MarketTab.MY_OFFERS) }
                 .bounds(row1X + primaryW + primaryGap, row1Y, primaryW, 20)
                 .build()
         )
         addRenderableWidget(
-            Button.builder(Component.literal("Publicar")) { minecraft?.setScreen(PublishOfferScreen(this)) }
+            GtsButton.create(Component.literal("Publicar")) { minecraft?.setScreen(PublishOfferScreen(this)) }
                 .bounds(row1X + primaryW * 2 + primaryGap * 2, row1Y, smallW, 20)
                 .build()
         )
@@ -69,7 +73,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         var secondX = (width - secondTotal) / 2
 
         filterButton = addRenderableWidget(
-            Button.builder(Component.literal(filterLabel())) {
+            GtsButton.create(Component.literal(filterLabel())) {
                 if (state.tab == MarketTab.MARKET) {
                     state = state.copy(filter = nextFilter(state.filter), page = 1)
                     refreshControls()
@@ -80,7 +84,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         secondX += secondWidths[0] + secondGap
 
         sortButton = addRenderableWidget(
-            Button.builder(Component.literal(sortLabel())) {
+            GtsButton.create(Component.literal(sortLabel())) {
                 state = state.copy(sort = nextSort(state.sort), page = 1)
                 refreshControls()
                 requestCurrent()
@@ -89,13 +93,13 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         secondX += secondWidths[1] + secondGap
 
         addRenderableWidget(
-            Button.builder(Component.literal("Ganancias")) { minecraft?.setScreen(ProceedsScreen(this)) }
+            GtsButton.create(Component.literal("Ganancias")) { minecraft?.setScreen(ProceedsScreen(this)) }
                 .bounds(secondX, row2Y, secondWidths[2], 18)
                 .build()
         )
         secondX += secondWidths[2] + secondGap
         addRenderableWidget(
-            Button.builder(Component.literal("Historial")) { minecraft?.setScreen(HistoryScreen(this)) }
+            GtsButton.create(Component.literal("Historial")) { minecraft?.setScreen(HistoryScreen(this)) }
                 .bounds(secondX, row2Y, secondWidths[3], 18)
                 .build()
         )
@@ -103,7 +107,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         refreshControls()
         val layout = MarketLayout.calculate(width, height)
         previousButton = addRenderableWidget(
-            Button.builder(Component.literal("<")) {
+            GtsButton.create(Component.literal("<")) {
                 val next = state.previousPage()
                 if (next !== state) {
                     state = next
@@ -112,7 +116,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
             }.bounds(width / 2 - 65, layout.footerY, 30, 20).build()
         )
         nextButton = addRenderableWidget(
-            Button.builder(Component.literal(">")) {
+            GtsButton.create(Component.literal(">")) {
                 val next = state.nextPage()
                 if (next !== state) {
                     state = next
@@ -121,6 +125,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
             }.bounds(width / 2 + 35, layout.footerY, 30, 20).build()
         )
         updateNavigationButtons()
+        rebuildEntryButtons()
         requestCurrent()
     }
 
@@ -143,7 +148,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
             if (action != null) {
                 val buttonWidth = 62
                 val button = addRenderableWidget(
-                    Button.builder(Component.literal(if (action == MarketAction.BUY) "Comprar" else "Retirar")) {
+                    GtsButton.create(Component.literal(if (action == MarketAction.BUY) "Comprar" else "Retirar")) {
                         if (!actionPending) {
                             actionPending = true
                             actionMessage = "Procesando..."
@@ -165,6 +170,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
             observedRevision = revision
             val response = V2MarketClientState.snapshot()
             if (response != null && response.tab == state.tab) {
+                previewStates.keys.retainAll(response.entries.map { it.offerId }.toSet())
                 state = state.accept(response)
                 refreshControls()
                 updateNavigationButtons()
@@ -224,45 +230,28 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
             graphics.fill(x + 1, y + 1, x + cardW - 1, y + cardH - 1, 0xF0181D24.toInt())
             graphics.fill(x + 1, y + 1, x + cardW - 1, y + 4, rarityAccent(entry))
 
-            val previewLeft = x + cardW / 2
-            val previewRight = x + cardW - 7
-            val previewTop = y + 7
-            val previewBottom = y + 68
-            graphics.fill(previewLeft, previewTop, previewRight, previewBottom, 0x8010161D.toInt())
-            graphics.renderOutline(
-                previewLeft,
-                previewTop,
-                previewRight - previewLeft,
-                previewBottom - previewTop,
-                0xFF343D47.toInt()
-            )
-            renderPokemonPreview(
-                graphics,
-                entry,
-                (previewLeft + previewRight) / 2,
-                (previewTop + previewBottom) / 2 - 14,
-                partialTick
-            )
-
-            val species = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
-            graphics.drawString(font, Component.literal(species), x + 8, y + 10, 0xFFF4F7FA.toInt())
-            graphics.drawString(font, Component.literal("Nv. ${entry.level}"), x + 8, y + 23, 0xFF9FAAB5.toInt())
-
-            var badgeY = y + 37
-            listOfNotNull(
-                if (entry.legendary) "LEGENDARIO" else null,
-                if (entry.shiny) "SHINY" else null,
-                if (entry.alpha) "ALPHA" else null
-            ).take(3).forEach { badge ->
-                drawBadge(graphics, badge, x + 8, badgeY, rarityAccent(entry))
-                badgeY += 11
+            val species = entry.species.substringAfter(':').replace('_',' ').replaceFirstChar { it.uppercase() }
+            graphics.drawString(font, fitText(species,cardW-16), x+8,y+10,ZianGtsTheme.GOLD)
+            val gender=when(entry.gender.uppercase()){ "MALE"->"♂ Macho";"FEMALE"->"♀ Hembra";else->"Sin sexo" }
+            graphics.drawString(font,fitText("$gender · Nv. ${entry.level}",cardW-88),x+80,y+25,0xFFB8C0C8.toInt())
+            val labels=listOf("PS","Atq","Def","AtE","DfE","Vel")
+            labels.forEachIndexed { i,label ->
+                graphics.drawString(font,"$label ${entry.ivs.getOrElse(i){0}}",x+80+(i%2)*49,y+41+(i/2)*11,0xFFD2DCE6.toInt())
             }
-
-            val footerTop = y + 70
-            graphics.fill(x + 1, footerTop, x + cardW - 1, y + cardH - 1, 0xC010141A.toInt())
-            val priceLabel = "Precio: ${entry.price}"
-            graphics.drawString(font, Component.literal(priceLabel), x + 8, footerTop + 5, 0xFFF7E4A6.toInt())
-            renderCurrencyIcon(graphics, entry.currency, x + 12 + font.width(priceLabel), footerTop + 1, mouseX, mouseY)
+            graphics.fill(x+8,y+25,x+72,y+76,0x8010161D.toInt())
+            graphics.renderOutline(x+8,y+25,64,51,0xFF343D47.toInt())
+            canvasScissor(graphics,x+9,y+26,x+71,y+75)
+            try{renderPokemonPreview(graphics,entry,x+40,y+31,partialTick)}finally{graphics.disableScissor()}
+            val traits=listOfNotNull(if(entry.shiny)"✦ Shiny" else null,if(entry.legendary)"Legendario" else null,if(entry.alpha)"Alfa" else null).joinToString(" · ").ifEmpty{"IVs del Pokémon"}
+            graphics.drawString(font,fitText(traits,cardW-16),x+8,y+80,rarityAccent(entry))
+            val footerTop=y+94
+            graphics.fill(x+1,footerTop,x+cardW-1,y+cardH-1,0xC010141A.toInt())
+            val priceLabel=fitText("Precio: ${entry.price}",cardW-40)
+            graphics.drawString(font,priceLabel,x+8,footerTop+5,0xFFF7E4A6.toInt())
+            renderCurrencyIcon(graphics,entry.currency,x+12+font.width(priceLabel),footerTop+1,mouseX,mouseY)
+            if(mouseX in x until x+cardW && mouseY in y until footerTop){
+                queueTooltip(listOf(Component.literal(species),Component.literal("$gender · Nivel ${entry.level}"),Component.literal("IVs: "+entry.ivs.joinToString(" / ")),Component.literal("Naturaleza: "+entry.nature.substringAfter(':')),Component.literal("Habilidad: "+entry.ability.substringAfter(':')),Component.literal("Haz clic para ver los detalles")))
+            }
 
             val seller = fitText("Vendedor: ${entry.sellerName}", cardW - 16)
             graphics.drawString(font, Component.literal(seller), x + 8, footerTop + 20, 0xFFB7C0C9.toInt())
@@ -281,7 +270,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         actionMessage?.let {
             graphics.drawCenteredString(
                 font,
-                Component.literal(it),
+                font.plainSubstrByWidth(it,width-24),
                 width / 2,
                 layout.footerY - font.lineHeight,
                 0xCCCCCC
@@ -289,7 +278,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         }
 
         if (response.entries.isEmpty()) {
-            graphics.drawCenteredString(font, Component.literal("No hay anuncios en esta página"), width / 2, 86, 0xAAAAAA)
+            graphics.drawCenteredString(font, Component.literal(if(state.tab==MarketTab.MY_OFFERS)"Todavía no tienes Pokémon publicados" else "No hay anuncios de otros jugadores con este filtro"), width / 2, 86, 0xAAAAAA)
         }
     }
 
@@ -338,7 +327,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
                 Quaternionf().rotationXYZ(0.08f, 0.45f, 0f),
                 state = pose,
                 partialTicks = partialTick,
-                scale = 24.0f
+                scale = 22.0f
             )
         } finally {
             graphics.pose().popPose()

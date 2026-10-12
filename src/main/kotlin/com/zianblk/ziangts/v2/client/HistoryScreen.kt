@@ -21,13 +21,13 @@ class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.lit
     override fun init() {
         fitViewport(600,390)
         observed = V2MarketClientState.historyRevision()
-        previous = addRenderableWidget(Button.builder(Component.literal("<")) {
+        previous = addRenderableWidget(GtsButton.create(Component.literal("<")) {
             if (page > 1) { page -= 1; request() }
-        }.bounds(width / 2 - 65, height - 34, 30, 20).build())
-        next = addRenderableWidget(Button.builder(Component.literal(">")) {
+        }.bounds(width / 2 - 125, height - 34, 30, 20).build())
+        next = addRenderableWidget(GtsButton.create(Component.literal(">")) {
             if (response?.hasNext == true) { page += 1; request() }
-        }.bounds(width / 2 + 35, height - 34, 30, 20).build())
-        addRenderableWidget(Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
+        }.bounds(width / 2 + 95, height - 34, 30, 20).build())
+        addRenderableWidget(GtsButton.create(Component.literal("Volver")) { minecraft?.setScreen(parent) }
             .bounds(width / 2 - 40, height - 34, 80, 20).build())
         refreshButtons()
         request()
@@ -80,7 +80,8 @@ class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.lit
             val kind = if (sold) "Venta" else "Compra"
             val species = entry.species.substringAfter(':').replaceFirstChar(Char::uppercase)
             val line = "$kind · $species · ${entry.amount} ${friendly(entry.currency)}"
-            graphics.drawString(font, Component.literal(line), width / 2 - 205, y, if (sold) 0xFFF4D481.toInt() else 0xFFE2E8F0.toInt(), false)
+            graphics.drawString(font, font.plainSubstrByWidth(line,288), width / 2 - 205, y, if (sold) 0xFFF4D481.toInt() else 0xFFE2E8F0.toInt(), false)
+            if(mouseX in width/2-205 until width/2+83 && mouseY in y until y+12)queueTooltip(listOf(Component.literal(line)))
             graphics.drawString(font, Component.literal(formatter.format(Instant.ofEpochMilli(entry.completedAtEpochMilli))), width / 2 + 95, y, 0xFF999999.toInt(), false)
         }
     }
@@ -88,16 +89,16 @@ class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.lit
     private fun friendly(value: String): String {
         val path = value.substringAfter(':')
         val known = mapOf(
-            "coppercoin" to "Copper Coin",
-            "ironcoin" to "Iron Coin",
-            "goldcoin" to "Gold Coin",
-            "diamondcoin" to "Diamond Coin",
-            "netheritecoin" to "Netherite Coin",
-            "copperticket" to "Copper Ticket",
-            "ironticket" to "Iron Ticket",
-            "goldticket" to "Gold Ticket",
-            "diamondticket" to "Diamond Ticket",
-            "netheriteticket" to "Netherite Ticket"
+            "coppercoin" to "Moneda de Cobre",
+            "ironcoin" to "Moneda de Hierro",
+            "goldcoin" to "Moneda de Oro",
+            "diamondcoin" to "Moneda de Diamante",
+            "netheritecoin" to "Moneda de Netherita",
+            "copperticket" to "Ticket de Cobre",
+            "ironticket" to "Ticket de Hierro",
+            "goldticket" to "Ticket de Oro",
+            "diamondticket" to "Ticket de Diamante",
+            "netheriteticket" to "Ticket de Netherita"
         )
         return known[path.lowercase()] ?: path.replace('_', ' ').replace('-', ' ').split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     }

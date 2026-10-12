@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component
 
 class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.literal("Mis ganancias")) {
     private var observed = -1L
+    private var initialized=false
     private var observedClaim = -1L
     private var entries: List<ProceedsEntryDto> = emptyList()
     private var message = "Cargando ganancias..."
@@ -18,9 +19,11 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.li
     override fun init() {
         fitViewport(600,390)
         observed = V2MarketClientState.proceedsRevision()
-        observedClaim = V2MarketClientState.claimRevision()
-        addRenderableWidget(Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
+        if(!initialized){observedClaim=V2MarketClientState.claimRevision();initialized=true}
+        addRenderableWidget(GtsButton.create(Component.literal("Volver")) { minecraft?.setScreen(parent) }
             .bounds(width / 2 - 45, height - 34, 90, 20).build())
+        claimButtons.clear()
+        rebuild()
         V2MarketClient.requestProceeds()
     }
 
@@ -53,7 +56,7 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.li
         claimButtons.clear()
         entries.take(8).forEachIndexed { index, entry ->
             val y = 72 + index * 30
-            val button = addRenderableWidget(Button.builder(Component.literal("Cobrar")) {
+            val button = addRenderableWidget(GtsButton.create(Component.literal("Cobrar")) {
                 if (!pending) {
                     pending = true
                     message = "Procesando cobro..."
@@ -77,9 +80,11 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.li
         entries.take(8).forEachIndexed { index, entry ->
             val y = 72 + index * 30
             graphics.drawString(font, Component.literal(friendly(entry.currency)), width / 2 - 170, y, 0xFFF4D481.toInt(), false)
-            graphics.drawString(font, Component.literal("Pendiente: ${entry.amount}"), width / 2 - 10, y, 0xFFE2E8F0.toInt(), false)
+            val amount="Pendiente: ${entry.amount}"
+            graphics.drawString(font,font.plainSubstrByWidth(amount,107),width/2-10,y,0xFFE2E8F0.toInt(),false)
+            if(mouseX in width/2-10 until width/2+97 && mouseY in y until y+12)queueTooltip(listOf(Component.literal(amount),Component.literal(friendly(entry.currency))))
         }
-        if (message.isNotBlank()) graphics.drawCenteredString(font, Component.literal(message), width / 2, 50, 0xCCCCCC)
+        if (message.isNotBlank()) graphics.drawCenteredString(font, font.plainSubstrByWidth(message,420), width / 2, 50, 0xCCCCCC)
     }
 
     private fun friendly(value: String): String {

@@ -25,7 +25,7 @@ internal data class MarketLayout(
             val gap = 7
             val available = (width - margin * 2).coerceAtLeast(132)
             val footerY = height - 30
-            val top = if (height < 330) 70 else 78
+            val top = 84
 
             // Keep the market grid clear of the pagination controls. Cards are deliberately
             // compact and nearly fixed; GUI scaling already changes the logical canvas.
@@ -34,14 +34,14 @@ internal data class MarketLayout(
                 available >= 355 -> 2
                 else -> 1
             }
-            val desiredCardWidth = 170
+            val desiredCardWidth = 190
             val cardWidth = minOf(desiredCardWidth, (available - gap * (columns - 1)) / columns).coerceAtLeast(132)
 
             // Two rows must end above the pagination/status area. 118 px preserves all
             // current card metadata while noticeably reducing the oversized cards.
             val paginationClearance = 12
-            val maxTwoRowHeight = ((footerY - paginationClearance - top - gap) / 2).coerceAtLeast(108)
-            val cardHeight = minOf(118, maxTwoRowHeight).coerceAtLeast(108)
+            val maxTwoRowHeight = ((footerY - paginationClearance - top - gap) / 2).coerceAtLeast(144)
+            val cardHeight = minOf(144, maxTwoRowHeight).coerceAtLeast(144)
             val gridWidth = cardWidth * columns + gap * (columns - 1)
             val left = (width - gridWidth) / 2
             return MarketLayout(

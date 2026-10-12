@@ -32,7 +32,7 @@ public abstract class ResponsiveScreen extends Screen {
   protected void renderCanvas(GuiGraphics graphics, int mouseX, int mouseY, float partial) { renderWidgets(graphics,mouseX,mouseY,partial); }
 
   protected final void renderWidgets(GuiGraphics g, int x, int y, float partial) {
-    super.render(g, x, y, partial);
+    for(var widget:renderables)widget.render(g,x,y,partial);
   }
 
   protected final void queueTooltip(List<Component> lines) {

@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Assertions.*
 class ResponsiveCanvasTest {
  @Test fun `market rows and pagination remain separate at scale four and small windows`() {
   for ((w,h) in listOf(960 to 540,640 to 360,480 to 270,320 to 240)) {
-   val canvas=ResponsiveLayout.fit(w,h,600,390)
+   val canvas=ResponsiveLayout.fit(w,h,640,440)
    val grid=MarketLayout.calculate(canvas.width(),canvas.height())
    for(i in 0 until 6){assertTrue(grid.cardX(i)>=0);assertTrue(grid.cardX(i)+grid.cardWidth<=canvas.width());assertTrue(grid.cardY(i)+grid.cardHeight<=grid.footerY-12)}
    assertTrue(canvas.y()+(grid.footerY+20)*canvas.scale()<=h)
