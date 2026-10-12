@@ -6,7 +6,7 @@ import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
-class ProceedsScreen(private val parent: Screen) : Screen(Component.literal("Mis ganancias")) {
+class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.literal("Mis ganancias")) {
     private var observed = -1L
     private var observedClaim = -1L
     private var entries: List<ProceedsEntryDto> = emptyList()
@@ -16,6 +16,7 @@ class ProceedsScreen(private val parent: Screen) : Screen(Component.literal("Mis
     private val claimButtons = mutableListOf<Button>()
 
     override fun init() {
+        fitViewport(600,390)
         observed = V2MarketClientState.proceedsRevision()
         observedClaim = V2MarketClientState.claimRevision()
         addRenderableWidget(Button.builder(Component.literal("Volver")) { minecraft?.setScreen(parent) }
@@ -69,9 +70,9 @@ class ProceedsScreen(private val parent: Screen) : Screen(Component.literal("Mis
         ZianGtsTheme.background(graphics, width, height)
     }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+    override fun renderCanvas(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         renderBackground(graphics, mouseX, mouseY, partialTick)
-        super.render(graphics, mouseX, mouseY, partialTick)
+        renderWidgets(graphics, mouseX, mouseY, partialTick)
         graphics.drawCenteredString(font, title, width / 2, 24, ZianGtsTheme.GOLD)
         entries.take(8).forEachIndexed { index, entry ->
             val y = 72 + index * 30

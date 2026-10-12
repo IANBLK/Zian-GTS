@@ -18,7 +18,7 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 import org.joml.Quaternionf
 
-class MarketScreen : Screen(Component.literal("Zian GTS")) {
+class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
     private var state = MarketUiState()
     private var observedRevision = -1L
     private var previousButton: Button? = null
@@ -32,6 +32,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
     private val previewStates = mutableMapOf<UUID, FloatingState>()
 
     override fun init() {
+        fitViewport(600,390)
         super.init()
         observedActionRevision = V2MarketClientState.actionRevision()
         actionMessage = null
@@ -188,19 +189,19 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         // menu blur cannot be inserted between the custom cards and the widgets.
     }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+    override fun renderCanvas(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         ZianGtsTheme.background(graphics, width, height)
         graphics.drawCenteredString(font, title, width / 2, 6, 0xFFF7E4A6.toInt())
 
         val response = state.response
         if (state.loading && response == null) {
             graphics.drawCenteredString(font, Component.literal("Cargando mercado..."), width / 2, 54, 0xAAAAAA)
-            super.render(graphics, mouseX, mouseY, partialTick)
+            renderWidgets(graphics, mouseX, mouseY, partialTick)
             return
         }
         if (response == null) {
             graphics.drawCenteredString(font, Component.literal("Sin datos del mercado"), width / 2, 54, 0xAAAAAA)
-            super.render(graphics, mouseX, mouseY, partialTick)
+            renderWidgets(graphics, mouseX, mouseY, partialTick)
             return
         }
 
@@ -254,7 +255,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 if (entry.alpha) "ALPHA" else null
             ).take(3).forEach { badge ->
                 drawBadge(graphics, badge, x + 8, badgeY, rarityAccent(entry))
-                badgeY += 12
+                badgeY += 11
             }
 
             val footerTop = y + 70
@@ -275,7 +276,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
             graphics.drawString(font, Component.literal(time), x + 8, footerTop + 34, 0xFF7F8A96.toInt())
         }
 
-        super.render(graphics, mouseX, mouseY, partialTick)
+        renderWidgets(graphics, mouseX, mouseY, partialTick)
 
         actionMessage?.let {
             graphics.drawCenteredString(
@@ -337,15 +338,15 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
                 Quaternionf().rotationXYZ(0.08f, 0.45f, 0f),
                 state = pose,
                 partialTicks = partialTick,
-                scale = 19.0f
+                scale = 24.0f
             )
         } finally {
             graphics.pose().popPose()
         }
     }
 
-    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (super.mouseClicked(mouseX, mouseY, button)) return true
+    override fun canvasMouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (super.canvasMouseClicked(mouseX, mouseY, button)) return true
         if (button != 0) return false
         val response = state.response ?: return false
         val layout = MarketLayout.calculate(width, height)
@@ -376,7 +377,7 @@ class MarketScreen : Screen(Component.literal("Zian GTS")) {
         if (BuiltInRegistries.ITEM.getKey(item) != id) return
         graphics.renderItem(ItemStack(item), x, y)
         if (mouseX in x until (x + 16) && mouseY in y until (y + 16)) {
-            graphics.renderTooltip(font, Component.literal(currencyDisplayName(id.path)), mouseX, mouseY)
+            queueTooltip(listOf(Component.literal(currencyDisplayName(id.path))))
         }
     }
 

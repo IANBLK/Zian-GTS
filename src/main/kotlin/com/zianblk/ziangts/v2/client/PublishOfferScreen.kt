@@ -7,7 +7,7 @@ import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
-class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal("Publicar Pokémon")) {
+class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Component.literal("Publicar Pokémon")) {
     private var options: PublishOptionsResponse? = null
     private var selectedPokemon = 0
     private var selectedCurrency = 0
@@ -22,6 +22,7 @@ class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal(
     private var confirmButton: Button? = null
 
     override fun init() {
+        fitViewport(600,390)
         priceBox = EditBox(font, width / 2 - 75, height / 2 + 18, 150, 20, Component.literal("Precio")).also {
             it.setHint(Component.literal("Precio"))
             it.setFilter { text -> text.isEmpty() || (text.all(Char::isDigit) && text.length <= 12) }
@@ -126,9 +127,9 @@ class PublishOfferScreen(private val parent: Screen) : Screen(Component.literal(
         ZianGtsTheme.background(graphics, width, height)
     }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+    override fun renderCanvas(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         renderBackground(graphics, mouseX, mouseY, partialTick)
-        super.render(graphics, mouseX, mouseY, partialTick)
+        renderWidgets(graphics, mouseX, mouseY, partialTick)
         graphics.drawCenteredString(font, title, width / 2, height / 2 - 92, ZianGtsTheme.GOLD)
         graphics.drawCenteredString(font, Component.literal("Selecciona un Pokémon de tu equipo"), width / 2, height / 2 - 73, 0xBBBBBB)
         if (message.isNotBlank()) graphics.drawCenteredString(font, Component.literal(message), width / 2, height / 2 + 76, 0xCCCCCC)

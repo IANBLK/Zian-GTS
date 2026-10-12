@@ -13,10 +13,11 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent: Screen) : Screen(Component.literal("Detalles del Pokémon")) {
+class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent: Screen) : ResponsiveScreen(Component.literal("Detalles del Pokémon")) {
     private val pose = FloatingState()
 
     override fun init() {
+        fitViewport(600,390)
         val layout = DetailsLayout.calculate(width, height)
         val previewW = (layout.width * 0.27).toInt().coerceIn(82, 105)
         val previewX = layout.left + 12
@@ -26,7 +27,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
             .bounds(buttonX, layout.buttonY - 24, buttonW, 18).build())
     }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+    override fun renderCanvas(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         ZianGtsTheme.background(graphics, width, height)
         val layout = DetailsLayout.calculate(width, height)
         val left = layout.left

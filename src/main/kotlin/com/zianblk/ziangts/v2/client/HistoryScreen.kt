@@ -10,7 +10,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-class HistoryScreen(private val parent: Screen) : Screen(Component.literal("Historial")) {
+class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.literal("Historial")) {
     private var observed = -1L
     private var response: HistoryResponsePayload? = null
     private var page = 1
@@ -19,6 +19,7 @@ class HistoryScreen(private val parent: Screen) : Screen(Component.literal("Hist
     private val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault())
 
     override fun init() {
+        fitViewport(600,390)
         observed = V2MarketClientState.historyRevision()
         previous = addRenderableWidget(Button.builder(Component.literal("<")) {
             if (page > 1) { page -= 1; request() }
@@ -58,9 +59,9 @@ class HistoryScreen(private val parent: Screen) : Screen(Component.literal("Hist
         ZianGtsTheme.background(graphics, width, height)
     }
 
-    override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+    override fun renderCanvas(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         renderBackground(graphics, mouseX, mouseY, partialTick)
-        super.render(graphics, mouseX, mouseY, partialTick)
+        renderWidgets(graphics, mouseX, mouseY, partialTick)
         graphics.drawCenteredString(font, title, width / 2, 18, ZianGtsTheme.GOLD)
         val data = response
         if (data == null) {
