@@ -3,7 +3,7 @@ package com.zianblk.ziangts.v2.persistence
 import com.zianblk.ziangts.v2.domain.*
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
-import java.nio.file.Files
+import com.zianblk.ziangts.storage.StorageFiles as Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
@@ -70,7 +70,7 @@ class DurableMarketStore(private val path: Path) : OfferBook, ProceedsStore {
         Files.createDirectories(path.toAbsolutePath().parent)
         val tmp = path.resolveSibling(path.fileName.toString() + ".tmp")
         val bytes = serialize().toByteArray(Charsets.UTF_8)
-        FileChannel.open(tmp, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING).use {
+        Files.channel(tmp, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING).use {
             var b = ByteBuffer.wrap(bytes)
             while (b.hasRemaining()) it.write(b)
             it.force(true)
@@ -81,7 +81,7 @@ class DurableMarketStore(private val path: Path) : OfferBook, ProceedsStore {
             Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING)
         }
         if (!System.getProperty("os.name", "").lowercase().startsWith("windows")) {
-            FileChannel.open(path.toAbsolutePath().parent, StandardOpenOption.READ).use { it.force(true) }
+            Files.channel(path.toAbsolutePath().parent, StandardOpenOption.READ).use { it.force(true) }
         }
     }
 

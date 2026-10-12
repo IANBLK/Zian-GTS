@@ -2,6 +2,7 @@ package com.zianblk.ziangts.v2.persistence
 
 import java.nio.channels.FileChannel
 import java.nio.file.*
+import com.zianblk.ziangts.storage.StorageFiles as Files
 import java.util.UUID
 
 /** Offline, only fully resolved transactions. Market, proceeds and history are never changed. */
@@ -19,9 +20,9 @@ object TradeStorageMaintenance {
             DurableTradeJournal(path).use { journal ->
                 check(!journal.blocksTrading()) { "pending/quarantined transactions require review; original preserved" }
                 Files.writeString(marker,"Offline closed-trade archive; archive=${archive.fileName}",StandardOpenOption.CREATE_NEW)
-                owned=true;FileChannel.open(marker,StandardOpenOption.WRITE).use { it.force(true) };forceDirectory(parent)
+                owned=true;Files.channel(marker,StandardOpenOption.WRITE).use { it.force(true) };forceDirectory(parent)
                 journal.archiveClosed(archive);forceDirectory(parent)
-                FileChannel.open(temp,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE).use { it.force(true) }
+                Files.channel(temp,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE).use { it.force(true) }
                 journal.close()
                 Files.move(temp,path,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING)
                 forceDirectory(parent)
@@ -34,7 +35,7 @@ object TradeStorageMaintenance {
     }
     private fun forceDirectory(path:Path) {
         if(!System.getProperty("os.name").lowercase(java.util.Locale.ROOT).contains("windows"))
-            FileChannel.open(path,StandardOpenOption.READ).use { it.force(true) }
+            Files.channel(path,StandardOpenOption.READ).use { it.force(true) }
     }
     @JvmStatic fun main(args:Array<String>) {
         require(args.size==2 && args[0]=="compact-closed-offline") { "Usage: compact-closed-offline <transactions-v2.wal>; stop server and disable restart first" }

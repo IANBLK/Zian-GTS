@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import com.zianblk.ziangts.v2.port.*
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
-import java.nio.file.Files
+import com.zianblk.ziangts.storage.StorageFiles as Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.*
 import java.security.MessageDigest
@@ -28,7 +28,7 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
     init {
         require(!Files.exists(path.resolveSibling(path.fileName.toString()+".maintenance"))) { "trade storage maintenance in progress" }
         Files.createDirectories(path.toAbsolutePath().parent)
-        channel = FileChannel.open(path, CREATE, READ, WRITE)
+        channel = Files.channel(path, CREATE, READ, WRITE)
         try {
             lock = channel.tryLock() ?: error("V2 trade journal already in use")
             require(!Files.exists(path.resolveSibling(path.fileName.toString()+".maintenance"))) { "trade storage maintenance in progress" }
@@ -177,7 +177,7 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
                 original.update(buffer.array(),0,read);output.write(buffer.array(),0,read);offset += read
             }
         }
-        FileChannel.open(target, WRITE).use { it.force(true) }
+        Files.channel(target, WRITE).use { it.force(true) }
         val recovered=MessageDigest.getInstance("SHA-256");var count=0L
         java.util.zip.GZIPInputStream(Files.newInputStream(target)).use { input ->
             val bytes=ByteArray(65536)

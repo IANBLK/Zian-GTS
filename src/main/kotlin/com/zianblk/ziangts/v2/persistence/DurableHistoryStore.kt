@@ -8,7 +8,7 @@ import com.zianblk.ziangts.v2.port.TradeHistoryRecord
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
+import com.zianblk.ziangts.storage.StorageFiles as Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption.*
 import java.security.MessageDigest
@@ -29,10 +29,11 @@ class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
     private val channel: FileChannel
     private val lock: java.nio.channels.FileLock
     private var healthy = true
+    private var compactable = true
 
     init {
         Files.createDirectories(file.parent)
-        channel = FileChannel.open(file, CREATE, READ, WRITE)
+        channel = Files.channel(file, CREATE, READ, WRITE)
         try {
             lock = channel.tryLock() ?: error("history already in use")
             replay()
@@ -46,7 +47,7 @@ class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
     @Synchronized
     override fun append(record: TradeHistoryRecord) {
         check(available()) { "history unavailable" }
-        require(record.operationId !in operationIds) { "duplicate history operation" }
+        require(record.operationId !in operationIds && (file.fileName.toString()!="history-v2.wal" || !Files.wasRecorded(file,"gts-history",record.operationId))) { "duplicate history operation" }
         val payload = gson.toJson(Wire.from(record)).toByteArray(StandardCharsets.UTF_8)
         val hash = digest(previousHash, payload)
         val frame = ByteBuffer.allocate(4 + payload.size + hash.size)
@@ -103,7 +104,9 @@ class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
             val actualHash = hashBuffer.array()
             val expectedHash = digest(expectedPrevious, payload)
             require(MessageDigest.isEqual(actualHash, expectedHash)) { "history checksum mismatch" }
-            val wire = gson.fromJson(String(payload, StandardCharsets.UTF_8), Wire::class.java)
+            val json = com.google.gson.JsonParser.parseString(String(payload, StandardCharsets.UTF_8)).asJsonObject
+            if (json.keySet() != setOf("operationId","offerId","sellerId","buyerId","pokemonId","species","adapter","currency","amount","completedAt")) compactable = false
+            val wire = gson.fromJson(json, Wire::class.java)
             val record = wire.toRecord()
             require(record.operationId !in operationIds) { "duplicate history operation" }
             val pointer = Pointer(records.size, offset, length, actualHash.copyOf())
@@ -145,6 +148,31 @@ class DurableHistoryStore(private val file: Path) : HistoryPort, AutoCloseable {
                 && MessageDigest.isEqual(digest(previous, payload.array()), pointer.hash)) { "history checksum changed" }
             return gson.fromJson(String(payload.array(), Charsets.UTF_8), Wire::class.java).toRecord()
         } catch (error: Exception) { healthy = false; throw error }
+    }
+
+    @Synchronized internal fun visit(action: (TradeHistoryRecord) -> Unit) { records.forEach { action(readRecord(it)) } }
+    internal fun canCompact(): Boolean = compactable
+    internal fun archiveCompressed(target: Path) {
+        check(available())
+        val original = MessageDigest.getInstance("SHA-256")
+        val buffer = ByteBuffer.allocate(65536)
+        java.util.zip.GZIPOutputStream(Files.newOutputStream(target, CREATE_NEW)).use { out ->
+            var at = 0L
+            while (at < channel.size()) {
+                buffer.clear()
+                val n = channel.read(buffer,at)
+                require(n > 0)
+                original.update(buffer.array(),0,n)
+                out.write(buffer.array(),0,n)
+                at += n
+            }
+        }
+        val archived = MessageDigest.getInstance("SHA-256")
+        java.util.zip.GZIPInputStream(Files.newInputStream(target)).use { input ->
+            val bytes = ByteArray(65536)
+            while(true){val n=input.read(bytes);if(n<0)break;archived.update(bytes,0,n)}
+        }
+        check(MessageDigest.isEqual(original.digest(),archived.digest())) { "history archive mismatch" }
     }
 
     override fun close() { healthy = false; try { if(lock.isValid) lock.release() } finally { channel.close() } }
