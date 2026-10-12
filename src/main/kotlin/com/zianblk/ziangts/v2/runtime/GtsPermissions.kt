@@ -45,7 +45,7 @@ object GtsPermissions {
     }
 
     fun deny(player: ServerPlayer) {
-        player.sendSystemMessage(Component.literal(DENIED))
+        player.sendSystemMessage(com.zianblk.ziangts.Messages.format(Component.literal(DENIED)))
         ZianGts.LOGGER.info("Denied GTS action for {}", player.scoreboardName)
     }
 
