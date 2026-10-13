@@ -43,6 +43,7 @@ neoForge {
 
 repositories {
     mavenCentral()
+    maven("https://www.cursemaven.com")
     maven("https://maven.neoforged.net/releases")
     maven("https://thedarkcolour.github.io/KotlinForForge/")
     maven("https://maven.impactdev.net/repository/development/")
@@ -58,7 +59,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("thedarkcolour:kotlinforforge-neoforge:${property("kotlin_for_forge_version")}")
-    implementation("com.cobblemon:neoforge:${property("cobblemon_version")}") {
+    implementation("curse.maven:cobblemon-687131:${property("cobblemon_file_id")}") {
         isTransitive = false
     }
 }

@@ -2,31 +2,34 @@ modLoader = "kotlinforforge"
 loaderVersion = "[5.10,)"
 license = "MIT"
 
+issueTrackerURL = "https://github.com/IANBLK/Zian-GTS/issues"
+
 [[mods]]
 modId = "ziangts"
 version = "${version}"
 displayName = "Zian GTS"
 authors = "ZIANBLK"
+displayURL = "https://github.com/IANBLK/Zian-GTS"
 description = "Mercado GTS seguro y persistente para Cobblemon, con interfaz nativa, AVECOINS, historial y recuperación de transacciones."
 
 [[dependencies.ziangts]]
 modId = "minecraft"
-mandatory = true
+type = "required"
 versionRange = "[1.21.1]"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.ziangts]]
 modId = "neoforge"
-mandatory = true
+type = "required"
 versionRange = "[21.1.228,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.ziangts]]
 modId = "cobblemon"
-mandatory = true
-versionRange = "[1.8.0+1.21.1,)"
+type = "required"
+versionRange = "[1.8.2,1.9)"
 ordering = "AFTER"
 side = "BOTH"
 
@@ -43,3 +46,10 @@ type = "optional"
 versionRange = "[0,)"
 ordering = "AFTER"
 side = "SERVER"
+
+[[dependencies.ziangts]]
+modId = "kotlinforforge"
+type = "required"
+versionRange = "[5.10,6)"
+ordering = "AFTER"
+side = "BOTH"
