@@ -9,7 +9,8 @@ class AvecoinsWalletVersionTest {
     fun onlyReviewedVersionsMayTrade() {
         assertTrue(AvecoinsWallet.supportsVersion("2.3"))
         assertTrue(AvecoinsWallet.supportsVersion("2.4"))
-        assertFalse(AvecoinsWallet.supportsVersion("2.5"))
+        assertTrue(AvecoinsWallet.supportsVersion("2.5"))
+        assertFalse(AvecoinsWallet.supportsVersion("2.6"))
         assertFalse(AvecoinsWallet.supportsVersion("3.0"))
     }
 }

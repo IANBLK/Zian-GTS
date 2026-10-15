@@ -17,7 +17,7 @@ class AvecoinsWallet(private val currencyId: String) {
     }
 
     companion object {
-        private val supportedVersions = setOf("2.3", "2.4")
+        private val supportedVersions = setOf("2.3", "2.4", "2.5")
 
         internal fun supportsVersion(version: String): Boolean = version in supportedVersions
 
@@ -34,8 +34,8 @@ class AvecoinsWallet(private val currencyId: String) {
                 IllegalStateException("AVECOINS is not installed")
             }
             val version = mod.modInfo.version.toString()
-            check(supportsVersion(version)) {
-                "AVECOINS $version is not inspected; supported versions: 2.3, 2.4"
+            check(supportsVersion(version) || AvecoinsContractFingerprint.matchesInspectedContract()) {
+                "AVECOINS $version is not inspected; supported versions: ${supportedVersions.joinToString()}"
             }
             val crafting = Class.forName("net.sundggs.avecoins.config.CraftingConfig")
             val store = Class.forName("net.sundggs.avecoins.shop.WalletStore")

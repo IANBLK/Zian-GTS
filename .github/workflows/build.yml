@@ -56,10 +56,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Upload Beta 2.4 JARs
+      - name: Upload current JARs
         if: success()
         uses: actions/upload-artifact@v6
         with:
-          name: zian-gts-1.0.0-beta.2.4
+          name: zian-gts-${{ github.sha }}
           path: build/libs/*.jar
           if-no-files-found: error

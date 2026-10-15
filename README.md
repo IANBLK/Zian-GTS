@@ -1,14 +1,14 @@
 # Zian GTS
 
-**Beta 2.4:** the command is now `/ZianGTS`, including `open`, `status` and `recovery`.
+**1.0.1:** the public command is `/ZianGTS`, including `open`, `status` and `recovery`.
 The old command is not registered. Existing `ziangts.*` LuckPerms nodes and saved market data are preserved.
 LuckPerms is supported as a NeoForge mod or a Bukkit plugin on Youer.
 
 Zian GTS es un mercado GTS para Cobblemon en Minecraft 1.21.1, desarrollado con NeoForge y pensado para servidores multijugador.
 
-## Beta 2.4
+## Versión actual
 
-La versión actual es **1.0.0 Beta 2.4**.
+La versión actual es **1.0.1 Release**.
 
 Funciones principales:
 
@@ -21,7 +21,7 @@ Funciones principales:
 - Ordenación y paginación.
 - Naturaleza, habilidad, movimientos e IVs.
 - Radar visual de IVs.
-- Integración comprobada con la cartera de AVECOINS 2.3 y 2.4.
+- Integración comprobada con la cartera de AVECOINS 2.3, 2.4 y 2.5.
 - Persistencia durable del mercado, historial y ganancias.
 - Journal de transacciones y recuperación administrativa.
 - Validaciones en el servidor y reserva de ofertas para impedir una segunda compra simultánea en el mismo proceso.
@@ -33,10 +33,14 @@ Funciones principales:
 - Java 21
 - NeoForge 21.1.228 o superior
 - Kotlin for Forge 5.10+
-- Cobblemon 1.8+
-- AVECOINS 2.3 o 2.4 para la economía integrada
+- Cobblemon 1.8.2 (rama 1.8.x)
+- AVECOINS 2.3, 2.4 o 2.5 para la economía integrada
 
 Zian GTS también se prueba en Youer 1.21.1.
+
+Consulta [el contrato económico](docs/AVECOINS.md). AVECOINS 2.3, 2.4 y 2.5 están inspeccionados. Una versión posterior solo se admite si las tres clases económicas verificadas conservan exactamente sus huellas revisadas y pasan las comprobaciones de métodos y capacidad. Un cambio real de contrato requiere revisión; no se promete compatibilidad automática con cualquier actualización.
+
+Descarga el JAR actual en [Releases](https://github.com/IANBLK/Zian-GTS/releases/latest) e instala la misma versión en cliente y servidor.
 
 ## Uso
 
