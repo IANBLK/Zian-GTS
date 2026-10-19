@@ -1,77 +1,29 @@
-# Zian GTS
+# Zian GTS 1.0.3
 
-**1.0.1:** the public command is `/ZianGTS`, including `open`, `status` and `recovery`.
-The old command is not registered. Existing `ziangts.*` LuckPerms nodes and saved market data are preserved.
-LuckPerms is supported as a NeoForge mod or a Bukkit plugin on Youer.
+**Language notice:** The current in-game interface, preset dialogues and administrator messages are primarily Spanish. English localization is incomplete. The English guide explains the controls and includes their Spanish button names. Changing Minecraft to English does not translate administrator-written NPC names, dialogues or configuration text.
 
-Zian GTS es un mercado GTS para Cobblemon en Minecraft 1.21.1, desarrollado con NeoForge y pensado para servidores multijugador.
+[English guide](docs/GUIDE.md) · [Guía en español](docs/GUIA_ES.md) · [Updating and recovery](docs/UPDATING.md) · [Current changes](CHANGELOG.md) · [Download](https://github.com/IANBLK/Zian-GTS/releases/latest)
 
-## Versión actual
+List Pokémon from your party, browse offers, purchase Pokémon, withdraw listings and claim sale proceeds in a native interface.
 
-La versión actual es **1.0.1 Release**.
+Pokémon cards provide models and useful hover details. Filters, sorting, pagination and responsive layouts keep market and publishing controls aligned at GUI scales 3 and 4.
 
-Funciones principales:
+AVECOINS 2.3/2.4/2.5 wallets are supported. Trading is unavailable without a supported wallet rather than silently changing balances. LuckPerms is optional for permissions.
 
-- Mercado gráfico con modelos de Pokémon.
-- Publicación de Pokémon directamente desde el Party.
-- Compra y retirada de ofertas.
-- Ganancias pendientes y claim.
-- Historial de transacciones.
-- Filtros por Shiny, Alpha, legendarios y ofertas propias.
-- Ordenación y paginación.
-- Naturaleza, habilidad, movimientos e IVs.
-- Radar visual de IVs.
-- Integración comprobada con la cartera de AVECOINS 2.3, 2.4 y 2.5.
-- Persistencia durable del mercado, historial y ganancias.
-- Journal de transacciones y recuperación administrativa.
-- Validaciones en el servidor y reserva de ofertas para impedir una segunda compra simultánea en el mismo proceso.
-- Permisos por acción con LuckPerms opcional; una denegación explícita se aplica también a operadores.
+Journals, reservations and receipts protect concurrent purchases and retain interrupted-operation evidence. History maintenance preserves unresolved transactions and unclaimed proceeds.
 
-## Requisitos
+Install on client and server with Minecraft 1.21.1, Java 21, NeoForge 21.1.x, Cobblemon 1.8.2 and Kotlin for Forge 5.10 or compatible newer 5.x. Open with /ZianGTS. Back up the world before upgrades or maintenance.
 
-- Minecraft 1.21.1
-- Java 21
-- NeoForge 21.1.228 o superior
-- Kotlin for Forge 5.10+
-- Cobblemon 1.8.2 (rama 1.8.x)
-- AVECOINS 2.3, 2.4 o 2.5 para la economía integrada
+## Español
 
-Zian GTS también se prueba en Youer 1.21.1.
+Publique Pokémon, consulte ofertas, compre, retire anuncios y reclame ganancias con AVECOINS 2.3/2.4/2.5. La interfaz adapta tarjetas y botones a ×3 y ×4. Los recibos conservan operaciones pendientes y ganancias sin reclamar.
 
-Consulta [el contrato económico](docs/AVECOINS.md). AVECOINS 2.3, 2.4 y 2.5 están inspeccionados. Una versión posterior solo se admite si las tres clases económicas verificadas conservan exactamente sus huellas revisadas y pasan las comprobaciones de métodos y capacidad. Un cambio real de contrato requiere revisión; no se promete compatibilidad automática con cualquier actualización.
+## Latest update — 1.0.3
 
-Descarga el JAR actual en [Releases](https://github.com/IANBLK/Zian-GTS/releases/latest) e instala la misma versión en cliente y servidor.
+Added confirmation before buying or withdrawing offers, species/seller search before pagination, searchable selectors and compact four-move details. Added /gts when the alias is available. Fixed unresolved page counters and translated level/IV text. Expired listings are excluded from the public market but remain recoverable by their owner; relisting starts a new listing period. Purchases, wallet balances and saved transaction IDs are preserved. Update client and server: v3-market.
 
-## Uso
+## Novedades — Español
 
-Los jugadores pueden abrir el mercado con:
+Confirmación al comprar o retirar, búsqueda por especie o vendedor y selectores con búsqueda. Corrige contadores de páginas, nivel e IV traducidos. Los anuncios caducados dejan de mostrarse al público y su propietario puede retirarlos. Conserva saldos, recibos y UUID; alias /gts cuando está disponible.
 
-`/ZianGTS`
-
-o:
-
-`/ZianGTS open`
-
-La publicación, compra, retirada, claim, historial, filtros y navegación se realizan desde la interfaz.
-
-## Administración y recuperación
-
-Los operadores disponen de:
-
-- `/ZianGTS status`
-- `/ZianGTS recovery`
-- `/ZianGTS recovery resolve <operation-uuid>`
-- `/ZianGTS recovery resolve <operation-uuid> confirm`
-
-Una operación incierta puede bloquear el mercado deliberadamente. Antes de resolver una incidencia deben comprobarse manualmente el estado de AVECOINS, el almacenamiento Pokémon y el estado del GTS. La resolución no entrega Pokémon ni devuelve monedas automáticamente.
-
-## Seguridad
-
-El servidor decide propiedad, precio, moneda, contenido del Pokémon y resultado de cada transacción. El cliente no proporciona valores autoritativos.
-
-Las operaciones económicas y de Pokémon atraviesan sistemas externos distintos, por lo que Zian GTS conserva evidencia durable y falla de forma cerrada cuando no puede determinar con seguridad el resultado de una operación.
-No hay una transacción atómica compartida entre esos sistemas: una incidencia puede requerir conciliación manual antes de reabrir el mercado. Consulte [recuperación](docs/RECOVERY.md) y [permisos](docs/PERMISSIONS.md).
-
-## Estado de pruebas
-
-El núcleo ha superado pruebas automatizadas de persistencia, concurrencia, journal, rollback, cierre forzado y recuperación, además de pruebas multijugador del flujo de mercado. Cada nueva versión requiere comprobar su JAR en un servidor con las dependencias reales antes de publicarlo.
+Minecraft 1.21.1 · NeoForge · Java 21. Install the same mod version on client and server. Back up your world before upgrading; replace the old JAR instead of keeping both copies.

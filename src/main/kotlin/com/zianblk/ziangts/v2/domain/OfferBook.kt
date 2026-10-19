@@ -14,9 +14,11 @@ data class MarketQuery(
     val filter: OfferFilter = OfferFilter.ALL,
     val sort: OfferSort = OfferSort.NEWEST,
     val ownership: OfferOwnership = OfferOwnership.ANY,
-    val now: Instant = Instant.now()
+    val now: Instant = Instant.now(),
+    val search:String = ""
 ) {
     init {
+        require(search.length<=64&&search.none{it.isISOControl()})
         require(page >= 1)
         require(pageSize in 1..50)
     }
@@ -56,7 +58,9 @@ class InMemoryOfferBook : OfferBook {
 data class MarketView(val offers: List<TradeOffer>, val total: Int, val page: Int, val pageSize: Int)
 
 fun OfferBook.query(query: MarketQuery): MarketView {
+    val needle=query.search.trim().lowercase(java.util.Locale.ROOT).replace(' ','_')
     val visible = all().asSequence()
+        .filter { offer -> needle.isEmpty()||offer.pokemon.species.lowercase(java.util.Locale.ROOT).contains(needle)||offer.owner.displayName.lowercase(java.util.Locale.ROOT).contains(needle) }
         .filter { offer ->
             when (query.filter) {
                 OfferFilter.OWN -> offer.owner.playerId == query.viewer

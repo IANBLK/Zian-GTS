@@ -13,7 +13,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent: Screen) : ResponsiveScreen(Component.literal("Detalles del Pokémon")) {
+class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent: Screen) : ResponsiveScreen(Component.translatableWithFallback("ui.ziangts.7225db37cd7d", "Detalles del Pokémon")) {
     private val pose = FloatingState()
 
     override fun init() {
@@ -23,7 +23,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         val previewX = layout.left + 12
         val buttonW = 80
         val buttonX = previewX + (previewW - buttonW) / 2
-        addRenderableWidget(GtsButton.create(Component.literal("Volver")) { minecraft?.setScreen(parent) }
+        addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.84a715a785a9", "Volver")) { minecraft?.setScreen(parent) }
             .bounds(buttonX, layout.buttonY - 24, buttonW, 18).build())
     }
 
@@ -40,7 +40,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         if (layout.compact) renderCompactDetails(graphics, layout, speciesName) else renderWideDetails(graphics, layout, speciesName)
         renderPokemonModel(graphics, layout, partialTick)
         if(mouseX in layout.left+125 until layout.left+layout.width-175 && mouseY in layout.top+32 until layout.top+170){
-            queueTooltip(listOf(Component.literal(speciesName),Component.literal("Género: "+localizedGender(entry.gender)),Component.literal("Naturaleza: ").append(localizedNature(entry.nature)),Component.literal("Habilidad: ").append(localizedAbility(entry.ability)),Component.literal("Vendedor: "+entry.sellerName)))
+            queueTooltip(listOf(Component.literal(speciesName),Component.literal("Género: "+localizedGender(entry.gender)),Component.translatableWithFallback("ui.ziangts.aaf864181772", "Naturaleza: ").append(localizedNature(entry.nature)),Component.translatableWithFallback("ui.ziangts.d15ab4bd0f10", "Habilidad: ").append(localizedAbility(entry.ability)),Component.literal("Vendedor: "+entry.sellerName)))
         }
         for (renderable in renderables) renderable.render(graphics, mouseX, mouseY, partialTick)
     }
@@ -82,7 +82,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         val movesX = controlsX + controlsW + 12
         val movesW = layout.left + layout.width - pad - movesX
         drawPanel(graphics, movesX, bottomY, movesW, bottomH)
-        graphics.drawString(font, Component.literal("Movimientos"), movesX + 8, bottomY + 5, 0xFFF4D481.toInt(), false)
+        graphics.drawString(font, Component.translatableWithFallback("ui.ziangts.797955099ea6", "Movimientos"), movesX + 8, bottomY + 5, 0xFFF4D481.toInt(), false)
         val moves = entry.moves.take(4)
         val cellGap = 8
         val innerLeft = movesX + 8
@@ -96,7 +96,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
             graphics.renderOutline(mx, my, cellW, cellH, 0xFF526575.toInt())
             graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), mx + 4, my + 2, 0xFFE2E8F0.toInt(), false)
         }
-        if (moves.isEmpty()) graphics.drawString(font, Component.literal("Sin movimientos"), innerLeft, bottomY + 20, 0xFFA1A6AB.toInt(), false)
+        if (moves.isEmpty()) graphics.drawString(font, Component.translatableWithFallback("ui.ziangts.72249bc4981a", "Sin movimientos"), innerLeft, bottomY + 20, 0xFFA1A6AB.toInt(), false)
     }
 
     private fun renderCompactDetails(graphics: GuiGraphics, layout: DetailsLayout, speciesName: String) {
@@ -108,8 +108,8 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         componentLine(graphics, "Habilidad", localizedAbility(entry.ability), x, y); y += 13
         graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), x, y, 0xFFE2E8F0.toInt(), false); y += 13
         graphics.drawString(font, Component.literal(expiryLabel()), x, y, 0xFFF4D481.toInt(), false); y += 16
-        graphics.drawString(font, Component.literal("Movimientos"), x, y, 0xFFF4D481.toInt(), false); y += 12
-        entry.moves.take(2).forEach { move -> graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), x, y, 0xFFE2E8F0.toInt(), false); y += 11 }
+        graphics.drawString(font, Component.translatableWithFallback("ui.ziangts.797955099ea6", "Movimientos"), x, y, 0xFFF4D481.toInt(), false); y += 12
+        entry.moves.take(4).forEach { move -> graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), x, y, 0xFFE2E8F0.toInt(), false); y += 11 }
     }
 
     private fun drawPanel(graphics: GuiGraphics, x: Int, y: Int, w: Int, h: Int) {
@@ -126,7 +126,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         val labels = listOf("PS", "At", "Def", "At.E", "Def.E", "Vel")
         labels.forEachIndexed { index, label ->
             val value = ivs.getOrNull(index)?.coerceIn(0, 31) ?: 0
-            graphics.drawString(font, Component.literal("$label: ${value.toString().padStart(2, '0')}/31"), x, y + index * 13, 0xFFE2E8F0.toInt(), false)
+            graphics.drawString(font, UiText.ivValue(label, value), x, y + index * 13, 0xFFE2E8F0.toInt(), false)
         }
     }
 
@@ -153,7 +153,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         for (i in 0 until 6) { val edge = point(i, radius.toDouble()); drawLine(graphics, cx, cy, edge.first, edge.second, 0xFF3D444C.toInt()) }
         if (ivs.size == 6) { val pts = ivs.mapIndexed { index, value -> point(index, radius * value.coerceIn(0, 31) / 31.0) }; for (i in pts.indices) { val a = pts[i]; val b = pts[(i + 1) % pts.size]; drawLine(graphics, a.first, a.second, b.first, b.second, 0xFFF4D481.toInt()); graphics.fill(a.first - 1, a.second - 1, a.first + 2, a.second + 2, 0xFFF4D481.toInt()) } }
         labels.forEachIndexed { index, label -> val p = point(index, radius + 11.0); graphics.drawCenteredString(font, Component.literal(label), p.first, p.second - 4, 0xFFB8C0C8.toInt()) }
-        graphics.drawCenteredString(font, Component.literal("IVs"), cx, cy - radius - 27, 0xFFF4D481.toInt())
+        graphics.drawCenteredString(font, Component.translatableWithFallback("ui.ziangts.aedeb9785f1b", "IVs"), cx, cy - radius - 27, 0xFFF4D481.toInt())
     }
 
     private fun drawLine(graphics: GuiGraphics, x0: Int, y0: Int, x1: Int, y1: Int, color: Int) {

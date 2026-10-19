@@ -23,7 +23,7 @@ import java.time.Instant
  */
 object V2MarketNetwork {
     fun register(event: RegisterPayloadHandlersEvent) {
-        val registrar = event.registrar("v2-market")
+        val registrar = event.registrar("v3-market")
         registrar.playToServer(
             MarketPageRequestPayload.TYPE,
             MarketPayloadCodecs.REQUEST_PAYLOAD

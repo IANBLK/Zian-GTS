@@ -1,0 +1,60 @@
+{
+  "name": "Zian GTS",
+  "projectId": 1709651,
+  "version": "1.0.3",
+  "jar": "zian-gts-1.0.3.jar",
+  "sha256": "86e394f1ffc986bf3a38f75417bf73f9f4820fa1d2277f9e78f7a6a87c9a01ef",
+  "dependencies": {
+    "ziangts": [
+      {
+        "modId": "minecraft",
+        "type": "required",
+        "versionRange": "[1.21.1]",
+        "ordering": "NONE",
+        "side": "BOTH"
+      },
+      {
+        "modId": "neoforge",
+        "type": "required",
+        "versionRange": "[21.1.228,)",
+        "ordering": "NONE",
+        "side": "BOTH"
+      },
+      {
+        "modId": "cobblemon",
+        "type": "required",
+        "versionRange": "[1.8.2,1.9)",
+        "ordering": "AFTER",
+        "side": "BOTH"
+      },
+      {
+        "modId": "avecoins",
+        "type": "optional",
+        "versionRange": "[0,)",
+        "ordering": "AFTER",
+        "side": "BOTH"
+      },
+      {
+        "modId": "luckperms",
+        "type": "optional",
+        "versionRange": "[0,)",
+        "ordering": "AFTER",
+        "side": "SERVER"
+      },
+      {
+        "modId": "kotlinforforge",
+        "type": "required",
+        "versionRange": "[5.10,6)",
+        "ordering": "AFTER",
+        "side": "BOTH"
+      }
+    ]
+  },
+  "license": "MIT",
+  "uploaded": true,
+  "descriptionVerified": true,
+  "fileId": 9252509,
+  "authorFileUrl": "https://authors.curseforge.com/#/projects/1709651/files/9252509",
+  "status": "Processing",
+  "verifiedAt": "2026-10-19T05:23:22.237016+00:00"
+}

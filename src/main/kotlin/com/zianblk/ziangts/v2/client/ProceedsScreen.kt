@@ -6,7 +6,7 @@ import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
-class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.literal("Mis ganancias")) {
+class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.translatableWithFallback("ui.ziangts.d97537be733b", "Mis ganancias")) {
     private var observed = -1L
     private var initialized=false
     private var observedClaim = -1L
@@ -20,7 +20,7 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.li
         fitViewport(600,390)
         observed = V2MarketClientState.proceedsRevision()
         if(!initialized){observedClaim=V2MarketClientState.claimRevision();initialized=true}
-        addRenderableWidget(GtsButton.create(Component.literal("Volver")) { minecraft?.setScreen(parent) }
+        addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.84a715a785a9", "Volver")) { minecraft?.setScreen(parent) }
             .bounds(width / 2 - 45, height - 34, 90, 20).build())
         claimButtons.clear()
         rebuild()
@@ -56,7 +56,7 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.li
         claimButtons.clear()
         entries.take(8).forEachIndexed { index, entry ->
             val y = 72 + index * 30
-            val button = addRenderableWidget(GtsButton.create(Component.literal("Cobrar")) {
+            val button = addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.c7ae321f269a", "Cobrar")) {
                 if (!pending) {
                     pending = true
                     message = "Procesando cobro..."

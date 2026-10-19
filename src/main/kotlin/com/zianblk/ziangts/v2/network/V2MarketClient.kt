@@ -34,7 +34,8 @@ object V2MarketClient {
         page: Int = 1,
         pageSize: Int = 6,
         filter: com.zianblk.ziangts.v2.domain.OfferFilter = com.zianblk.ziangts.v2.domain.OfferFilter.ALL,
-        sort: com.zianblk.ziangts.v2.domain.OfferSort = com.zianblk.ziangts.v2.domain.OfferSort.NEWEST
+        sort: com.zianblk.ziangts.v2.domain.OfferSort = com.zianblk.ziangts.v2.domain.OfferSort.NEWEST,
+        search:String=""
     ) {
         requestPage(
             MarketPageRequest(
@@ -42,7 +43,7 @@ object V2MarketClient {
                 page = page,
                 pageSize = pageSize,
                 filter = filter,
-                sort = sort
+                sort = sort, search=search
             )
         )
     }
@@ -50,7 +51,8 @@ object V2MarketClient {
     fun requestMyOffers(
         page: Int = 1,
         pageSize: Int = 6,
-        sort: com.zianblk.ziangts.v2.domain.OfferSort = com.zianblk.ziangts.v2.domain.OfferSort.NEWEST
+        sort: com.zianblk.ziangts.v2.domain.OfferSort = com.zianblk.ziangts.v2.domain.OfferSort.NEWEST,
+        search:String=""
     ) {
         requestPage(
             MarketPageRequest(
@@ -58,7 +60,7 @@ object V2MarketClient {
                 page = page,
                 pageSize = pageSize,
                 filter = com.zianblk.ziangts.v2.domain.OfferFilter.OWN,
-                sort = sort
+                sort = sort, search=search
             )
         )
     }

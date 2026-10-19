@@ -1,108 +1,11 @@
-# Changelog
+# Zian GTS 1.0.3 — 2026-10-19
 
-## 1.0.1
-
-- Accept the inspected AVECOINS 2.5 wallet contract.
-- Keep method and capacity validation; later version numbers require all reviewed class fingerprints to match.
-- Preserve balances, currencies, durable receipts and interrupted-operation recovery. No automatic data migration.
-- Refresh installation requirements and current documentation for Cobblemon 1.8.2.
+Added confirmation before buying or withdrawing offers, species/seller search before pagination, searchable selectors and compact four-move details. Added /gts when the alias is available. Fixed unresolved page counters and translated level/IV text. Expired listings are excluded from the public market but remain recoverable by their owner; relisting starts a new listing period. Purchases, wallet balances and saved transaction IDs are preserved. Update client and server: v3-market.
 
 ## Español
 
-- Compatibilidad revisada con AVECOINS 2.5, conservando los controles de contrato y recuperación.
-- Las versiones posteriores solo se admiten si mantienen las clases económicas verificadas sin cambios.
-- Conserva saldos y datos. Instala la misma versión en cliente y servidor.
+Confirmación al comprar o retirar, búsqueda por especie o vendedor y selectores con búsqueda. Corrige contadores de páginas, nivel e IV traducidos. Los anuncios caducados dejan de mostrarse al público y su propietario puede retirarlos. Conserva saldos, recibos y UUID; alias /gts cuando está disponible.
 
+## Installation / Instalación
 
-## 1.0.0-beta.2.5 — candidata de almacenamiento
-
-- El historial conserva posiciones y hashes en memoria; lee las filas solicitadas verificando el contenido del WAL.
-- Un historial no disponible bloquea nuevas compras antes de retirar monedas o entregar Pokémon.
-- Herramienta offline para archivar únicamente transacciones resueltas, con gzip verificado del original. Rechaza pendientes y cuarentenas.
-- Historial de compras, mercado y saldos conservan sus formatos; 109 pruebas aprobadas.
-
-## 1.0.0-beta.2.4
-
-- Replace the public command with `/ZianGTS`; remove the `/gtsv2` root and update command help and documentation.
-- Detect LuckPerms installed as a Bukkit plugin on Youer as well as a NeoForge mod. Preserve explicit denials and fail closed when an installed provider is unavailable.
-- Preserve existing permission nodes, AVECOINS integration, journal recovery and saved trade data.
-- Release journal/history file handles when corrupt data prevents opening them, leaving recovery evidence untouched.
-- Add command-registration and reflective LuckPerms API regression tests.
-
-## 1.0.0 Beta 2.3
-
-- Los permisos documentados del GTS se comprueban en el servidor para comandos, consultas y acciones de la interfaz. Si LuckPerms está instalado pero no puede responder, la operación se deniega.
-- La resolución del journal exige ejecutarse en el hilo del servidor.
-- La documentación aclara el alcance real del journal y de los permisos administrativos.
-- Las pruebas de cierre forzado usan archivos de argumentos de Java para ejecutarse con classpaths largos en Windows.
-
-## 1.0.0 Beta 2.2
-
-- AVECOINS 2.4 ya no bloquea el arranque del servidor: GTS comprueba la estructura de la cartera antes de abrir el mercado.
-- Una futura versión de AVECOINS no verificada mantiene el servidor encendido y deja el mercado deshabilitado hasta revisar su contrato.
-- Los botones y las pantallas secundarias comparten la paleta oscura, el borde dorado y el fondo sin blur duplicado de Zian Utilities.
-- La prueba aislada de la cartera pasó con los JARs AVECOINS 2.3 y 2.4; falta validación dentro del servidor con 2.4.
-
-## 1.0.0 Beta 2.1
-
-Hotfix de permisos para servidores híbridos basados en Youer/Bukkit.
-
-### Permisos
-- `/ZianGTS` y `/ZianGTS open` ahora pueden ser usados por jugadores normales sin OP.
-- Se añade un puente de permisos compatible con Youer/Bukkit para registrar `minecraft.command.ziangts` con acceso por defecto para jugadores.
-- En NeoForge puro el puente no añade una dependencia obligatoria de Bukkit.
-- Los comandos administrativos continúan protegidos:
-  - `/ZianGTS status`
-  - `/ZianGTS recovery`
-  - `/ZianGTS recovery resolve ...`
-- No se modificó la lógica de compra, venta, persistencia, economía ni recuperación.
-
-### Compatibilidad
-- Minecraft 1.21.1
-- Java 21
-- NeoForge 21.1.228+
-- Cobblemon 1.8+
-- AVECOINS 2.3
-- Youer 1.21.1
-
-## 1.0.0 Beta 1
-
-Primera beta pública candidata de Zian GTS V2.
-
-### Mercado
-- Interfaz GTS nativa con modelos de Pokémon.
-- Publicación desde el Party.
-- Compra y retirada de ofertas.
-- Ganancias y claim.
-- Historial de transacciones.
-- Filtros, ordenación y paginación.
-- Vista detallada con género, naturaleza, habilidad, movimientos, IVs, Alpha, Shiny y legendario.
-- Radar visual de IVs.
-
-### Economía
-- Integración con AVECOINS 2.3.
-- Validación de saldo y operaciones en el servidor.
-- Ganancias persistentes para vendedores.
-
-### Seguridad y persistencia
-- Arquitectura server-authoritative.
-- Protección frente a doble compra y operaciones concurrentes.
-- Mercado, historial y journal persistentes.
-- Journal durable para operaciones sensibles.
-- Bloqueo fail-closed cuando una operación externa queda en estado incierto.
-- Recuperación administrativa con reconciliación manual.
-- Protección mediante requestId frente a respuestas antiguas del mercado.
-
-### Pruebas
-- Tests automatizados de persistencia, concurrencia, rollback, journal y hard-kill.
-- Pruebas multijugador de publicación, compra, retirada, claim, historial, filtros y paginación.
-- Pruebas de reinicio y persistencia.
-- Pruebas de abuso y duplicación sin duplicaciones observadas.
-
-### Compatibilidad
-- Minecraft 1.21.1
-- Java 21
-- NeoForge 21.1.228+
-- Cobblemon 1.8+
-- AVECOINS 2.3
-- Youer 1.21.1 como plataforma objetivo de servidor híbrido
+Minecraft 1.21.1 · NeoForge · Java 21. Install the same mod version on client and server. Back up your world before upgrading; replace the old JAR instead of keeping both copies.

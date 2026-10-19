@@ -15,7 +15,8 @@ data class MarketScreenRequest(
     val pageSize: Int = 6,
     val filter: OfferFilter = OfferFilter.ALL,
     val sort: OfferSort = OfferSort.NEWEST,
-    val now: java.time.Instant = java.time.Instant.now()
+    val now: java.time.Instant = java.time.Instant.now(),
+    val search:String=""
 ) {
     init {
         require(page >= 1)
@@ -55,7 +56,7 @@ fun OfferBook.screen(request: MarketScreenRequest): MarketScreenModel {
             filter = request.filter,
             sort = request.sort,
             ownership = OfferOwnership.OTHERS,
-            now = request.now
+            now = request.now, search=request.search
         )
         MarketTab.MY_OFFERS -> MarketQuery(
             viewer = request.viewer,
@@ -64,7 +65,7 @@ fun OfferBook.screen(request: MarketScreenRequest): MarketScreenModel {
             filter = OfferFilter.OWN,
             sort = request.sort,
             ownership = OfferOwnership.MINE,
-            now = request.now
+            now = request.now, search=request.search
         )
     }
 

@@ -17,7 +17,7 @@ import com.zianblk.ziangts.v2.network.OpenMarketScreenPayload
  */
 object V2Commands {
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
-        val root = Commands.literal("ZianGTS")
+        val root = Commands.literal("ZianGTS").requires { GtsPermissions.allows(it,"use") }
             .executes { ctx -> open(ctx.source) }
             .then(Commands.literal("open").executes { ctx -> open(ctx.source) })
             .then(Commands.literal("status")
@@ -37,18 +37,18 @@ object V2Commands {
                     val pending = ZianGtsV2Runtime.unresolvedTransactions()
                     if (pending.isEmpty()) {
                         ctx.source.sendSuccess(
-                            { Component.literal("Zian GTS V2: no unresolved transactions") },
+                            { Component.literal("Zian GTS: no hay operaciones pendientes de revisión.") },
                             false
                         )
                     } else {
                         ctx.source.sendFailure(Component.literal(
-                            "Zian GTS V2: ${pending.size} unresolved transaction(s); trading remains blocked"
+                            "Zian GTS: ${pending.size} operaciones requieren revisión; el mercado permanece bloqueado."
                         ))
                         pending.take(10).forEach { incident ->
                             ctx.source.sendFailure(Component.literal(
-                                "id=${incident.ticket.operationId} op=${incident.ticket.operation} " +
-                                    "subject=${incident.subjectId} stage=${incident.stage} " +
-                                    "quarantined=${incident.quarantined} reason=${incident.reason ?: "-"}"
+                                "${ZianGtsV2Runtime.reference(incident.ticket.operationId)} · jugador=${ZianGtsV2Runtime.referenceOwner(incident.ticket.operationId)} · operación=${incident.ticket.operation} " +
+                                    "fase=${incident.stage} " +
+                                    "enRevisión=${incident.quarantined} motivo=${incident.reason ?: "-"}"
                             ))
                         }
                     }
@@ -56,19 +56,19 @@ object V2Commands {
                 }
                 .then(Commands.literal("resolve")
                     .requires { GtsPermissions.allows(it, "admin.recovery.resolve", defaultAdmin = true) }
-                    .then(Commands.argument("operation", StringArgumentType.word())
+                    .then(Commands.argument("operation", StringArgumentType.word()).suggests { _,b -> net.minecraft.commands.SharedSuggestionProvider.suggest(ZianGtsV2Runtime.unresolvedTransactions().map{ZianGtsV2Runtime.reference(it.ticket.operationId)},b) }
                         .executes { ctx ->
                             val idText = StringArgumentType.getString(ctx, "operation")
-                            val id = parseUuid(ctx.source, idText) ?: return@executes 0
+                            val id = parseReference(ctx.source, idText) ?: return@executes 0
                             ctx.source.sendFailure(Component.literal(
-                                "Recovery is destructive. Verify AVECOINS, Pokemon storage and GTS state first. " +
-                                    "To confirm: /ZianGTS recovery resolve $id confirm"
+                                "Comprueba el cobro, el almacenamiento Pokémon y el GTS. No se compensa nada automáticamente. " +
+                                    "Para confirmar: /ZianGTS recovery resolve $idText confirm"
                             ))
                             1
                         }
                         .then(Commands.literal("confirm").executes { ctx ->
                             val idText = StringArgumentType.getString(ctx, "operation")
-                            val id = parseUuid(ctx.source, idText) ?: return@executes 0
+                            val id = parseReference(ctx.source, idText) ?: return@executes 0
                             val actor = ctx.source.entity?.uuid?.toString() ?: "console"
                             val resolved = try {
                                 ZianGtsV2Runtime.resolveBlockedTransaction(
@@ -77,24 +77,26 @@ object V2Commands {
                                 )
                             } catch (error: Exception) {
                                 ctx.source.sendFailure(Component.literal(
-                                    "Recovery resolution failed: ${error.message}"
+                                    "No se pudo registrar la revisión: ${error.message}"
                                 ))
                                 return@executes 0
                             }
                             if (!resolved) {
-                                ctx.source.sendFailure(Component.literal("Unknown unresolved operation: $id"))
+                                ctx.source.sendFailure(Component.literal("No existe una operación pendiente con esa referencia."))
                                 0
                             } else {
                                 ctx.source.sendSuccess({ Component.literal(
-                                    "Resolved $id after manual reconciliation. " +
-                                        "Restart the server before V2 trading resumes."
+                                    "Revisión de $idText registrada tras la conciliación manual. " +
+                                        "Reinicia el servidor antes de reabrir el mercado."
                                 ) }, true)
                                 1
                             }
                         }))))
-        dispatcher.register(root)
+        val registered=dispatcher.register(root)
+        if(dispatcher.root.getChild("gts")==null)dispatcher.register(Commands.literal("gts").requires { GtsPermissions.allows(it,"use") }.executes { open(it.source) }.redirect(registered))
     }
 
+    private fun parseReference(source:CommandSourceStack,value:String):java.util.UUID?=try{ZianGtsV2Runtime.resolveReference(value)}catch(error:Exception){source.sendFailure(Component.literal("Referencia inexistente. Usa el autocompletado o un UUID válido."));null}
     private fun open(source: CommandSourceStack): Int {
         val player = try {
             source.playerOrException

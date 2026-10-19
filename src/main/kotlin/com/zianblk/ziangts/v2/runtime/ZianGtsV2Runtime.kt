@@ -55,6 +55,7 @@ object ZianGtsV2Runtime {
             val avecoinsVersion = AvecoinsWallet.verifyContract()
             val market = DurableMarketStore(root.resolve("market-v2.state"))
             journal = DurableTradeJournal(root.resolve("transactions-v2.wal"))
+            journal.ownerName={id -> server.profileCache?.get(id)?.map{it.name}?.orElse("JUGADOR") ?: "JUGADOR"}
             if (journal.blocksTrading()) {
                 val reconciled = journal.reconcileRuntimeComplete()
                 if (reconciled.isNotEmpty()) {
@@ -186,6 +187,9 @@ object ZianGtsV2Runtime {
     /** Read-only pending seller proceeds for UI/commands. */
     fun proceedsFor(playerId: java.util.UUID): Map<ProceedsKey, Long>? =
         context?.market?.balances(playerId)
+    fun reference(id:java.util.UUID):String=(context?.journal ?: blockedJournal)?.reference(id) ?: "GTS-NO-DISPONIBLE"
+    fun referenceOwner(id:java.util.UUID):String=(context?.journal ?: blockedJournal)?.referenceOwner(id) ?: "Desconocido"
+    fun resolveReference(value:String):java.util.UUID=(context?.journal ?: blockedJournal)?.resolveReference(value) ?: java.util.UUID.fromString(value)
     fun unresolvedTransactions(): List<DurableTradeJournal.Pending> =
         (context?.journal ?: blockedJournal)?.unresolved() ?: emptyList()
 

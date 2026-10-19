@@ -1,11 +1,11 @@
-# Zian GTS 1.0.1
+# Zian GTS 1.0.3
 
-- File type: **Release**.
-- Minecraft **1.21.1**, loader **NeoForge**, Java **21**. Install the same JAR on client and server.
-- Main file: `zian-gts-1.0.1.jar`. Upload the JAR, not a documentation ZIP.
-- Current description: [description.md](docs/releases/1.0.1/description.md).
-- Current changes: [changelog.md](docs/releases/1.0.1/changelog.md).
-- Current requirements and commands: [README](README.md).
-- Artifact checksum and validation: [artifact.json](docs/releases/1.0.1/artifact.json).
+Minecraft 1.21.1 / NeoForge / Java 21. Client and server.
 
-External dependencies are listed in the README; do not bundle them in the uploaded file. Updating this GitHub documentation does not change an existing CurseForge listing automatically.
+Upload `zian-gts-1.0.3.jar` (the JAR, not the documentation ZIP).
+
+- [Description](docs/releases/1.0.3/description.md)
+- [Changelog](docs/releases/1.0.3/changelog.md)
+- [Artifact and dependencies](docs/releases/1.0.3/artifact.json)
+
+Web submission status is recorded separately; this document does not confirm an upload.

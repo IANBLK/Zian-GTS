@@ -10,7 +10,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.literal("Historial")) {
+class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.translatableWithFallback("ui.ziangts.302027905ce5", "Historial")) {
     private var observed = -1L
     private var response: HistoryResponsePayload? = null
     private var page = 1
@@ -27,7 +27,7 @@ class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.lit
         next = addRenderableWidget(GtsButton.create(Component.literal(">")) {
             if (response?.hasNext == true) { page += 1; request() }
         }.bounds(width / 2 + 95, height - 34, 30, 20).build())
-        addRenderableWidget(GtsButton.create(Component.literal("Volver")) { minecraft?.setScreen(parent) }
+        addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.84a715a785a9", "Volver")) { minecraft?.setScreen(parent) }
             .bounds(width / 2 - 40, height - 34, 80, 20).build())
         refreshButtons()
         request()
@@ -65,12 +65,12 @@ class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.lit
         graphics.drawCenteredString(font, title, width / 2, 18, ZianGtsTheme.GOLD)
         val data = response
         if (data == null) {
-            graphics.drawCenteredString(font, Component.literal("Cargando historial..."), width / 2, 48, 0xAAAAAA)
+            graphics.drawCenteredString(font, Component.translatableWithFallback("ui.ziangts.1551e5d0208e", "Cargando historial..."), width / 2, 48, 0xAAAAAA)
             return
         }
-        graphics.drawCenteredString(font, Component.literal("Página ${data.page}/${data.totalPages}"), width / 2, 38, 0xBBBBBB)
+        graphics.drawCenteredString(font, UiText.pageCounter(data.page, data.totalPages), width / 2, 38, 0xBBBBBB)
         if (data.entries.isEmpty()) {
-            graphics.drawCenteredString(font, Component.literal("Todavía no tienes transacciones completadas"), width / 2, 76, 0xAAAAAA)
+            graphics.drawCenteredString(font, Component.translatableWithFallback("ui.ziangts.2fdccd930dca", "Todavía no tienes transacciones completadas"), width / 2, 76, 0xAAAAAA)
             return
         }
         val viewer = Minecraft.getInstance().player?.uuid

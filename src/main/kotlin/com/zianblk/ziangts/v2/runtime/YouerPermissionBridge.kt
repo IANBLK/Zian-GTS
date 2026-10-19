@@ -17,16 +17,17 @@ import com.zianblk.ziangts.ZianGts
 object YouerPermissionBridge {
     private const val ROOT_PERMISSION = "minecraft.command.ziangts"
 
-    fun registerPlayerAccess() {
+    fun registerPlayerAccess(){register("minecraft.command.ziangts");register("minecraft.command.gts")}
+    private fun register(rootPermission:String) {
         try {
             val bukkitClass = Class.forName("org.bukkit.Bukkit")
             val pluginManager = bukkitClass.getMethod("getPluginManager").invoke(null) ?: return
             val pluginManagerClass = Class.forName("org.bukkit.plugin.PluginManager")
             val existing = pluginManagerClass.getMethod("getPermission", String::class.java)
-                .invoke(pluginManager, ROOT_PERMISSION)
+                .invoke(pluginManager, rootPermission)
 
             if (existing != null) {
-                ZianGts.LOGGER.info("Youer/Bukkit permission {} already exists; leaving its configured default unchanged", ROOT_PERMISSION)
+                ZianGts.LOGGER.info("Youer/Bukkit permission {} already exists; leaving its configured default unchanged", rootPermission)
                 return
             }
 
@@ -36,17 +37,17 @@ object YouerPermissionBridge {
             val permission = permissionClass
                 .getConstructor(String::class.java, String::class.java, permissionDefaultClass)
                 .newInstance(
-                    ROOT_PERMISSION,
+                    rootPermission,
                     "Allows players to open the Zian GTS market",
                     defaultTrue
                 )
 
             pluginManagerClass.getMethod("addPermission", permissionClass).invoke(pluginManager, permission)
-            ZianGts.LOGGER.info("Registered Youer/Bukkit permission {} with default TRUE", ROOT_PERMISSION)
+            ZianGts.LOGGER.info("Registered Youer/Bukkit permission {} with default TRUE", rootPermission)
         } catch (_: ClassNotFoundException) {
             // Pure NeoForge: Bukkit is not present, so no bridge is necessary.
         } catch (error: Throwable) {
-            ZianGts.LOGGER.warn("Could not register Youer/Bukkit permission bridge for {}", ROOT_PERMISSION, error)
+            ZianGts.LOGGER.warn("Could not register Youer/Bukkit permission bridge for {}", rootPermission, error)
         }
     }
 }

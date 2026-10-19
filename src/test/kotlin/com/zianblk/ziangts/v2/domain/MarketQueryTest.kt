@@ -10,6 +10,16 @@ class MarketQueryTest {
     private val viewer = UUID.randomUUID()
     private val other = UUID.randomUUID()
 
+    @Test fun searchIsAppliedBeforePaginationAndNeverExposesExpiredOrOtherPrivateOffers(){
+        val current=offer(other,"cobblemon:charizard",50,20,shiny=false)
+        val hidden=offer(viewer,"cobblemon:charizard",50,20,shiny=false)
+        val expired=offer(other,"cobblemon:charizard",50,20,shiny=false,expires=now.minusSeconds(1))
+        val book=InMemoryOfferBook().apply{add(current);add(hidden);add(expired)}
+        val result=book.query(MarketQuery(viewer=viewer,ownership=OfferOwnership.OTHERS,now=now,search="CHARIZARD"))
+        assertEquals(listOf(current.id),result.offers.map{it.id});assertEquals(1,result.total)
+        assertTrue(book.query(MarketQuery(viewer=viewer,now=now,search="pikachu")).offers.isEmpty())
+        assertThrows(IllegalArgumentException::class.java){MarketQuery(viewer,search="x".repeat(65))}
+    }
     @Test fun publicMarketExcludesExpiredOffersButOwnIncludesThem() {
         val current = offer(other, "cobblemon:gimmighoul", 20, 10, shiny = false, alpha = false, published = now.minusSeconds(60), expires = now.plusSeconds(60))
         val expiredOwn = offer(viewer, "cobblemon:mewtwo", 70, 100, shiny = true, alpha = false, published = now.minusSeconds(7200), expires = now.minusSeconds(1))

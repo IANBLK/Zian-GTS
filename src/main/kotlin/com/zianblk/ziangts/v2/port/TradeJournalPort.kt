@@ -22,6 +22,7 @@ data class JournalTicket(val operationId: UUID, val operation: TradeOperation)
 
 interface TradeJournalPort {
     fun begin(operation: TradeOperation, subjectId: UUID): JournalTicket
+    fun begin(operation: TradeOperation, subjectId: UUID, owner: UUID, ownerName: String): JournalTicket = begin(operation,subjectId)
     fun stage(ticket: JournalTicket, stage: TradeStage)
     fun complete(ticket: JournalTicket)
     /**

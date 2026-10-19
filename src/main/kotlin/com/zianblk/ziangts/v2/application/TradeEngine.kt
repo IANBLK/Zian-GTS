@@ -57,7 +57,7 @@ class TradeEngine(
         } ?: return@mutate TradeResult.Rejected("pokemon is not owned by seller")
 
         val ticket = try {
-            journal.begin(TradeOperation.PUBLISH, pokemonId)
+            journal.begin(TradeOperation.PUBLISH, pokemonId,sellerId,sellerName)
         } catch (error: Exception) {
             return@mutate TradeResult.Rejected("journal unavailable")
         }
@@ -138,7 +138,7 @@ class TradeEngine(
         if (!canWithdraw) return@mutate TradeResult.Rejected("insufficient funds")
 
         val ticket = try {
-            journal.begin(TradeOperation.PURCHASE, offerId.value)
+            journal.begin(TradeOperation.PURCHASE, offerId.value,buyerId,"JUGADOR")
         } catch (error: Exception) {
             return@mutate TradeResult.Rejected("journal unavailable")
         }
@@ -274,7 +274,7 @@ class TradeEngine(
         if (amount <= 0) return@mutateClaim ClaimResult.Rejected("no proceeds available")
 
         val ticket = try {
-            journal.begin(TradeOperation.CLAIM, ownerId)
+            journal.begin(TradeOperation.CLAIM, ownerId,ownerId,"JUGADOR")
         } catch (error: Exception) {
             return@mutateClaim ClaimResult.Rejected("journal unavailable")
         }
@@ -327,7 +327,7 @@ class TradeEngine(
         if (offer.owner.playerId != ownerId) return@mutate TradeResult.Rejected("offer is not owned by player")
 
         val ticket = try {
-            journal.begin(TradeOperation.WITHDRAW, offerId.value)
+            journal.begin(TradeOperation.WITHDRAW, offerId.value,ownerId,"JUGADOR")
         } catch (error: Exception) {
             return@mutate TradeResult.Rejected("journal unavailable")
         }

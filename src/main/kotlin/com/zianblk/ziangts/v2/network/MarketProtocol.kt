@@ -10,7 +10,7 @@ import java.util.UUID
  * These DTOs contain no NeoForge/Cobblemon classes so codec and packet wiring can evolve
  * without leaking runtime objects into the domain layer.
  */
-const val MARKET_PROTOCOL_VERSION = 2
+const val MARKET_PROTOCOL_VERSION = 3
 
 data class MarketPageRequest(
     val protocolVersion: Int = MARKET_PROTOCOL_VERSION,
@@ -18,17 +18,19 @@ data class MarketPageRequest(
     val page: Int = 1,
     val pageSize: Int = 6,
     val filter: OfferFilter = OfferFilter.ALL,
-    val sort: OfferSort = OfferSort.NEWEST
+    val sort: OfferSort = OfferSort.NEWEST,
+    val search:String=""
 ) {
     init {
         require(protocolVersion == MARKET_PROTOCOL_VERSION) { "unsupported market protocol version" }
+        require(search.length<=64&&search.none{it.isISOControl()})
         require(page >= 1)
         require(pageSize in 1..50)
         require(tab != MarketTab.MARKET || filter != OfferFilter.OWN)
     }
 
     fun toScreenRequest(viewer: UUID, now: Instant): MarketScreenRequest =
-        MarketScreenRequest(viewer, tab, page, pageSize, filter, sort, now)
+        MarketScreenRequest(viewer, tab, page, pageSize, filter, sort, now,search)
 }
 
 data class MarketEntryDto(

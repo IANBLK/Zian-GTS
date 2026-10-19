@@ -7,7 +7,7 @@ import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
-class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Component.literal("Publicar Pokémon")) {
+class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Component.translatableWithFallback("ui.ziangts.916325d8018b", "Publicar Pokémon")) {
     private val previewStates=mutableMapOf<java.util.UUID,com.cobblemon.mod.common.client.render.models.blockbench.FloatingState>()
     private var initialized=false
     private var options: PublishOptionsResponse? = null
@@ -27,17 +27,17 @@ class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Componen
         fitViewport(600,390)
         val left=(width-440)/2;val top=(height-274)/2
         val previousPrice=priceBox?.value.orEmpty()
-        priceBox = EditBox(font,left+254,top+131,164,20,Component.literal("Precio")).also {
-            it.setHint(Component.literal("Cantidad"))
+        priceBox = EditBox(font,left+254,top+131,164,20,Component.translatableWithFallback("ui.ziangts.18e0707ea726", "Precio")).also {
+            it.setHint(Component.translatableWithFallback("ui.ziangts.b5b6f862d41c", "Cantidad"))
             it.setFilter { text -> text.isEmpty() || (text.all(Char::isDigit) && text.length <= 12) }
             it.value=previousPrice
             it.setResponder{confirmArmed=false;if(message.startsWith("Confirma:"))message="";refresh()}
             addRenderableWidget(it)
         }
-        pokemonButton=addRenderableWidget(GtsButton.create(Component.literal("Elegir del equipo")){cyclePokemon()}.bounds(left+18,top+194,194,20).build())
-        currencyButton=addRenderableWidget(GtsButton.create(Component.literal("Moneda")){cycleCurrency()}.bounds(left+254,top+84,164,20).build())
-        confirmButton=addRenderableWidget(GtsButton.create(Component.literal("Publicar")){publish()}.bounds(left+234,top+239,96,20).build())
-        addRenderableWidget(GtsButton.create(Component.literal("Volver")){minecraft?.setScreen(parent)}.bounds(left+340,top+239,82,20).build())
+        pokemonButton=addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.b6057fa91bec", "Elegir del equipo")){cyclePokemon()}.bounds(left+18,top+194,194,20).build())
+        currencyButton=addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.3a724b648064", "Moneda")){cycleCurrency()}.bounds(left+254,top+84,164,20).build())
+        confirmButton=addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.9df643f06945", "Publicar")){publish()}.bounds(left+234,top+239,96,20).build())
+        addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.84a715a785a9", "Volver")){minecraft?.setScreen(parent)}.bounds(left+340,top+239,82,20).build())
         confirmArmed=false
         if(message.startsWith("Confirma:"))message=""
         // Baseline once: resizing must not discard an in-flight result.
@@ -85,17 +85,16 @@ class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Componen
     }
 
     private fun cyclePokemon() {
-        confirmArmed = false
-        val list = options?.party.orEmpty()
-        if (list.isNotEmpty()) selectedPokemon = (selectedPokemon + 1) % list.size
-        refresh()
+        confirmArmed=false
+        val list=options?.party.orEmpty()
+        minecraft?.setScreen(MarketChoiceScreen(this,"Elegir Pokémon del equipo",list.map { it.pokemonId.toString() to (friendly(it.species)+" · Nv. "+it.level) }) { id ->
+            selectedPokemon=list.indexOfFirst{it.pokemonId.toString()==id}.coerceAtLeast(0);refresh()
+        })
     }
-
     private fun cycleCurrency() {
-        confirmArmed = false
-        val list = options?.currencies.orEmpty()
-        if (list.isNotEmpty()) selectedCurrency = (selectedCurrency + 1) % list.size
-        refresh()
+        confirmArmed=false
+        val list=options?.currencies.orEmpty()
+        minecraft?.setScreen(MarketChoiceScreen(this,"Elegir moneda",list.map{it to friendly(it)}){id->selectedCurrency=list.indexOf(id).coerceAtLeast(0);refresh()})
     }
 
     private fun publish() {

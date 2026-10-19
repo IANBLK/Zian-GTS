@@ -153,6 +153,7 @@ object MarketPayloadCodecs {
         buf.writeVarInt(value.pageSize)
         buf.writeEnum(value.filter)
         buf.writeEnum(value.sort)
+        buf.writeUtf(value.search,64)
     }
 
     private fun decodeRequest(buf: RegistryFriendlyByteBuf) = MarketPageRequest(
@@ -161,7 +162,8 @@ object MarketPayloadCodecs {
         page = buf.readVarInt(),
         pageSize = buf.readVarInt(),
         filter = buf.readEnum(OfferFilter::class.java),
-        sort = buf.readEnum(OfferSort::class.java)
+        sort = buf.readEnum(OfferSort::class.java),
+        search=buf.readUtf(64)
     )
 
     private fun encodeResponse(buf: RegistryFriendlyByteBuf, value: MarketPageResponse) {

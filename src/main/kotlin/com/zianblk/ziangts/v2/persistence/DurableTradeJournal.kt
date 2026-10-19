@@ -39,6 +39,19 @@ class DurableTradeJournal(private val path: Path) : TradeJournalPort, AutoClosea
         }
     }
 
+    private val references by lazy { HumanReferences(path.resolveSibling("references.json"),"GTS") }
+    var ownerName: (UUID)->String = { "JUGADOR" }
+    override fun begin(operation:TradeOperation,subjectId:UUID,owner:UUID,ownerName:String):JournalTicket {
+        val ticket=begin(operation,subjectId)
+        references.reference(ticket.operationId,owner,if(ownerName=="JUGADOR")this.ownerName(owner) else ownerName)
+        return ticket
+    }
+    fun reference(operation:UUID):String {
+        val known=references.entry(operation)
+        return known?.reference() ?: references.reference(operation,UUID(0,0),"LEGADO")
+    }
+    fun referenceOwner(operation:UUID):String=references.entry(operation)?.ownerName() ?: "Propietario por verificar"
+    fun resolveReference(value:String):UUID=references.resolve(value,null)
     fun unresolved(): List<Pending> = pending.values.toList()
     fun blocksTrading(): Boolean = !healthy || pending.isNotEmpty()
 

@@ -18,7 +18,8 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 import org.joml.Quaternionf
 
-class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
+class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.ziangts.47e7e9085cc1", "Zian GTS")) {
+    private var searchQuery=""
     private var initialized=false
     private var state = MarketUiState()
     private var observedRevision = -1L
@@ -27,6 +28,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
     private var observedActionRevision = -1L
     private var actionMessage: String? = null
     private var actionPending = false
+    private var actionStarted=0L
     private val actionButtons = mutableListOf<Button>()
     private var filterButton: Button? = null
     private var sortButton: Button? = null
@@ -41,7 +43,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         }
         actionButtons.clear()
 
-        addRenderableWidget(GtsButton.create(Component.literal("Cerrar")){onClose()}.bounds(width-76,18,64,20).build())
+        addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.4b0816bbd5e9", "Cerrar")){onClose()}.bounds(width-76,18,64,20).build())
         val compact = width < 600
         val row1Y = 18
         val row2Y = 41
@@ -52,17 +54,17 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         val row1X = (width - row1Total) / 2
 
         addRenderableWidget(
-            GtsButton.create(Component.literal("Mercado")) { switchTab(MarketTab.MARKET) }
+            GtsButton.create(Component.translatableWithFallback("ui.ziangts.9e1c498be862", "Mercado")) { switchTab(MarketTab.MARKET) }
                 .bounds(row1X, row1Y, primaryW, 20)
                 .build()
         )
         addRenderableWidget(
-            GtsButton.create(Component.literal("Mis anuncios")) { switchTab(MarketTab.MY_OFFERS) }
+            GtsButton.create(Component.translatableWithFallback("ui.ziangts.967115867746", "Mis anuncios")) { switchTab(MarketTab.MY_OFFERS) }
                 .bounds(row1X + primaryW + primaryGap, row1Y, primaryW, 20)
                 .build()
         )
         addRenderableWidget(
-            GtsButton.create(Component.literal("Publicar")) { minecraft?.setScreen(PublishOfferScreen(this)) }
+            GtsButton.create(Component.translatableWithFallback("ui.ziangts.9df643f06945", "Publicar")) { minecraft?.setScreen(PublishOfferScreen(this)) }
                 .bounds(row1X + primaryW * 2 + primaryGap * 2, row1Y, smallW, 20)
                 .build()
         )
@@ -75,9 +77,9 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         filterButton = addRenderableWidget(
             GtsButton.create(Component.literal(filterLabel())) {
                 if (state.tab == MarketTab.MARKET) {
-                    state = state.copy(filter = nextFilter(state.filter), page = 1)
-                    refreshControls()
-                    requestCurrent()
+                    minecraft?.setScreen(MarketChoiceScreen(this,"Filtrar ofertas",OfferFilter.entries.filter{it!=OfferFilter.OWN}.map{it.name to filterName(it)}) { id ->
+                        state=state.withFilter(OfferFilter.valueOf(id));refreshControls();requestCurrent()
+                    })
                 }
             }.bounds(secondX, row2Y, secondWidths[0], 18).build()
         )
@@ -85,25 +87,28 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
 
         sortButton = addRenderableWidget(
             GtsButton.create(Component.literal(sortLabel())) {
-                state = state.copy(sort = nextSort(state.sort), page = 1)
-                refreshControls()
-                requestCurrent()
+                minecraft?.setScreen(MarketChoiceScreen(this,"Ordenar ofertas",OfferSort.entries.map{it.name to sortName(it)}) { id ->
+                    state=state.withSort(OfferSort.valueOf(id));refreshControls();requestCurrent()
+                })
             }.bounds(secondX, row2Y, secondWidths[1], 18).build()
         )
         secondX += secondWidths[1] + secondGap
 
         addRenderableWidget(
-            GtsButton.create(Component.literal("Ganancias")) { minecraft?.setScreen(ProceedsScreen(this)) }
+            GtsButton.create(Component.translatableWithFallback("ui.ziangts.f5b08aebcf92", "Ganancias")) { minecraft?.setScreen(ProceedsScreen(this)) }
                 .bounds(secondX, row2Y, secondWidths[2], 18)
                 .build()
         )
         secondX += secondWidths[2] + secondGap
         addRenderableWidget(
-            GtsButton.create(Component.literal("Historial")) { minecraft?.setScreen(HistoryScreen(this)) }
+            GtsButton.create(Component.translatableWithFallback("ui.ziangts.302027905ce5", "Historial")) { minecraft?.setScreen(HistoryScreen(this)) }
                 .bounds(secondX, row2Y, secondWidths[3], 18)
                 .build()
         )
 
+        val search=addRenderableWidget(net.minecraft.client.gui.components.EditBox(font,width/2-110,64,180,16,Component.translatableWithFallback("ui.ziangts.89df234cef3a", "Buscar especie o vendedor")))
+        search.setMaxLength(64);search.value=searchQuery;search.setHint(Component.translatableWithFallback("ui.ziangts.1d58c9f3fe44", "Especie o vendedor…"));search.setResponder{searchQuery=it}
+        addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.a62405e2cefb", "Buscar")){state=state.copy(page=1);requestCurrent()}.bounds(width/2+76,63,60,18).build())
         refreshControls()
         val layout = MarketLayout.calculate(width, height)
         previousButton = addRenderableWidget(
@@ -126,7 +131,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         )
         updateNavigationButtons()
         rebuildEntryButtons()
-        requestCurrent()
+        if(!state.loading)requestCurrent()
     }
 
     private fun rebuildEntryButtons() {
@@ -150,10 +155,14 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
                 val button = addRenderableWidget(
                     GtsButton.create(Component.literal(if (action == MarketAction.BUY) "Comprar" else "Retirar")) {
                         if (!actionPending) {
-                            actionPending = true
-                            actionMessage = "Procesando..."
-                            actionButtons.forEach { it.active = false }
-                            V2MarketClient.requestAction(entry.offerId, action)
+                            minecraft?.setScreen(MarketConfirmScreen(this,
+                                if(action==MarketAction.BUY) "Confirmar compra" else "Retirar anuncio",
+                                listOf(entry.species.substringAfter(':').replace('_',' ')+" · Nv. "+entry.level,
+                                    "Vendedor: "+entry.sellerName,
+                                    "Precio: "+entry.price+" "+currencyDisplayName(entry.currency.substringAfter(':')),
+                                    if(action==MarketAction.BUY)"Revisa el precio y el Pokémon antes de pagar." else "El Pokémon se devolverá a tu almacenamiento cuando se confirme la retirada.")) {
+                                if(!actionPending){actionPending=true;actionStarted=System.nanoTime();actionMessage="Esperando al servidor…";actionButtons.forEach{it.active=false};V2MarketClient.requestAction(entry.offerId,action)}
+                            })
                         }
                     }.bounds(x + cardW - buttonWidth - 7, y + cardH - 17, buttonWidth, 15).build()
                 )
@@ -178,6 +187,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
             }
         }
 
+        if(actionPending&&System.nanoTime()-actionStarted>8_000_000_000L)actionMessage="Respuesta tardía. Consulta el mercado; no repitas la operación."
         val actionRevision = V2MarketClientState.actionRevision()
         if (actionRevision != observedActionRevision) {
             observedActionRevision = actionRevision
@@ -201,21 +211,21 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
 
         val response = state.response
         if (state.loading && response == null) {
-            graphics.drawCenteredString(font, Component.literal("Cargando mercado..."), width / 2, 54, 0xAAAAAA)
+            graphics.drawCenteredString(font, Component.translatableWithFallback("ui.ziangts.9f2c6ad20d44", "Cargando mercado..."), width / 2, 54, 0xAAAAAA)
             renderWidgets(graphics, mouseX, mouseY, partialTick)
             return
         }
         if (response == null) {
-            graphics.drawCenteredString(font, Component.literal("Sin datos del mercado"), width / 2, 54, 0xAAAAAA)
+            graphics.drawCenteredString(font, Component.translatableWithFallback("ui.ziangts.1731c978f4d3", "Sin datos del mercado"), width / 2, 54, 0xAAAAAA)
             renderWidgets(graphics, mouseX, mouseY, partialTick)
             return
         }
 
         graphics.drawCenteredString(
             font,
-            Component.literal("Página ${response.page}/${response.totalPages.coerceAtLeast(1)}"),
+            UiText.pageCounter(response.page, response.totalPages),
             width / 2,
-            61,
+            height-43,
             0xCCCCCC
         )
 
@@ -250,7 +260,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
             graphics.drawString(font,priceLabel,x+8,footerTop+5,0xFFF7E4A6.toInt())
             renderCurrencyIcon(graphics,entry.currency,x+12+font.width(priceLabel),footerTop+1,mouseX,mouseY)
             if(mouseX in x until x+cardW && mouseY in y until footerTop){
-                queueTooltip(listOf(Component.literal(species),Component.literal("$gender · Nivel ${entry.level}"),Component.literal("IVs: "+entry.ivs.joinToString(" / ")),Component.literal("Naturaleza: "+entry.nature.substringAfter(':')),Component.literal("Habilidad: "+entry.ability.substringAfter(':')),Component.literal("Haz clic para ver los detalles")))
+                queueTooltip(listOf(Component.literal(species),UiText.genderLevel(gender, entry.level),Component.literal("IVs: "+entry.ivs.joinToString(" / ")),Component.literal("Naturaleza: "+entry.nature.substringAfter(':')),Component.literal("Habilidad: "+entry.ability.substringAfter(':')),Component.translatableWithFallback("ui.ziangts.2088184a2408", "Haz clic para ver los detalles")))
             }
 
             val seller = fitText("Vendedor: ${entry.sellerName}", cardW - 16)
@@ -421,6 +431,8 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         return values[(index + 1) % values.size]
     }
 
+    private fun filterName(value:OfferFilter):String {val before=state;state=state.copy(filter=value);val label=filterLabel();state=before;return label}
+    private fun sortName(value:OfferSort):String {val before=state;state=state.copy(sort=value);val label=sortLabel();state=before;return label}
     private fun filterLabel(): String = "Filtro: " + when (state.filter) {
         OfferFilter.ALL -> "Todos"
         OfferFilter.SHINY -> "Shiny"
@@ -452,6 +464,7 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
         nextButton?.active = !state.loading && (state.response?.hasNext == true)
     }
 
+    override fun onClose(){if(!GuiReturn.returnToMenu())super.onClose()}
     private fun requestCurrent() {
         state = state.beginRequest()
         refreshControls()
@@ -461,12 +474,12 @@ class MarketScreen : ResponsiveScreen(Component.literal("Zian GTS")) {
                 page = state.page,
                 pageSize = state.pageSize,
                 filter = state.filter,
-                sort = state.sort
+                sort = state.sort, search=searchQuery
             )
             MarketTab.MY_OFFERS -> V2MarketClient.requestMyOffers(
                 page = state.page,
                 pageSize = state.pageSize,
-                sort = state.sort
+                sort = state.sort, search=searchQuery
             )
         }
     }
