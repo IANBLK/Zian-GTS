@@ -2,12 +2,7 @@
 
 ## Supported versions
 
-Zian GTS is currently in beta. Security fixes are provided for the latest published beta or stable release.
-
-| Version | Supported |
-| --- | --- |
-| 1.0.0-beta.1 | Yes |
-| Older development builds | No |
+Security maintenance targets **Zian GTS 1.0.3**, the current release for Minecraft 1.21.1 and NeoForge. Use its matching client/server JAR and required libraries.
 
 ## Reporting a vulnerability
 
