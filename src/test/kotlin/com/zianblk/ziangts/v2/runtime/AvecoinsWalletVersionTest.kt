@@ -59,6 +59,7 @@ class AvecoinsWalletVersionTest {
         assertThrows(IllegalStateException::class.java) { wallet.withdraw(id, 5) }
         assertThrows(IllegalStateException::class.java) { wallet.deposit(id, 5) }
         assertEquals(0, WStore.saves)
+        assertEquals(10L, WStore.data.coins)
     }
 
     @Test

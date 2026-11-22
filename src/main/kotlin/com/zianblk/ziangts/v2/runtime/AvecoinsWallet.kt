@@ -151,6 +151,7 @@ class AvecoinsWallet internal constructor(
         require(amount > 0)
         val live = get.invoke(null)
         val candidate = copy.invoke(live)
+        check(candidate !== live) { "AVECOINS copy() returned the live wallet; nothing saved" }
         val before = readBalance.invoke(live, playerId, currencyId) as Long
         if (debit.invoke(candidate, playerId, currencyId, amount) != true) {
             return@synchronized Mutation.Rejected("insufficient_funds")
@@ -167,6 +168,7 @@ class AvecoinsWallet internal constructor(
         if (capacity(playerId) < amount) return@synchronized Mutation.Rejected("wallet_full")
         val live = get.invoke(null)
         val candidate = copy.invoke(live)
+        check(candidate !== live) { "AVECOINS copy() returned the live wallet; nothing saved" }
         val before = readBalance.invoke(live, playerId, currencyId) as Long
         credit.invoke(candidate, playerId, currencyId, amount)
         requireOutcome(live, candidate, playerId, before, before + amount)
