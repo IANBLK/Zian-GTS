@@ -12,8 +12,8 @@ import java.util.Base64
 import java.util.UUID
 
 /**
- * Durable V2 test/reference store. Production NeoForge adapters may map the same
- * contracts to SavedData, but the core does not depend on Minecraft persistence.
+ * Durable V2 market store used in production by ZianGtsV2Runtime (`market-v2.state`).
+ * Every mutation is persisted before returning and rolled back in memory if the write fails.
  */
 class DurableMarketStore(private val path: Path) : OfferBook, ProceedsStore {
     private val offers = linkedMapOf<OfferId, TradeOffer>()
