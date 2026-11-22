@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.Cobblemon
 import com.cobblemon.mod.common.pokemon.Pokemon
 import com.cobblemon.mod.common.pokemon.activestate.InactivePokemonState
 import com.zianblk.ziangts.v2.domain.PokemonEnvelope
+import com.zianblk.ziangts.v2.domain.isLegendarySpecies
 import com.zianblk.ziangts.v2.port.PokemonMutation
 import com.zianblk.ziangts.v2.port.PokemonPort
 import net.minecraft.core.RegistryAccess
@@ -111,7 +112,7 @@ class CobblemonPokemonPort(
             species = pokemon.species.resourceIdentifier.toString(),
             level = pokemon.level,
             shiny = pokemon.shiny,
-            alpha = isAlpha(pokemon, tag.toString()),
+            alpha = isAlpha(pokemon),
             legendary = isLegendarySpecies(pokemon.species.resourceIdentifier.toString()),
             gender = pokemon.gender.name,
             nature = pokemon.nature.name.toString(),
@@ -129,32 +130,11 @@ class CobblemonPokemonPort(
         )
     }
 
-    private fun isLegendarySpecies(species: String): Boolean =
-        species.substringAfter(':') in setOf(
-            "articuno","zapdos","moltres","mewtwo","mew","raikou","entei","suicune","lugia","ho_oh","celebi",
-            "regirock","regice","registeel","latias","latios","kyogre","groudon","rayquaza","jirachi","deoxys",
-            "uxie","mesprit","azelf","dialga","palkia","heatran","regigigas","giratina","cresselia","phione","manaphy","darkrai","shaymin","arceus",
-            "cobalion","terrakion","virizion","tornadus","thundurus","reshiram","zekrom","landorus","kyurem","keldeo","meloetta","genesect",
-            "xerneas","yveltal","zygarde","diancie","hoopa","volcanion","type_null","silvally","tapu_koko","tapu_lele","tapu_bulu","tapu_fini",
-            "cosmog","cosmoem","solgaleo","lunala","nihilego","buzzwole","pheromosa","xurkitree","celesteela","kartana","guzzlord","necrozma",
-            "magearna","marshadow","poipole","naganadel","stakataka","blacephalon","zeraora","meltan","melmetal","zacian","zamazenta","eternatus",
-            "kubfu","urshifu","zarude","regieleki","regidrago","glastrier","spectrier","calyrex","enamorus","wo_chien","chien_pao","ting_lu",
-            "chi_yu","koraidon","miraidon","okidogi","munkidori","fezandipiti","ogerpon","terapagos","pecharunt"
-        )
-
-    private fun isAlpha(pokemon: Pokemon, serialized: String): Boolean {
-        // Cobblemon 1.8 identifies owned Alpha Pokémon with the native Alpha Mark.
-        // This is a stronger signal than visual aspects: the eyes can be toggled,
-        // while the mark remains attached to the Pokémon.
-        val alphaMark = "cobblemon:mark_alpha"
-        if (pokemon.activeMark?.identifier?.toString() == alphaMark) return true
-        if (pokemon.marks.any { it.identifier.toString() == alphaMark }) return true
-        if (pokemon.potentialMarks.any { it.identifier.toString() == alphaMark }) return true
-
-        // Compatibility fallback for 1.8.x persisted data. Keep it narrow to the
-        // official mark rather than treating arbitrary alpha-looking aspects as truth.
-        return serialized.lowercase().contains("cobblemon:mark_alpha")
-    }
+    private fun isAlpha(pokemon: Pokemon): Boolean = isAlphaPokemon(
+        pokemon.isAlpha,
+        pokemon.activeMark?.identifier?.toString(),
+        pokemon.marks.map { it.identifier.toString() }
+    )
 
     private fun decode(envelope: PokemonEnvelope): Pokemon =
         // Use Cobblemon's codec-backed companion loader. Creating an empty Pokémon
@@ -168,3 +148,13 @@ class CobblemonPokemonPort(
         check(server.isSameThread) { "CobblemonPokemonPort requires the Minecraft server thread" }
     }
 }
+
+private const val ALPHA_MARK = "cobblemon:mark_alpha"
+
+/**
+ * Cobblemon 1.8 guarda `isAlpha` en el NBT (clave `Alpha`), así que es el criterio principal.
+ * La Alpha Mark activa o poseída solo se acepta por compatibilidad con datos antiguos;
+ * las marcas potenciales no cuentan porque el Pokémon aún no las tiene.
+ */
+internal fun isAlphaPokemon(alphaFlag: Boolean, activeMark: String?, marks: Iterable<String>): Boolean =
+    alphaFlag || activeMark == ALPHA_MARK || ALPHA_MARK in marks
