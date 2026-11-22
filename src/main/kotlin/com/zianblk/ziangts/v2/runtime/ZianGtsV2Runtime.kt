@@ -85,7 +85,8 @@ object ZianGtsV2Runtime {
                 journal,
                 Clock.systemUTC(),
                 history,
-                mutationThreadCheck = { server.isSameThread }
+                mutationThreadCheck = { server.isSameThread },
+                recovery = com.zianblk.ziangts.v2.persistence.FileRecoveryStore(root.resolve("recovery"))
             )
             context = Context(market, journal, engine, history, pokemon)
             blockedJournal = null
