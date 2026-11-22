@@ -21,7 +21,7 @@ The server checks ownership, listing availability, payment and storage. Public a
 
 Player defaults allow `ziangts.use`, `.list`, `.mine`, `.sell`, `.buy`, `.cancel` and `.claim`. LuckPerms is optional; explicit denials affect OP too. Recovery needs `ziangts.admin.recovery`, and resolution additionally needs `ziangts.admin.recovery.resolve`, or the supported fallback without a provider.
 
-AVECOINS 2.3/2.4/2.5 wallets have been inspected. Later versions require the reviewed classes/fingerprints and reflection contract to match; arbitrary future compatibility is not promised. Trading is unavailable without a supported wallet. Cobblemon and Kotlin for Forge are separate required libraries.
+AVECOINS wallets are accepted by contract, not by version number: the contract check was run against 2.5 and 3.0, and other versions work if the wallet classes and method signatures still match (otherwise trading stays unavailable and the log lists what is missing). Trading is unavailable without a supported wallet. Cobblemon and Kotlin for Forge are separate required libraries.
 
 ## Administrator recovery
 
