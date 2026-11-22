@@ -59,7 +59,23 @@ class TradeEngineJournalRecoveryTest {
         val json = Files.readString(file)
         listOf(offer.id.value, buyer, seller, p.pokemonId).forEach { assertTrue(json.contains(it.toString()), "missing $it") }
         assertTrue(json.contains("{test:true}") && json.contains("PAYMENT_APPLIED") && json.contains("\"amount\": 8"))
+        assertTrue(json.contains("\"paymentApplied\": true"))
         assertTrue(journal.quarantined)
+    }
+
+    @Test fun purchaseFailureBeforePaymentWithRestoreFailureDumpsWithoutPayment(@TempDir dir: Path) {
+        val inner = InMemoryOfferBook().apply { add(offer) }
+        val offers = object : OfferBook by inner { override fun add(offer: TradeOffer) = error("store down") }
+        val economy = Economy(); val pokemon = Pokemon()
+        val engine = TradeEngine(offers, pokemon, economy, InMemoryProceedsStore(), FailOnStage(TradeStage.BEFORE_PAYMENT), clock, recovery = FileRecoveryStore(dir))
+
+        val result = engine.purchase(buyer, offer.id) as TradeResult.Quarantined
+
+        assertEquals(0, economy.withdrawCalls)
+        assertEquals(0, pokemon.deliverCalls)
+        val json = Files.readString(dir.resolve("${result.operationId}.json"))
+        assertTrue(json.contains("{test:true}") && json.contains("BEFORE_PAYMENT"))
+        assertTrue(json.contains("\"paymentApplied\": false"))
     }
 
     @Test fun recoveryWriteFailureStillQuarantinesWithoutThrowing() {

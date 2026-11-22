@@ -2,7 +2,10 @@ package com.zianblk.ziangts.v2.persistence
 
 import com.zianblk.ziangts.v2.port.RecoveryPort
 import com.zianblk.ziangts.v2.port.RecoveryRecord
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.StandardOpenOption
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -13,7 +16,11 @@ class FileRecoveryStore(private val dir: Path) : RecoveryPort {
         Files.createDirectories(dir)
         val target = dir.resolve("${record.ticket.operationId}.json")
         val tmp = dir.resolve("${record.ticket.operationId}.json.tmp")
-        Files.write(tmp, record.toJson().toByteArray(Charsets.UTF_8))
+        Files.newByteChannel(tmp, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING).use {
+            val b = ByteBuffer.wrap(record.toJson().toByteArray(Charsets.UTF_8))
+            while (b.hasRemaining()) it.write(b)
+            (it as FileChannel).force(true)
+        }
         try {
             Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
         } catch (_: AtomicMoveNotSupportedException) {

@@ -21,6 +21,8 @@ data class RecoveryRecord(
             "ticket" to ticket.operationId.toString(),
             "operation" to ticket.operation.name,
             "failedStage" to stage.name,
+            // Solo compra: PAYMENT_APPLIED y BEFORE_POKEMON_DELIVERY ocurren tras cobrar; withdraw no tiene comprador.
+            "paymentApplied" to (buyerId != null && (stage == TradeStage.PAYMENT_APPLIED || stage == TradeStage.BEFORE_POKEMON_DELIVERY)),
             "offerId" to offer.id.value.toString(),
             "buyerId" to buyerId?.toString(),
             "sellerId" to sellerId.toString(),

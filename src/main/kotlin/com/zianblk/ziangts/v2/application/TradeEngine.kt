@@ -1,12 +1,15 @@
 package com.zianblk.ziangts.v2.application
 
-import com.zianblk.ziangts.ZianGts
+import org.slf4j.LoggerFactory
 import com.zianblk.ziangts.v2.domain.*
 import com.zianblk.ziangts.v2.port.*
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+
+// Logger propio: la capa de aplicación no debe cargar la clase @Mod en pruebas.
+private val LOG = LoggerFactory.getLogger("Zian GTS")
 
 sealed interface ClaimResult {
     data class Success(val amount: Long, val key: ProceedsKey) : ClaimResult
@@ -397,7 +400,7 @@ class TradeEngine(
             cause.addSuppressed(restoreError)
             return dumpAndQuarantine(ticket, offer, buyerId, stage, cause, "$reason; offer restoration failed")
         }
-        ZianGts.LOGGER.error("GTS ticket {} stage {} journal failed; offer {} restored, nothing charged", ticket.operationId, stage, offer.id.value, cause)
+        LOG.error("GTS ticket {} stage {} journal failed; offer {} restored, nothing charged", ticket.operationId, stage, offer.id.value, cause)
         quarantineQuietly(ticket, "$reason: ${cause.javaClass.simpleName}")
         return TradeResult.Quarantined(ticket.operationId, reason)
     }
@@ -406,13 +409,13 @@ class TradeEngine(
         ticket: JournalTicket, offer: TradeOffer, buyerId: UUID?, stage: TradeStage, cause: Exception, reason: String
     ): TradeResult {
         val record = RecoveryRecord(ticket, stage, offer, buyerId, offer.owner.playerId, Instant.now(clock), "$reason: ${cause.javaClass.simpleName}: ${cause.message}")
-        ZianGts.LOGGER.error("GTS ticket {} stage {} journal failed; pokemon of offer {} needs recovery (buyer={}, seller={})",
+        LOG.error("GTS ticket {} stage {} journal failed; pokemon of offer {} needs recovery (buyer={}, seller={})",
             ticket.operationId, stage, offer.id.value, buyerId, offer.owner.playerId, cause)
         try {
             (recovery ?: throw IllegalStateException("no recovery store configured")).dump(record)
         } catch (dumpError: Exception) {
             // Last resort: the full data, including the serialized pokemon, goes to the log.
-            ZianGts.LOGGER.error("GTS ticket {} recovery file FAILED, full data follows: {}", ticket.operationId, record.toJson(), dumpError)
+            LOG.error("GTS ticket {} recovery file FAILED, full data follows: {}", ticket.operationId, record.toJson(), dumpError)
         }
         quarantineQuietly(ticket, reason)
         return TradeResult.Quarantined(ticket.operationId, reason)
@@ -420,7 +423,7 @@ class TradeEngine(
 
     private fun quarantineQuietly(ticket: JournalTicket, reason: String) {
         try { journal.quarantine(ticket, reason) } catch (error: Exception) {
-            ZianGts.LOGGER.error("GTS ticket {} could not be quarantined in the journal", ticket.operationId, error)
+            LOG.error("GTS ticket {} could not be quarantined in the journal", ticket.operationId, error)
         }
     }
 
