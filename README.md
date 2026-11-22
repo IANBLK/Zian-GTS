@@ -12,7 +12,7 @@ AVECOINS 2.3/2.4/2.5 wallets are supported. Trading is unavailable without a sup
 
 Journals, reservations and receipts protect concurrent purchases and retain interrupted-operation evidence. History maintenance preserves unresolved transactions and unclaimed proceeds.
 
-Install on client and server with Minecraft 1.21.1, Java 21, NeoForge 21.1.x, Cobblemon 1.8.2 and Kotlin for Forge 5.10 or compatible newer 5.x. Open with /ZianGTS. Back up the world before upgrades or maintenance.
+Install on client and server with Minecraft 1.21.1, Java 21, NeoForge 21.1.x, Cobblemon 1.8.4 and Kotlin for Forge 5.10 or compatible newer 5.x. Open with /ZianGTS. Back up the world before upgrades or maintenance.
 
 ## Español
 
