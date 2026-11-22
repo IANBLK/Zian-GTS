@@ -16,10 +16,8 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 import java.time.Instant
 
 /**
- * NeoForge transport wiring for V2 market reads.
- *
- * Mutating actions (buy/withdraw/publish/claim) intentionally stay out of this first
- * networking slice until the read path is verified end-to-end.
+ * NeoForge transport wiring for the V2 market: page, proceeds and history reads plus the
+ * buy/withdraw, publish and claim actions, each re-checking permissions on the server.
  */
 object V2MarketNetwork {
     fun register(event: RegisterPayloadHandlersEvent) {
