@@ -10,7 +10,11 @@ import java.util.UUID
  * implementation classes and only relies on the WalletStore/WalletData/CraftingConfig
  * contract (checked by signature, not by version number). A failed save is treated as an uncertain external mutation.
  */
-class AvecoinsWallet(private val currencyId: String) {
+class AvecoinsWallet internal constructor(
+    private val currencyId: String, crafting: Class<*>, private val store: Class<*>, private val data: Class<*>,
+) {
+    constructor(currencyId: String) : this(currencyId, cls("config.CraftingConfig"), cls("shop.WalletStore"), cls("shop.WalletData"))
+
     sealed interface Mutation {
         data object Applied : Mutation
         data class Rejected(val reason: String) : Mutation
@@ -62,6 +66,8 @@ class AvecoinsWallet(private val currencyId: String) {
         private inline fun requireMember(name: String, block: () -> Unit): List<String> =
             try { block(); emptyList() } catch (_: Exception) { listOf(name) } catch (_: LinkageError) { listOf(name) }
 
+        private fun cls(name: String): Class<*> { verifyContract(); return Class.forName("net.sundggs.avecoins.$name") }
+
         private fun load(name: String): Class<*>? =
             try { Class.forName(name) } catch (_: ClassNotFoundException) { null } catch (_: LinkageError) { null }
 
@@ -94,8 +100,6 @@ class AvecoinsWallet(private val currencyId: String) {
         }
     }
 
-    private val store: Class<*>
-    private val data: Class<*>
     private val get: java.lang.reflect.Method
     private val copy: java.lang.reflect.Method
     private val save: java.lang.reflect.Method
@@ -107,10 +111,7 @@ class AvecoinsWallet(private val currencyId: String) {
     private val stackSize: Int
 
     init {
-        verifyContract()
-        store = Class.forName("net.sundggs.avecoins.shop.WalletStore")
-        data = Class.forName("net.sundggs.avecoins.shop.WalletData")
-        val crafting = Class.forName("net.sundggs.avecoins.config.CraftingConfig")
+        check(missingContract(crafting, store, data).isEmpty()) { "AVECOINS wallet contract mismatch" }
         val managed = crafting.getField("MANAGED_RESULTS").get(null) as Set<*>
         require(currencyId in managed) { "Unsupported AVECOINS currency" }
 
@@ -141,12 +142,20 @@ class AvecoinsWallet(private val currencyId: String) {
         ((slots - otherSlots).coerceAtLeast(0) * stackSize - current).coerceAtLeast(0)
     }
 
+    /** Candidate must hold exactly the expected balance and the live wallet must be untouched; otherwise nothing is saved. */
+    private fun requireOutcome(live: Any?, candidate: Any?, playerId: UUID, before: Long, expected: Long) =
+        check(readBalance.invoke(candidate, playerId, currencyId) as Long == expected &&
+            readBalance.invoke(live, playerId, currencyId) as Long == before) { "AVECOINS postcondition failed; nothing saved" }
+
     fun withdraw(playerId: UUID, amount: Long): Mutation = synchronized(store) {
         require(amount > 0)
-        val candidate = copy.invoke(get.invoke(null))
+        val live = get.invoke(null)
+        val candidate = copy.invoke(live)
+        val before = readBalance.invoke(live, playerId, currencyId) as Long
         if (debit.invoke(candidate, playerId, currencyId, amount) != true) {
             return@synchronized Mutation.Rejected("insufficient_funds")
         }
+        requireOutcome(live, candidate, playerId, before, before - amount)
         check(save.invoke(null, candidate) == true) {
             "AVECOINS save outcome is uncertain; do not retry automatically"
         }
@@ -156,8 +165,11 @@ class AvecoinsWallet(private val currencyId: String) {
     fun deposit(playerId: UUID, amount: Long): Mutation = synchronized(store) {
         require(amount > 0)
         if (capacity(playerId) < amount) return@synchronized Mutation.Rejected("wallet_full")
-        val candidate = copy.invoke(get.invoke(null))
+        val live = get.invoke(null)
+        val candidate = copy.invoke(live)
+        val before = readBalance.invoke(live, playerId, currencyId) as Long
         credit.invoke(candidate, playerId, currencyId, amount)
+        requireOutcome(live, candidate, playerId, before, before + amount)
         check(save.invoke(null, candidate) == true) {
             "AVECOINS save outcome is uncertain; do not retry automatically"
         }
