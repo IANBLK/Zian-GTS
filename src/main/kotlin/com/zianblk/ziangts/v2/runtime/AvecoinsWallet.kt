@@ -7,8 +7,8 @@ import java.util.UUID
  * Narrow AVECOINS interop boundary used by V2.
  *
  * The integration is reflective on purpose: Zian GTS does not package AVECOINS
- * implementation classes and only relies on the inspected WalletStore/WalletData
- * contract. A failed save is treated as an uncertain external mutation.
+ * implementation classes and only relies on the WalletStore/WalletData/CraftingConfig
+ * contract (checked by signature, not by version number). A failed save is treated as an uncertain external mutation.
  */
 class AvecoinsWallet(private val currencyId: String) {
     sealed interface Mutation {
@@ -17,9 +17,53 @@ class AvecoinsWallet(private val currencyId: String) {
     }
 
     companion object {
-        private val supportedVersions = setOf("2.3", "2.4", "2.5")
+        /**
+         * Contract fingerprint: every class, field and method signature GTS calls. Any version
+         * (2.3, 3.0, 4.1...) that matches is accepted; otherwise the list says what is missing.
+         */
+        internal fun missingContract(crafting: Class<*>?, store: Class<*>?, data: Class<*>?): List<String> {
+            val missing = mutableListOf<String>()
+            if (crafting == null) missing += "class CraftingConfig" else missing += requireMember("CraftingConfig.MANAGED_RESULTS") {
+                static(crafting.getField("MANAGED_RESULTS"), "MANAGED_RESULTS")
+            }
+            if (store == null) missing += "class WalletStore"
+            if (data == null) missing += "class WalletData"
+            if (store == null || data == null) return missing
+            val bool = Boolean::class.javaPrimitiveType
+            val long = Long::class.javaPrimitiveType
+            missing += requireMember("WalletStore.get()") { check(static(store.getMethod("get"), "get").returnType == data) }
+            missing += requireMember("WalletStore.save(WalletData)") {
+                check(static(store.getMethod("save", data), "save").returnType == bool)
+            }
+            missing += requireMember("WalletData.copy()") { check(data.getMethod("copy").returnType == data) }
+            missing += requireMember("WalletData.balance(UUID,String)") {
+                check(data.getMethod("balance", UUID::class.java, String::class.java).returnType == long)
+            }
+            missing += requireMember("WalletData.balances(UUID)") {
+                check(Map::class.java.isAssignableFrom(data.getMethod("balances", UUID::class.java).returnType))
+            }
+            missing += requireMember("WalletData.credit(UUID,String,long)") {
+                check(data.getMethod("credit", UUID::class.java, String::class.java, long).returnType == Void.TYPE)
+            }
+            missing += requireMember("WalletData.debit(UUID,String,long)") {
+                check(data.getMethod("debit", UUID::class.java, String::class.java, long).returnType == bool)
+            }
+            missing += requireMember("WalletData.SLOT_COUNT=27/STACK_SIZE=64") {
+                check(data.getField("SLOT_COUNT").getInt(null) == 27 && data.getField("STACK_SIZE").getInt(null) == 64)
+            }
+            return missing
+        }
 
-        internal fun supportsVersion(version: String): Boolean = version in supportedVersions
+        private fun <T : java.lang.reflect.Member> static(member: T, name: String): T {
+            check(java.lang.reflect.Modifier.isStatic(member.modifiers)) { "$name not static" }
+            return member
+        }
+
+        private inline fun requireMember(name: String, block: () -> Unit): List<String> =
+            try { block(); emptyList() } catch (_: Exception) { listOf(name) } catch (_: LinkageError) { listOf(name) }
+
+        private fun load(name: String): Class<*>? =
+            try { Class.forName(name) } catch (_: ClassNotFoundException) { null } catch (_: LinkageError) { null }
 
         fun supportedCurrencies(): List<String> {
             verifyContract()
@@ -28,36 +72,23 @@ class AvecoinsWallet(private val currencyId: String) {
             return managed.filterIsInstance<String>().sorted()
         }
 
-        /** Refuse uninspected wallet versions before the market accepts any trade. */
+        /** Refuse wallets whose contract does not match before the market accepts any trade. */
         fun verifyContract(): String {
             val mod = ModList.get().getModContainerById("avecoins").orElseThrow {
                 IllegalStateException("AVECOINS is not installed")
             }
             val version = mod.modInfo.version.toString()
-            check(supportsVersion(version) || AvecoinsContractFingerprint.matchesInspectedContract()) {
-                "AVECOINS $version is not inspected; supported versions: ${supportedVersions.joinToString()}"
+            val crafting = load("net.sundggs.avecoins.config.CraftingConfig")
+            val missing = missingContract(crafting, load("net.sundggs.avecoins.shop.WalletStore"),
+                load("net.sundggs.avecoins.shop.WalletData")).toMutableList()
+            if (missing.isEmpty()) {
+                val managed = crafting!!.getField("MANAGED_RESULTS").get(null)
+                if (!(managed is Set<*> && managed.isNotEmpty() && managed.all { it is String && it.isNotBlank() })) {
+                    missing += "CraftingConfig.MANAGED_RESULTS (non-empty Set<String>)"
+                }
             }
-            val crafting = Class.forName("net.sundggs.avecoins.config.CraftingConfig")
-            val store = Class.forName("net.sundggs.avecoins.shop.WalletStore")
-            val data = Class.forName("net.sundggs.avecoins.shop.WalletData")
-            val managedField = crafting.getField("MANAGED_RESULTS")
-            check(java.lang.reflect.Modifier.isStatic(managedField.modifiers)) { "AVECOINS currencies changed" }
-            val managed = managedField.get(null)
-            check(managed is Set<*> && managed.isNotEmpty() && managed.all { it is String && it.isNotBlank() }) {
-                "AVECOINS currencies changed"
-            }
-            val getMethod = store.getMethod("get")
-            val saveMethod = store.getMethod("save", data)
-            check(java.lang.reflect.Modifier.isStatic(getMethod.modifiers) && getMethod.returnType == data)
-            check(java.lang.reflect.Modifier.isStatic(saveMethod.modifiers)
-                && saveMethod.returnType == Boolean::class.javaPrimitiveType)
-            check(data.getMethod("copy").returnType == data)
-            check(data.getMethod("balance", UUID::class.java, String::class.java).returnType == Long::class.javaPrimitiveType)
-            check(Map::class.java.isAssignableFrom(data.getMethod("balances", UUID::class.java).returnType))
-            check(data.getMethod("credit", UUID::class.java, String::class.java, Long::class.javaPrimitiveType).returnType == Void.TYPE)
-            check(data.getMethod("debit", UUID::class.java, String::class.java, Long::class.javaPrimitiveType).returnType == Boolean::class.javaPrimitiveType)
-            check(data.getField("SLOT_COUNT").getInt(null) == 27 && data.getField("STACK_SIZE").getInt(null) == 64) {
-                "Unexpected AVECOINS wallet layout"
+            check(missing.isEmpty()) {
+                "AVECOINS $version does not match the GTS wallet contract; missing or changed: ${missing.joinToString()}"
             }
             return version
         }

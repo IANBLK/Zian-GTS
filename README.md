@@ -8,7 +8,7 @@ List Pokémon from your party, browse offers, purchase Pokémon, withdraw listin
 
 Pokémon cards provide models and useful hover details. Filters, sorting, pagination and responsive layouts keep market and publishing controls aligned at GUI scales 3 and 4.
 
-AVECOINS 2.3/2.4/2.5 wallets are supported. Trading is unavailable without a supported wallet rather than silently changing balances. LuckPerms is optional for permissions.
+AVECOINS wallets are supported by contract (verified 2.3, 2.4, 2.5 and 3.0; later versions work if the wallet classes and method signatures still match). Trading is unavailable without a supported wallet rather than silently changing balances. LuckPerms is optional for permissions.
 
 Journals, reservations and receipts protect concurrent purchases and retain interrupted-operation evidence. History maintenance preserves unresolved transactions and unclaimed proceeds.
 
@@ -16,7 +16,7 @@ Install on client and server with Minecraft 1.21.1, Java 21, NeoForge 21.1.x, Co
 
 ## Español
 
-Publique Pokémon, consulte ofertas, compre, retire anuncios y reclame ganancias con AVECOINS 2.3/2.4/2.5. La interfaz adapta tarjetas y botones a ×3 y ×4. Los recibos conservan operaciones pendientes y ganancias sin reclamar.
+Publique Pokémon, consulte ofertas, compre, retire anuncios y reclame ganancias con AVECOINS (2.3 a 3.0 verificadas; versiones posteriores si el contrato de la cartera coincide). La interfaz adapta tarjetas y botones a ×3 y ×4. Los recibos conservan operaciones pendientes y ganancias sin reclamar.
 
 ## Latest update — 1.0.3
 
