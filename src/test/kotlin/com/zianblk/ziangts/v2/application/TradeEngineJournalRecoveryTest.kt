@@ -60,6 +60,7 @@ class TradeEngineJournalRecoveryTest {
         listOf(offer.id.value, buyer, seller, p.pokemonId).forEach { assertTrue(json.contains(it.toString()), "missing $it") }
         assertTrue(json.contains("{test:true}") && json.contains("PAYMENT_APPLIED") && json.contains("\"amount\": 8"))
         assertTrue(json.contains("\"paymentApplied\": true"))
+        assertTrue(json.contains("\"formatVersion\": 1"))
         assertTrue(journal.quarantined)
     }
 

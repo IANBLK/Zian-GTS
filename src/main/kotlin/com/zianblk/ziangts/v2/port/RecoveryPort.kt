@@ -18,6 +18,7 @@ data class RecoveryRecord(
     fun toJson(): String {
         val p = offer.pokemon
         val data = linkedMapOf<String, Any?>(
+            "formatVersion" to 1,
             "ticket" to ticket.operationId.toString(),
             "operation" to ticket.operation.name,
             "failedStage" to stage.name,
