@@ -14,7 +14,7 @@ class TradeEngineJournalPostMutationFailureTest {
     private val clock = Clock.fixed(now, ZoneOffset.UTC)
     private val payment = PaymentSpec("avecoins_wallet", "avecoins:coppercoin", 8)
 
-    @Test fun journalFailureAfterPaymentPropagatesAndDoesNotContinueDelivery() {
+    @Test fun journalFailureAfterPaymentQuarantinesAndDoesNotContinueDelivery() {
         val seller = UUID.randomUUID()
         val buyer = UUID.randomUUID()
         val p = PokemonEnvelope(UUID.randomUUID(), "cobblemon:gimmighoul", 17, false, false, "{test:true}")
@@ -26,7 +26,7 @@ class TradeEngineJournalPostMutationFailureTest {
         val journal = FailOnStageJournal(TradeStage.PAYMENT_APPLIED)
         val engine = TradeEngine(offers, pokemon, economy, InMemoryProceedsStore(), journal, clock)
 
-        assertThrows(IllegalStateException::class.java) { engine.purchase(buyer, offer.id) }
+        assertTrue(engine.purchase(buyer, offer.id) is TradeResult.Quarantined)
 
         assertEquals(1, economy.withdrawCalls)
         assertEquals(0, pokemon.deliverCalls, "must stop immediately when durable evidence cannot advance")

@@ -1,11 +1,15 @@
 package com.zianblk.ziangts.v2.application
 
+import org.slf4j.LoggerFactory
 import com.zianblk.ziangts.v2.domain.*
 import com.zianblk.ziangts.v2.port.*
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+
+// Logger propio: la capa de aplicación no debe cargar la clase @Mod en pruebas.
+private val LOG = LoggerFactory.getLogger("Zian GTS")
 
 sealed interface ClaimResult {
     data class Success(val amount: Long, val key: ProceedsKey) : ClaimResult
@@ -30,7 +34,8 @@ class TradeEngine(
     private val maxOffersPerPlayer: Int = 20,
     private val offerLifetime: Duration = Duration.ofHours(48),
     private val faultHook: (TradeStage) -> Unit = {},
-    private val mutationThreadCheck: () -> Boolean = { true }
+    private val mutationThreadCheck: () -> Boolean = { true },
+    private val recovery: RecoveryPort? = null
 ) {
     init {
         require(maxOffersPerPlayer > 0)
@@ -150,7 +155,12 @@ class TradeEngine(
             return@mutate TradeResult.Rejected("offer disappeared")
         }
 
-        journal.stage(ticket, TradeStage.BEFORE_PAYMENT)
+        try {
+            journal.stage(ticket, TradeStage.BEFORE_PAYMENT)
+        } catch (error: Exception) {
+            // Nothing charged yet: put the offer back; dump to recovery only if that fails too.
+            return@mutate restoreOrDump(ticket, reserved, buyerId, TradeStage.BEFORE_PAYMENT, error, "journal persistence failed before payment")
+        }
         val charged = try {
             economy.withdraw(ticket.operationId, buyerId, reserved.payment.currency, reserved.payment.amount)
         } catch (error: Exception) {
@@ -159,7 +169,11 @@ class TradeEngine(
         }
         when (charged) {
             EconomyResult.Applied -> {
-                journal.stage(ticket, TradeStage.PAYMENT_APPLIED)
+                try {
+                    journal.stage(ticket, TradeStage.PAYMENT_APPLIED)
+                } catch (error: Exception) {
+                    return@mutate dumpAndQuarantine(ticket, reserved, buyerId, TradeStage.PAYMENT_APPLIED, error, "journal persistence failed after payment")
+                }
                 faultHook(TradeStage.PAYMENT_APPLIED)
             }
             is EconomyResult.Rejected -> {
@@ -179,7 +193,11 @@ class TradeEngine(
             }
         }
 
-        journal.stage(ticket, TradeStage.BEFORE_POKEMON_DELIVERY)
+        try {
+            journal.stage(ticket, TradeStage.BEFORE_POKEMON_DELIVERY)
+        } catch (error: Exception) {
+            return@mutate dumpAndQuarantine(ticket, reserved, buyerId, TradeStage.BEFORE_POKEMON_DELIVERY, error, "journal persistence failed before pokemon delivery")
+        }
         val delivered = try {
             pokemon.deliver(ticket.operationId, buyerId, reserved.pokemon)
         } catch (error: Exception) {
@@ -337,7 +355,11 @@ class TradeEngine(
             return@mutate TradeResult.Rejected("offer disappeared")
         }
 
-        journal.stage(ticket, TradeStage.BEFORE_POKEMON_DELIVERY)
+        try {
+            journal.stage(ticket, TradeStage.BEFORE_POKEMON_DELIVERY)
+        } catch (error: Exception) {
+            return@mutate restoreOrDump(ticket, removed, null, TradeStage.BEFORE_POKEMON_DELIVERY, error, "journal persistence failed before pokemon return")
+        }
         val delivered = try {
             pokemon.deliver(ticket.operationId, ownerId, removed.pokemon)
         } catch (error: Exception) {
@@ -366,6 +388,42 @@ class TradeEngine(
                 journal.quarantine(ticket, "pokemon return uncertain: ${delivered.reason}")
                 TradeResult.Quarantined(ticket.operationId, delivered.reason)
             }
+        }
+    }
+
+    private fun restoreOrDump(
+        ticket: JournalTicket, offer: TradeOffer, buyerId: UUID?, stage: TradeStage, cause: Exception, reason: String
+    ): TradeResult {
+        try {
+            offers.add(offer)
+        } catch (restoreError: Exception) {
+            cause.addSuppressed(restoreError)
+            return dumpAndQuarantine(ticket, offer, buyerId, stage, cause, "$reason; offer restoration failed")
+        }
+        LOG.error("GTS ticket {} stage {} journal failed; offer {} restored, nothing charged", ticket.operationId, stage, offer.id.value, cause)
+        quarantineQuietly(ticket, "$reason: ${cause.javaClass.simpleName}")
+        return TradeResult.Quarantined(ticket.operationId, reason)
+    }
+
+    private fun dumpAndQuarantine(
+        ticket: JournalTicket, offer: TradeOffer, buyerId: UUID?, stage: TradeStage, cause: Exception, reason: String
+    ): TradeResult {
+        val record = RecoveryRecord(ticket, stage, offer, buyerId, offer.owner.playerId, Instant.now(clock), "$reason: ${cause.javaClass.simpleName}: ${cause.message}")
+        LOG.error("GTS ticket {} stage {} journal failed; pokemon of offer {} needs recovery (buyer={}, seller={})",
+            ticket.operationId, stage, offer.id.value, buyerId, offer.owner.playerId, cause)
+        try {
+            (recovery ?: throw IllegalStateException("no recovery store configured")).dump(record)
+        } catch (dumpError: Exception) {
+            // Last resort: the full data, including the serialized pokemon, goes to the log.
+            LOG.error("GTS ticket {} recovery file FAILED, full data follows: {}", ticket.operationId, record.toJson(), dumpError)
+        }
+        quarantineQuietly(ticket, reason)
+        return TradeResult.Quarantined(ticket.operationId, reason)
+    }
+
+    private fun quarantineQuietly(ticket: JournalTicket, reason: String) {
+        try { journal.quarantine(ticket, reason) } catch (error: Exception) {
+            LOG.error("GTS ticket {} could not be quarantined in the journal", ticket.operationId, error)
         }
     }
 

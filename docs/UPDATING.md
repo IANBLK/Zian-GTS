@@ -9,3 +9,9 @@ Youer has been tested; this does not guarantee every hybrid server/plugin combin
 Keep world data and configuration together. Optional SQLite maintenance is explicit, not required automatically by an update. Never edit a live database or delete a journal to clear an error. For an uncertain payment/delivery, keep its reference, reconcile the recorded outcome with inventory/PC/wallet state and use the administrator review flow. Confirmation records a verified result; it must never be used to guess or generate a second reward.
 
 Report the mod/library versions, reproduction steps and sanitized logs through this repository's Issues. Do not upload credentials, tokens, player databases or private world backups.
+
+## Pokémon recovery files (journal failure)
+
+If the transaction journal cannot be written during a purchase or withdrawal, GTS puts the offer back when nothing was charged. If the buyer was already charged (stage `PAYMENT_APPLIED` or `BEFORE_POKEMON_DELIVERY`), or the offer cannot be restored, the Pokémon is **not** delivered and is saved to `<world>/ziangts-v2/recovery/<ticket>.json` (ticket quarantined, `ERROR` in the log with ticket and UUIDs). The file holds the ticket, failed stage, offer id, buyer and seller UUIDs, price, timestamp, error and the full Pokémon (`pokemon.serialized` is the stored NBT text). If the file cannot be written, the same JSON is printed in the server log.
+
+To restore by hand: stop the server, check that the offer is not still listed in the market, check the buyer's wallet and PC/party, then either give the Pokémon back from `pokemon.serialized` (to the buyer only if `paymentApplied` is `true` and the charge shows in their wallet; if it is `false` nothing was charged and the Pokémon goes back to the seller), or refund the buyer. Never do both. Then resolve the quarantined ticket with the administrator review flow and keep the file as evidence.
