@@ -54,7 +54,7 @@ object V2MarketNetwork {
                     MarketAction.WITHDRAW -> "cancel"
                 }
                 if (!permitted(player, permission)) {
-                    PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, false, GtsPermissions.denialMessage()))
+                    PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, false, GtsPermissions.denialMessage().string))
                     return@enqueueWork
                 }
                 val engine = ZianGtsV2Runtime.engineOrNull()
@@ -131,7 +131,7 @@ object V2MarketNetwork {
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
                 if (!permitted(player, "sell")) {
-                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, GtsPermissions.denialMessage()))
+                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, GtsPermissions.denialMessage().string))
                     return@enqueueWork
                 }
                 try {
@@ -210,7 +210,7 @@ object V2MarketNetwork {
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
                 if (!permitted(player, "claim")) {
-                    PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, GtsPermissions.denialMessage()))
+                    PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, GtsPermissions.denialMessage().string))
                     return@enqueueWork
                 }
                 try {

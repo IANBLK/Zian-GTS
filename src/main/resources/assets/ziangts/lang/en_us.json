@@ -211,5 +211,21 @@
   "ziangts.stat.radar.def": "Def.",
   "ziangts.stat.radar.spa": "Sp.A",
   "ziangts.stat.radar.spd": "Sp.D",
-  "ziangts.stat.radar.spe": "Spe."
+  "ziangts.stat.radar.spe": "Spe.",
+  "ziangts.permission.denied": "You don't have permission to use this GTS feature.",
+  "ziangts.cmd.player_only": "This command must be used by a player.",
+  "ziangts.cmd.market_unavailable": "Zian GTS V2 market unavailable: %s",
+  "ziangts.cmd.status": "Zian GTS V2: ready=%s, status=%s",
+  "ziangts.cmd.recovery.none": "Zian GTS: there are no operations pending review.",
+  "ziangts.cmd.recovery.pending": "Zian GTS: %s operations need review; the market stays blocked.",
+  "ziangts.cmd.recovery.incident": "%s · player=%s · operation=%s stage=%s underReview=%s reason=%s",
+  "ziangts.cmd.recovery.check": "Check the payment, the Pokémon storage and the GTS. Nothing is compensated automatically. To confirm: /ZianGTS recovery resolve %s confirm",
+  "ziangts.cmd.recovery.failed": "Could not record the review: %s",
+  "ziangts.cmd.recovery.not_found": "There is no pending operation with that reference.",
+  "ziangts.cmd.recovery.resolved": "Review of %s recorded after the manual reconciliation. Restart the server before reopening the market.",
+  "ziangts.cmd.bad_reference": "Unknown reference. Use autocomplete or a valid UUID.",
+  "ziangts.cmd.invalid_uuid": "Invalid operation UUID: %s",
+  "ziangts.storage.unavailable": "Storage unavailable",
+  "ziangts.storage.config_failed": "Storage configuration failed",
+  "ziangts.storage.retention_saved": "Retention saved for %s. Cleanup runs with the server stopped and backed up."
 }

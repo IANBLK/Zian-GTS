@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerPlayer
 /** Server-side gate shared by commands and packets. An unavailable installed provider denies access. */
 object GtsPermissions {
     private const val PREFIX = "ziangts."
-    private const val DENIED = "No tienes permiso para usar esta función del GTS"
 
     internal enum class Decision { TRUE, FALSE, UNDEFINED }
 
@@ -45,9 +44,9 @@ object GtsPermissions {
     }
 
     fun deny(player: ServerPlayer) {
-        player.sendSystemMessage(com.zianblk.ziangts.Messages.format(Component.literal(DENIED)))
+        player.sendSystemMessage(com.zianblk.ziangts.Messages.format(denialMessage()))
         ZianGts.LOGGER.info("Denied GTS action for {}", player.scoreboardName)
     }
 
-    fun denialMessage(): String = DENIED
+    fun denialMessage(): Component = Component.translatableWithFallback("ziangts.permission.denied", "No tienes permiso para usar esta función del GTS")
 }

@@ -211,5 +211,21 @@
   "ziangts.stat.radar.def": "Def.",
   "ziangts.stat.radar.spa": "At.E",
   "ziangts.stat.radar.spd": "Def.E",
-  "ziangts.stat.radar.spe": "Vel."
+  "ziangts.stat.radar.spe": "Vel.",
+  "ziangts.permission.denied": "No tienes permiso para usar esta función del GTS",
+  "ziangts.cmd.player_only": "Este comando debe usarlo un jugador.",
+  "ziangts.cmd.market_unavailable": "Mercado GTS V2 de Zian no disponible: %s",
+  "ziangts.cmd.status": "Zian GTS V2: listo=%s, estado=%s",
+  "ziangts.cmd.recovery.none": "Zian GTS: no hay operaciones pendientes de revisión.",
+  "ziangts.cmd.recovery.pending": "Zian GTS: %s operaciones requieren revisión; el mercado permanece bloqueado.",
+  "ziangts.cmd.recovery.incident": "%s · jugador=%s · operación=%s fase=%s enRevisión=%s motivo=%s",
+  "ziangts.cmd.recovery.check": "Comprueba el cobro, el almacenamiento Pokémon y el GTS. No se compensa nada automáticamente. Para confirmar: /ZianGTS recovery resolve %s confirm",
+  "ziangts.cmd.recovery.failed": "No se pudo registrar la revisión: %s",
+  "ziangts.cmd.recovery.not_found": "No existe una operación pendiente con esa referencia.",
+  "ziangts.cmd.recovery.resolved": "Revisión de %s registrada tras la conciliación manual. Reinicia el servidor antes de reabrir el mercado.",
+  "ziangts.cmd.bad_reference": "Referencia inexistente. Usa el autocompletado o un UUID válido.",
+  "ziangts.cmd.invalid_uuid": "UUID de operación no válido: %s",
+  "ziangts.storage.unavailable": "Almacenamiento no disponible",
+  "ziangts.storage.config_failed": "No se pudo configurar el almacenamiento",
+  "ziangts.storage.retention_saved": "Retención guardada para %s. La limpieza se ejecuta con el servidor detenido y respaldo."
 }
