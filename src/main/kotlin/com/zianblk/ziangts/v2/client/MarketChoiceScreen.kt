@@ -3,7 +3,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
-class MarketChoiceScreen(private val parent:Screen,heading:String,private val choices:List<Pair<String,String>>,private val accept:(String)->Unit):ResponsiveScreen(Component.literal(heading)) {
+class MarketChoiceScreen(private val parent:Screen,heading:Component,private val choices:List<Pair<String,String>>,private val accept:(String)->Unit):ResponsiveScreen(heading) {
  private var query="";private var page=0
  override fun init(){fitViewport(500,350);val x=(width-420)/2;val y=(height-300)/2
   val search=addRenderableWidget(EditBox(font,x+12,y+32,396,20,Component.translatableWithFallback("ui.ziangts.c518cc7b7f45", "Buscar por nombre o ID")));search.setHint(Component.translatableWithFallback("ui.ziangts.60194a11d9c0", "Buscar por nombre o ID…"));search.value=query;search.setResponder { value->query=value;page=0;rebuildWidgets() };setInitialFocus(search)

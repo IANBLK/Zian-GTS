@@ -75,9 +75,9 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
         var secondX = (width - secondTotal) / 2
 
         filterButton = addRenderableWidget(
-            GtsButton.create(Component.literal(filterLabel())) {
+            GtsButton.create(filterLabel()) {
                 if (state.tab == MarketTab.MARKET) {
-                    minecraft?.setScreen(MarketChoiceScreen(this,"Filtrar ofertas",OfferFilter.entries.filter{it!=OfferFilter.OWN}.map{it.name to filterName(it)}) { id ->
+                    minecraft?.setScreen(MarketChoiceScreen(this,Component.translatableWithFallback("ziangts.market.filter_title", "Filtrar ofertas"),OfferFilter.entries.filter{it!=OfferFilter.OWN}.map{it.name to filterName(it)}) { id ->
                         state=state.withFilter(OfferFilter.valueOf(id));refreshControls();requestCurrent()
                     })
                 }
@@ -86,8 +86,8 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
         secondX += secondWidths[0] + secondGap
 
         sortButton = addRenderableWidget(
-            GtsButton.create(Component.literal(sortLabel())) {
-                minecraft?.setScreen(MarketChoiceScreen(this,"Ordenar ofertas",OfferSort.entries.map{it.name to sortName(it)}) { id ->
+            GtsButton.create(sortLabel()) {
+                minecraft?.setScreen(MarketChoiceScreen(this,Component.translatableWithFallback("ziangts.market.sort_title", "Ordenar ofertas"),OfferSort.entries.map{it.name to sortName(it)}) { id ->
                     state=state.withSort(OfferSort.valueOf(id));refreshControls();requestCurrent()
                 })
             }.bounds(secondX, row2Y, secondWidths[1], 18).build()
@@ -153,15 +153,15 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
             if (action != null) {
                 val buttonWidth = 62
                 val button = addRenderableWidget(
-                    GtsButton.create(Component.literal(if (action == MarketAction.BUY) "Comprar" else "Retirar")) {
+                    GtsButton.create(if (action == MarketAction.BUY) Component.translatableWithFallback("gui.ziangts.purchase", "Comprar") else Component.translatableWithFallback("ziangts.market.withdraw", "Retirar")) {
                         if (!actionPending) {
                             minecraft?.setScreen(MarketConfirmScreen(this,
-                                if(action==MarketAction.BUY) "Confirmar compra" else "Retirar anuncio",
-                                listOf(entry.species.substringAfter(':').replace('_',' ')+" · Nv. "+entry.level,
-                                    "Vendedor: "+entry.sellerName,
-                                    "Precio: "+entry.price+" "+currencyDisplayName(entry.currency.substringAfter(':')),
-                                    if(action==MarketAction.BUY)"Revisa el precio y el Pokémon antes de pagar." else "El Pokémon se devolverá a tu almacenamiento cuando se confirme la retirada.")) {
-                                if(!actionPending){actionPending=true;actionStarted=System.nanoTime();actionMessage="Esperando al servidor…";actionButtons.forEach{it.active=false};V2MarketClient.requestAction(entry.offerId,action)}
+                                if(action==MarketAction.BUY) Component.translatableWithFallback("gui.ziangts.purchase_confirm", "Confirmar compra") else Component.translatableWithFallback("gui.ziangts.remove_listing", "Retirar anuncio"),
+                                listOf(Component.translatableWithFallback("ziangts.level_short", "%s · Nv. %s", entry.species.substringAfter(':').replace('_',' '), entry.level),
+                                    Component.translatableWithFallback("gui.ziangts.seller", "Vendedor: %s", entry.sellerName),
+                                    Component.translatableWithFallback("gui.ziangts.price", "Precio: %s", entry.price.toString()+" "+currencyDisplayName(entry.currency.substringAfter(':'))),
+                                    if(action==MarketAction.BUY)Component.translatableWithFallback("ziangts.market.confirm_buy_hint", "Revisa el precio y el Pokémon antes de pagar.") else Component.translatableWithFallback("ziangts.market.confirm_withdraw_hint", "El Pokémon se devolverá a tu almacenamiento cuando se confirme la retirada."))) {
+                                if(!actionPending){actionPending=true;actionStarted=System.nanoTime();actionMessage=Component.translatableWithFallback("ziangts.market.waiting", "Esperando al servidor…").string;actionButtons.forEach{it.active=false};V2MarketClient.requestAction(entry.offerId,action)}
                             })
                         }
                     }.bounds(x + cardW - buttonWidth - 7, y + cardH - 17, buttonWidth, 15).build()
@@ -187,7 +187,7 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
             }
         }
 
-        if(actionPending&&System.nanoTime()-actionStarted>8_000_000_000L)actionMessage="Respuesta tardía. Consulta el mercado; no repitas la operación."
+        if(actionPending&&System.nanoTime()-actionStarted>8_000_000_000L)actionMessage=Component.translatableWithFallback("ziangts.market.late", "Respuesta tardía. Consulta el mercado; no repitas la operación.").string
         val actionRevision = V2MarketClientState.actionRevision()
         if (actionRevision != observedActionRevision) {
             observedActionRevision = actionRevision
@@ -242,9 +242,9 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
 
             val species = entry.species.substringAfter(':').replace('_',' ').replaceFirstChar { it.uppercase() }
             graphics.drawString(font, fitText(species,cardW-16), x+8,y+10,ZianGtsTheme.GOLD)
-            val gender=when(entry.gender.uppercase()){ "MALE"->"♂ Macho";"FEMALE"->"♀ Hembra";else->"Sin sexo" }
-            graphics.drawString(font,fitText("$gender · Nv. ${entry.level}",cardW-88),x+80,y+25,0xFFB8C0C8.toInt())
-            val labels=listOf("PS","Atq","Def","AtE","DfE","Vel")
+            val gender=when(entry.gender.uppercase()){ "MALE"->"♂ "+Component.translatableWithFallback("gui.ziangts.gender.male", "Macho").string;"FEMALE"->"♀ "+Component.translatableWithFallback("gui.ziangts.gender.female", "Hembra").string;else->Component.translatableWithFallback("ziangts.market.no_sex", "Sin sexo").string }
+            graphics.drawString(font,fitText(Component.translatableWithFallback("ziangts.level_short", "%s · Nv. %s", gender, entry.level).string,cardW-88),x+80,y+25,0xFFB8C0C8.toInt())
+            val labels=List(6){UiText.stat("card",it).string}
             labels.forEachIndexed { i,label ->
                 graphics.drawString(font,"$label ${entry.ivs.getOrElse(i){0}}",x+80+(i%2)*49,y+41+(i/2)*11,0xFFD2DCE6.toInt())
             }
@@ -252,25 +252,25 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
             graphics.renderOutline(x+8,y+25,64,51,0xFF343D47.toInt())
             canvasScissor(graphics,x+9,y+26,x+71,y+75)
             try{renderPokemonPreview(graphics,entry,x+40,y+31,partialTick)}finally{graphics.disableScissor()}
-            val traits=listOfNotNull(if(entry.shiny)"✦ Shiny" else null,if(entry.legendary)"Legendario" else null,if(entry.alpha)"Alfa" else null).joinToString(" · ").ifEmpty{"IVs del Pokémon"}
+            val traits=listOfNotNull(if(entry.shiny)Component.translatableWithFallback("ziangts.trait.shiny", "✦ Shiny").string else null,if(entry.legendary)Component.translatableWithFallback("ziangts.trait.legendary", "Legendario").string else null,if(entry.alpha)Component.translatableWithFallback("ziangts.trait.alpha", "Alfa").string else null).joinToString(" · ").ifEmpty{Component.translatableWithFallback("ziangts.market.ivs_title", "IVs del Pokémon").string}
             graphics.drawString(font,fitText(traits,cardW-16),x+8,y+80,rarityAccent(entry))
             val footerTop=y+94
             graphics.fill(x+1,footerTop,x+cardW-1,y+cardH-1,0xC010141A.toInt())
-            val priceLabel=fitText("Precio: ${entry.price}",cardW-40)
+            val priceLabel=fitText(Component.translatableWithFallback("gui.ziangts.price", "Precio: %s", entry.price).string,cardW-40)
             graphics.drawString(font,priceLabel,x+8,footerTop+5,0xFFF7E4A6.toInt())
             renderCurrencyIcon(graphics,entry.currency,x+12+font.width(priceLabel),footerTop+1,mouseX,mouseY)
             if(mouseX in x until x+cardW && mouseY in y until footerTop){
-                queueTooltip(listOf(Component.literal(species),UiText.genderLevel(gender, entry.level),Component.literal("IVs: "+entry.ivs.joinToString(" / ")),Component.literal("Naturaleza: "+entry.nature.substringAfter(':')),Component.literal("Habilidad: "+entry.ability.substringAfter(':')),Component.translatableWithFallback("ui.ziangts.2088184a2408", "Haz clic para ver los detalles")))
+                queueTooltip(listOf(Component.literal(species),UiText.genderLevel(gender, entry.level),Component.translatableWithFallback("ziangts.market.ivs_line", "IVs: %s", entry.ivs.joinToString(" / ")),Component.translatableWithFallback("gui.ziangts.nature", "Naturaleza: %s", entry.nature.substringAfter(':')),Component.translatableWithFallback("gui.ziangts.ability", "Habilidad: %s", entry.ability.substringAfter(':')),Component.translatableWithFallback("ui.ziangts.2088184a2408", "Haz clic para ver los detalles")))
             }
 
-            val seller = fitText("Vendedor: ${entry.sellerName}", cardW - 16)
+            val seller = fitText(Component.translatableWithFallback("gui.ziangts.seller", "Vendedor: %s", entry.sellerName).string, cardW - 16)
             graphics.drawString(font, Component.literal(seller), x + 8, footerTop + 20, 0xFFB7C0C9.toInt())
 
             val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
             val time = if (seconds >= 3600) {
-                "Expira ${seconds / 3600}h ${(seconds % 3600) / 60}m"
+                Component.translatableWithFallback("ziangts.market.expires_hm", "Expira %sh %sm", seconds / 3600, (seconds % 3600) / 60).string
             } else {
-                "Expira ${seconds / 60}m"
+                Component.translatableWithFallback("ziangts.market.expires_m", "Expira %sm", seconds / 60).string
             }
             graphics.drawString(font, Component.literal(time), x + 8, footerTop + 34, 0xFF7F8A96.toInt())
         }
@@ -288,7 +288,7 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
         }
 
         if (response.entries.isEmpty()) {
-            graphics.drawCenteredString(font, Component.literal(if(state.tab==MarketTab.MY_OFFERS)"Todavía no tienes Pokémon publicados" else "No hay anuncios de otros jugadores con este filtro"), width / 2, 86, 0xAAAAAA)
+            graphics.drawCenteredString(font, if(state.tab==MarketTab.MY_OFFERS)Component.translatableWithFallback("ziangts.market.empty_mine", "Todavía no tienes Pokémon publicados") else Component.translatableWithFallback("ziangts.market.empty_filter", "No hay anuncios de otros jugadores con este filtro"), width / 2, 86, 0xAAAAAA)
         }
     }
 
@@ -381,17 +381,8 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
     }
 
     private fun currencyDisplayName(path: String): String {
-        val known = mapOf(
-            "coppercoin" to "Moneda de Cobre",
-            "ironcoin" to "Moneda de Hierro",
-            "goldcoin" to "Moneda de Oro",
-            "diamondcoin" to "Moneda de Diamante",
-            "netheritecoin" to "Moneda de Netherita",
-            "goldticket" to "Ticket de Oro",
-            "diamondticket" to "Ticket de Diamante",
-            "netheriteticket" to "Ticket de Netherita"
-        )
-        return known[path] ?: path
+        val known = setOf("coppercoin", "ironcoin", "goldcoin", "diamondcoin", "netheritecoin", "goldticket", "diamondticket", "netheriteticket")
+        return if (path in known) UiText.currency(path).string else path
             .replace('_', ' ')
             .replace('-', ' ')
             .split(' ')
@@ -400,9 +391,9 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
     }
 
     private fun refreshControls() {
-        filterButton?.message = Component.literal(filterLabel())
+        filterButton?.message = filterLabel()
         filterButton?.active = state.tab == MarketTab.MARKET
-        sortButton?.message = Component.literal(sortLabel())
+        sortButton?.message = sortLabel()
         sortButton?.active = true
     }
 
@@ -431,25 +422,25 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
         return values[(index + 1) % values.size]
     }
 
-    private fun filterName(value:OfferFilter):String {val before=state;state=state.copy(filter=value);val label=filterLabel();state=before;return label}
-    private fun sortName(value:OfferSort):String {val before=state;state=state.copy(sort=value);val label=sortLabel();state=before;return label}
-    private fun filterLabel(): String = "Filtro: " + when (state.filter) {
-        OfferFilter.ALL -> "Todos"
-        OfferFilter.SHINY -> "Shiny"
-        OfferFilter.ALPHA -> "Alpha"
-        OfferFilter.LEGENDARY -> "Legendarios"
-        OfferFilter.LEGENDARY_SHINY -> "Legendario Shiny"
-        OfferFilter.OWN -> "Míos"
-    }
+    private fun filterName(value:OfferFilter):String {val before=state;state=state.copy(filter=value);val label=filterLabel().string;state=before;return label}
+    private fun sortName(value:OfferSort):String {val before=state;state=state.copy(sort=value);val label=sortLabel().string;state=before;return label}
+    private fun filterLabel(): Component = Component.translatableWithFallback("ziangts.market.filter_label", "Filtro: %s", when (state.filter) {
+        OfferFilter.ALL -> Component.translatableWithFallback("ziangts.market.filter.all", "Todos")
+        OfferFilter.SHINY -> Component.translatableWithFallback("gui.ziangts.filter.shiny", "Shiny")
+        OfferFilter.ALPHA -> Component.translatableWithFallback("gui.ziangts.filter.alpha", "Alpha")
+        OfferFilter.LEGENDARY -> Component.translatableWithFallback("gui.ziangts.filter.legendary", "Legendarios")
+        OfferFilter.LEGENDARY_SHINY -> Component.translatableWithFallback("ziangts.market.filter.legendary_shiny", "Legendario Shiny")
+        OfferFilter.OWN -> Component.translatableWithFallback("ziangts.market.filter.own", "Míos")
+    })
 
-    private fun sortLabel(): String = "Orden: " + when (state.sort) {
-        OfferSort.NEWEST -> "Recientes"
-        OfferSort.OLDEST -> "Antiguos"
-        OfferSort.PRICE_LOW -> "Precio ↑"
-        OfferSort.PRICE_HIGH -> "Precio ↓"
-        OfferSort.LEVEL_LOW -> "Nivel ↑"
-        OfferSort.LEVEL_HIGH -> "Nivel ↓"
-    }
+    private fun sortLabel(): Component = Component.translatableWithFallback("ziangts.market.sort_label", "Orden: %s", when (state.sort) {
+        OfferSort.NEWEST -> Component.translatableWithFallback("ziangts.market.sort.newest", "Recientes")
+        OfferSort.OLDEST -> Component.translatableWithFallback("ziangts.market.sort.oldest", "Antiguos")
+        OfferSort.PRICE_LOW -> Component.translatableWithFallback("ziangts.market.sort.price_low", "Precio ↑")
+        OfferSort.PRICE_HIGH -> Component.translatableWithFallback("ziangts.market.sort.price_high", "Precio ↓")
+        OfferSort.LEVEL_LOW -> Component.translatableWithFallback("ziangts.market.sort.level_low", "Nivel ↑")
+        OfferSort.LEVEL_HIGH -> Component.translatableWithFallback("ziangts.market.sort.level_high", "Nivel ↓")
+    })
 
     private fun switchTab(tab: MarketTab) {
         if (state.tab == tab) return

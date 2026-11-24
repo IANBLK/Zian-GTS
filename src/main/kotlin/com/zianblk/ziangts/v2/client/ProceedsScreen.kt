@@ -11,7 +11,7 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.tr
     private var initialized=false
     private var observedClaim = -1L
     private var entries: List<ProceedsEntryDto> = emptyList()
-    private var message = "Cargando ganancias..."
+    private var message = Component.translatableWithFallback("ziangts.proceeds.loading", "Cargando ganancias...").string
     private var pending = false
     private var messageTicks = 0
     private val claimButtons = mutableListOf<Button>()
@@ -34,7 +34,7 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.tr
             observed = rev
             entries = V2MarketClientState.proceedsSnapshot()?.entries.orEmpty()
             if (messageTicks <= 0) {
-                message = if (entries.isEmpty()) "No tienes ganancias pendientes" else ""
+                message = if (entries.isEmpty()) Component.translatableWithFallback("ziangts.proceeds.none", "No tienes ganancias pendientes").string else ""
             }
             rebuild()
         }
@@ -59,7 +59,7 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.tr
             val button = addRenderableWidget(GtsButton.create(Component.translatableWithFallback("ui.ziangts.c7ae321f269a", "Cobrar")) {
                 if (!pending) {
                     pending = true
-                    message = "Procesando cobro..."
+                    message = Component.translatableWithFallback("ziangts.proceeds.processing", "Procesando cobro...").string
                     claimButtons.forEach { it.active = false }
                     V2MarketClient.claimProceeds(entry.adapter, entry.currency)
                 }
@@ -80,7 +80,7 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.tr
         entries.take(8).forEachIndexed { index, entry ->
             val y = 72 + index * 30
             graphics.drawString(font, Component.literal(friendly(entry.currency)), width / 2 - 170, y, 0xFFF4D481.toInt(), false)
-            val amount="Pendiente: ${entry.amount}"
+            val amount=Component.translatableWithFallback("ziangts.proceeds.pending", "Pendiente: %s", entry.amount).string
             graphics.drawString(font,font.plainSubstrByWidth(amount,107),width/2-10,y,0xFFE2E8F0.toInt(),false)
             if(mouseX in width/2-10 until width/2+97 && mouseY in y until y+12)queueTooltip(listOf(Component.literal(amount),Component.literal(friendly(entry.currency))))
         }
@@ -89,13 +89,8 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.tr
 
     private fun friendly(value: String): String {
         val path = value.substringAfter(':')
-        val known = mapOf(
-            "coppercoin" to "Moneda de Cobre", "ironcoin" to "Moneda de Hierro",
-            "goldcoin" to "Moneda de Oro", "diamondcoin" to "Moneda de Diamante",
-            "netheritecoin" to "Moneda de Netherita", "goldticket" to "Ticket de Oro",
-            "diamondticket" to "Ticket de Diamante", "netheriteticket" to "Ticket de Netherita"
-        )
-        return known[path] ?: path.replace('_', ' ').replace('-', ' ').split(' ')
+        val known = setOf("coppercoin", "ironcoin", "goldcoin", "diamondcoin", "netheritecoin", "goldticket", "diamondticket", "netheriteticket")
+        return if (path in known) UiText.currency(path).string else path.replace('_', ' ').replace('-', ' ').split(' ')
             .joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     }
 }

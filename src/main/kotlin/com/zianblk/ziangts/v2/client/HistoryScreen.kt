@@ -77,7 +77,7 @@ class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.tra
         data.entries.forEachIndexed { index, entry ->
             val y = 62 + index * 25
             val sold = viewer == entry.sellerId
-            val kind = if (sold) "Venta" else "Compra"
+            val kind = if (sold) Component.translatableWithFallback("ziangts.history.sale", "Venta").string else Component.translatableWithFallback("ziangts.history.purchase", "Compra").string
             val species = entry.species.substringAfter(':').replaceFirstChar(Char::uppercase)
             val line = "$kind · $species · ${entry.amount} ${friendly(entry.currency)}"
             graphics.drawString(font, font.plainSubstrByWidth(line,288), width / 2 - 205, y, if (sold) 0xFFF4D481.toInt() else 0xFFE2E8F0.toInt(), false)
@@ -88,18 +88,7 @@ class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.tra
 
     private fun friendly(value: String): String {
         val path = value.substringAfter(':')
-        val known = mapOf(
-            "coppercoin" to "Moneda de Cobre",
-            "ironcoin" to "Moneda de Hierro",
-            "goldcoin" to "Moneda de Oro",
-            "diamondcoin" to "Moneda de Diamante",
-            "netheritecoin" to "Moneda de Netherita",
-            "copperticket" to "Ticket de Cobre",
-            "ironticket" to "Ticket de Hierro",
-            "goldticket" to "Ticket de Oro",
-            "diamondticket" to "Ticket de Diamante",
-            "netheriteticket" to "Ticket de Netherita"
-        )
-        return known[path.lowercase()] ?: path.replace('_', ' ').replace('-', ' ').split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
+        val known = setOf("coppercoin", "ironcoin", "goldcoin", "diamondcoin", "netheritecoin", "copperticket", "ironticket", "goldticket", "diamondticket", "netheriteticket")
+        return if (path.lowercase() in known) UiText.currency(path.lowercase()).string else path.replace('_', ' ').replace('-', ' ').split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     }
 }
