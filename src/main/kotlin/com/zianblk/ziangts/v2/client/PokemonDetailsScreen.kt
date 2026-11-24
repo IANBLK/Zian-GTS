@@ -36,11 +36,11 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         graphics.renderOutline(left, top, layout.width, layout.height, 0xFF666D75.toInt())
         graphics.fill(left + 1, top + 1, left + layout.width - 1, top + 3, ZianGtsTheme.GOLD)
         graphics.drawCenteredString(font, title, width / 2, top + 11, ZianGtsTheme.TEXT)
-        val speciesName = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
+        val speciesName = ClientNames.species(entry.species)
         if (layout.compact) renderCompactDetails(graphics, layout, speciesName) else renderWideDetails(graphics, layout, speciesName)
         renderPokemonModel(graphics, layout, partialTick)
         if(mouseX in layout.left+125 until layout.left+layout.width-175 && mouseY in layout.top+32 until layout.top+170){
-            queueTooltip(listOf(Component.literal(speciesName),Component.literal("Género: "+localizedGender(entry.gender)),Component.translatableWithFallback("ui.ziangts.aaf864181772", "Naturaleza: ").append(localizedNature(entry.nature)),Component.translatableWithFallback("ui.ziangts.d15ab4bd0f10", "Habilidad: ").append(localizedAbility(entry.ability)),Component.literal("Vendedor: "+entry.sellerName)))
+            queueTooltip(listOf(Component.literal(speciesName),Component.translatableWithFallback("gui.ziangts.gender", "Género: %s", localizedGender(entry.gender)),Component.translatableWithFallback("ui.ziangts.aaf864181772", "Naturaleza: ").append(localizedNature(entry.nature)),Component.translatableWithFallback("ui.ziangts.d15ab4bd0f10", "Habilidad: ").append(localizedAbility(entry.ability)),Component.translatableWithFallback("gui.ziangts.seller", "Vendedor: %s", entry.sellerName)))
         }
         for (renderable in renderables) renderable.render(graphics, mouseX, mouseY, partialTick)
     }
@@ -61,12 +61,12 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
 
         var y = top + 10
         graphics.drawString(font, font.plainSubstrByWidth(speciesName,infoW-16), infoX + 8, y, 0xFFF4D481.toInt(), false); y += 12
-        graphics.drawString(font, Component.literal("Nv. " + entry.level), infoX + 8, y, 0xFFB8C0C8.toInt(), false); y += 12
+        graphics.drawString(font, Component.translatableWithFallback("ziangts.details.level", "Nv. %s", entry.level), infoX + 8, y, 0xFFB8C0C8.toInt(), false); y += 12
         drawTraitRow(graphics, infoX + 8, y); y += 32
-        componentLine(graphics, "Naturaleza", localizedNature(entry.nature), infoX + 8, y); y += 11
-        componentLine(graphics, "Habilidad", localizedAbility(entry.ability), infoX + 8, y); y += 11
-        graphics.drawString(font, font.plainSubstrByWidth("Género: "+localizedGender(entry.gender),infoW-16), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
-        graphics.drawString(font, font.plainSubstrByWidth("Vendedor: "+entry.sellerName,infoW-16), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
+        componentLine(graphics, Component.translatableWithFallback("ui.ziangts.aaf864181772", "Naturaleza: "), localizedNature(entry.nature), infoX + 8, y); y += 11
+        componentLine(graphics, Component.translatableWithFallback("ui.ziangts.d15ab4bd0f10", "Habilidad: "), localizedAbility(entry.ability), infoX + 8, y); y += 11
+        graphics.drawString(font, font.plainSubstrByWidth(Component.translatableWithFallback("gui.ziangts.gender", "Género: %s", localizedGender(entry.gender)).string,infoW-16), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
+        graphics.drawString(font, font.plainSubstrByWidth(Component.translatableWithFallback("gui.ziangts.seller", "Vendedor: %s", entry.sellerName).string,infoW-16), infoX + 8, y, 0xFFE2E8F0.toInt(), false); y += 11
         graphics.drawString(font, Component.literal(expiryLabel()), infoX + 8, minOf(y, top + topH - 13), 0xFFF4D481.toInt(), false)
 
         drawIvNumbers(graphics, radarX + 8, top + 27, entry.ivs)
@@ -102,11 +102,11 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
     private fun renderCompactDetails(graphics: GuiGraphics, layout: DetailsLayout, speciesName: String) {
         val x = layout.contentLeft
         var y = layout.contentTop
-        graphics.drawString(font, Component.literal(speciesName + " · Nv. " + entry.level), x, y, 0xFFF4D481.toInt(), false); y += 14
-        graphics.drawString(font, Component.literal("Género: " + localizedGender(entry.gender)), x, y, 0xFFE2E8F0.toInt(), false); y += 13
-        componentLine(graphics, "Naturaleza", localizedNature(entry.nature), x, y); y += 13
-        componentLine(graphics, "Habilidad", localizedAbility(entry.ability), x, y); y += 13
-        graphics.drawString(font, Component.literal("Vendedor: " + entry.sellerName), x, y, 0xFFE2E8F0.toInt(), false); y += 13
+        graphics.drawString(font, Component.translatableWithFallback("ziangts.level_short", "%s · Nv. %s", speciesName, entry.level), x, y, 0xFFF4D481.toInt(), false); y += 14
+        graphics.drawString(font, Component.translatableWithFallback("gui.ziangts.gender", "Género: %s", localizedGender(entry.gender)), x, y, 0xFFE2E8F0.toInt(), false); y += 13
+        componentLine(graphics, Component.translatableWithFallback("ui.ziangts.aaf864181772", "Naturaleza: "), localizedNature(entry.nature), x, y); y += 13
+        componentLine(graphics, Component.translatableWithFallback("ui.ziangts.d15ab4bd0f10", "Habilidad: "), localizedAbility(entry.ability), x, y); y += 13
+        graphics.drawString(font, Component.translatableWithFallback("gui.ziangts.seller", "Vendedor: %s", entry.sellerName), x, y, 0xFFE2E8F0.toInt(), false); y += 13
         graphics.drawString(font, Component.literal(expiryLabel()), x, y, 0xFFF4D481.toInt(), false); y += 16
         graphics.drawString(font, Component.translatableWithFallback("ui.ziangts.797955099ea6", "Movimientos"), x, y, 0xFFF4D481.toInt(), false); y += 12
         entry.moves.take(4).forEach { move -> graphics.drawString(font, Component.literal("• ").append(localizedMove(move)), x, y, 0xFFE2E8F0.toInt(), false); y += 11 }
@@ -118,12 +118,12 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
     }
 
     private fun drawTraitRow(graphics: GuiGraphics, x: Int, y: Int) {
-        val rows = listOf("Shiny: " + if (entry.shiny) "Sí" else "No", "Alpha: " + if (entry.alpha) "Sí" else "No", "Legendario: " + if (entry.legendary) "Sí" else "No")
-        rows.forEachIndexed { index, label -> graphics.drawString(font, Component.literal(label), x, y + index * 11, 0xFFE2E8F0.toInt(), false) }
+        val rows = listOf(Component.translatableWithFallback("gui.ziangts.shiny", "Shiny: %s", yesNo(entry.shiny)), Component.translatableWithFallback("gui.ziangts.alpha", "Alpha: %s", yesNo(entry.alpha)), Component.translatableWithFallback("ziangts.legendary", "Legendario: %s", yesNo(entry.legendary)))
+        rows.forEachIndexed { index, label -> graphics.drawString(font, label, x, y + index * 11, 0xFFE2E8F0.toInt(), false) }
     }
 
     private fun drawIvNumbers(graphics: GuiGraphics, x: Int, y: Int, ivs: List<Int>) {
-        val labels = listOf("PS", "At", "Def", "At.E", "Def.E", "Vel")
+        val labels = List(6) { UiText.stat("list", it).string }
         labels.forEachIndexed { index, label ->
             val value = ivs.getOrNull(index)?.coerceIn(0, 31) ?: 0
             graphics.drawString(font, UiText.ivValue(label, value), x, y + index * 13, 0xFFE2E8F0.toInt(), false)
@@ -132,7 +132,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
 
     private fun expiryLabel(): String {
         val seconds = ((entry.expiresAtEpochMilli - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
-        return if (seconds >= 3600) "Expira en: " + seconds / 3600 + "h " + (seconds % 3600) / 60 + "m" else "Expira en: " + seconds / 60 + "m"
+        return if (seconds >= 3600) Component.translatableWithFallback("ziangts.details.expires_hm", "Expira en: %sh %sm", seconds / 3600, (seconds % 3600) / 60).string else Component.translatableWithFallback("ziangts.details.expires_m", "Expira en: %sm", seconds / 60).string
     }
 
     private fun renderPokemonModel(graphics: GuiGraphics, layout: DetailsLayout, partialTick: Float) {
@@ -147,7 +147,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
     }
 
     private fun drawIvRadar(graphics: GuiGraphics, cx: Int, cy: Int, radius: Int, ivs: List<Int>) {
-        val labels = listOf("PS", "At.", "Def.", "At.E", "Def.E", "Vel.")
+        val labels = List(6) { UiText.stat("radar", it).string }
         fun point(index: Int, r: Double): Pair<Int, Int> { val angle = -PI / 2.0 + index * (PI / 3.0); return (cx + cos(angle) * r).toInt() to (cy + sin(angle) * r).toInt() }
         listOf(0.33, 0.66, 1.0).forEach { scale -> val pts = (0 until 6).map { point(it, radius * scale) }; for (i in pts.indices) { val a = pts[i]; val b = pts[(i + 1) % pts.size]; drawLine(graphics, a.first, a.second, b.first, b.second, 0xFF4B535C.toInt()) } }
         for (i in 0 until 6) { val edge = point(i, radius.toDouble()); drawLine(graphics, cx, cy, edge.first, edge.second, 0xFF3D444C.toInt()) }
@@ -161,17 +161,15 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         while (true) { graphics.fill(x, y, x + 1, y + 1, color); if (x == x1 && y == y1) break; val e2 = 2 * err; if (e2 >= dy) { err += dy; x += sx }; if (e2 <= dx) { err += dx; y += sy } }
     }
 
-    private fun localizedGender(value: String): String = when (value.substringAfter(':').uppercase()) { "MALE" -> "Macho"; "FEMALE" -> "Hembra"; "GENDERLESS" -> "Sin género"; else -> friendly(value) }
-    private fun componentLine(graphics: GuiGraphics, label: String, value: Component, x: Int, y: Int) { graphics.drawString(font, font.plainSubstrByWidth("$label: "+value.string,108), x, y, 0xFFE2E8F0.toInt(), false) }
+    private fun localizedGender(value: String): String = when (value.substringAfter(':').uppercase()) { "MALE" -> Component.translatableWithFallback("gui.ziangts.gender.male", "Macho").string; "FEMALE" -> Component.translatableWithFallback("gui.ziangts.gender.female", "Hembra").string; "GENDERLESS" -> Component.translatableWithFallback("gui.ziangts.gender.genderless", "Sin género").string; else -> friendly(value) }
+    private fun componentLine(graphics: GuiGraphics, label: Component, value: Component, x: Int, y: Int) { graphics.drawString(font, font.plainSubstrByWidth(label.string+value.string,108), x, y, 0xFFE2E8F0.toInt(), false) }
     private fun localizedNature(value: String): Component = cobblemonTranslation("cobblemon.nature.", value)
     private fun localizedAbility(value: String): Component = cobblemonTranslation("cobblemon.ability.", value)
     private fun localizedMove(value: String): Component = cobblemonTranslation("cobblemon.move.", value)
     private fun cobblemonTranslation(prefix: String, value: String): Component {
-        val id = value.substringAfter(':').lowercase().replace("_", "").replace("-", "")
-        if (id.isBlank()) return Component.literal(friendly(value))
-        val key = prefix + id; val translated = Component.translatable(key)
-        return if (net.minecraft.client.resources.language.I18n.exists(key)) translated else Component.literal(friendly(value))
+        return ClientNames.cobblemon(prefix, value)
     }
+    private fun yesNo(value: Boolean): String = if (value) Component.translatableWithFallback("ziangts.yes", "Sí").string else Component.translatableWithFallback("ziangts.no", "No").string
     private fun friendly(value: String): String = value.substringAfter(':').replace('_', ' ').split(' ').joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
     override fun isPauseScreen() = false
 }

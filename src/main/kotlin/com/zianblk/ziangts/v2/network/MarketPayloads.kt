@@ -1,6 +1,7 @@
 package com.zianblk.ziangts.v2.network
 
 import com.zianblk.ziangts.ZianGts
+import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
@@ -62,7 +63,7 @@ data class MarketActionRequestPayload(
 data class MarketActionResponsePayload(
     val offerId: java.util.UUID,
     val success: Boolean,
-    val message: String
+    val message: Component
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
     companion object {
@@ -104,7 +105,7 @@ data class PublishOfferRequestPayload(
 
 data class PublishOfferResponsePayload(
     val success: Boolean,
-    val message: String
+    val message: Component
 ) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
     companion object {
@@ -142,7 +143,7 @@ data class ClaimProceedsRequestPayload(val adapter: String, val currency: String
     }
 }
 
-data class ClaimProceedsResponsePayload(val success: Boolean, val message: String) : CustomPacketPayload {
+data class ClaimProceedsResponsePayload(val success: Boolean, val message: Component) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<out CustomPacketPayload> = TYPE
     companion object {
         val TYPE = CustomPacketPayload.Type<ClaimProceedsResponsePayload>(

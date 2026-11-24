@@ -26,7 +26,7 @@ object V2Commands {
                     val ready = ZianGtsV2Runtime.isReady()
                     val detail = ZianGtsV2Runtime.blockedReason() ?: "ready"
                     ctx.source.sendSuccess(
-                        { Component.literal("Zian GTS V2: ready=$ready, status=$detail") },
+                        { Component.translatableWithFallback("ziangts.cmd.status", "Zian GTS V2: ready=%s, status=%s", ready.toString(), detail) },
                         false
                     )
                     1
@@ -37,19 +37,13 @@ object V2Commands {
                     val pending = ZianGtsV2Runtime.unresolvedTransactions()
                     if (pending.isEmpty()) {
                         ctx.source.sendSuccess(
-                            { Component.literal("Zian GTS: no hay operaciones pendientes de revisión.") },
+                            { Component.translatableWithFallback("ziangts.cmd.recovery.none", "Zian GTS: no hay operaciones pendientes de revisión.") },
                             false
                         )
                     } else {
-                        ctx.source.sendFailure(Component.literal(
-                            "Zian GTS: ${pending.size} operaciones requieren revisión; el mercado permanece bloqueado."
-                        ))
+                        ctx.source.sendFailure(Component.translatableWithFallback("ziangts.cmd.recovery.pending", "Zian GTS: %s operaciones requieren revisión; el mercado permanece bloqueado.", pending.size))
                         pending.take(10).forEach { incident ->
-                            ctx.source.sendFailure(Component.literal(
-                                "${ZianGtsV2Runtime.reference(incident.ticket.operationId)} · jugador=${ZianGtsV2Runtime.referenceOwner(incident.ticket.operationId)} · operación=${incident.ticket.operation} " +
-                                    "fase=${incident.stage} " +
-                                    "enRevisión=${incident.quarantined} motivo=${incident.reason ?: "-"}"
-                            ))
+                            ctx.source.sendFailure(Component.translatableWithFallback("ziangts.cmd.recovery.incident", "%s · jugador=%s · operación=%s fase=%s enRevisión=%s motivo=%s", ZianGtsV2Runtime.reference(incident.ticket.operationId).toString(), ZianGtsV2Runtime.referenceOwner(incident.ticket.operationId).toString(), incident.ticket.operation.toString(), incident.stage.toString(), incident.quarantined.toString(), incident.reason ?: "-"))
                         }
                     }
                     1
@@ -60,10 +54,7 @@ object V2Commands {
                         .executes { ctx ->
                             val idText = StringArgumentType.getString(ctx, "operation")
                             val id = parseReference(ctx.source, idText) ?: return@executes 0
-                            ctx.source.sendFailure(Component.literal(
-                                "Comprueba el cobro, el almacenamiento Pokémon y el GTS. No se compensa nada automáticamente. " +
-                                    "Para confirmar: /ZianGTS recovery resolve $idText confirm"
-                            ))
+                            ctx.source.sendFailure(Component.translatableWithFallback("ziangts.cmd.recovery.check", "Comprueba el cobro, el almacenamiento Pokémon y el GTS. No se compensa nada automáticamente. Para confirmar: /ZianGTS recovery resolve %s confirm", idText))
                             1
                         }
                         .then(Commands.literal("confirm").executes { ctx ->
@@ -76,19 +67,14 @@ object V2Commands {
                                     "manual reconciliation confirmed by $actor"
                                 )
                             } catch (error: Exception) {
-                                ctx.source.sendFailure(Component.literal(
-                                    "No se pudo registrar la revisión: ${error.message}"
-                                ))
+                                ctx.source.sendFailure(Component.translatableWithFallback("ziangts.cmd.recovery.failed", "No se pudo registrar la revisión: %s", error.message.toString()))
                                 return@executes 0
                             }
                             if (!resolved) {
-                                ctx.source.sendFailure(Component.literal("No existe una operación pendiente con esa referencia."))
+                                ctx.source.sendFailure(Component.translatableWithFallback("ziangts.cmd.recovery.not_found", "No existe una operación pendiente con esa referencia."))
                                 0
                             } else {
-                                ctx.source.sendSuccess({ Component.literal(
-                                    "Revisión de $idText registrada tras la conciliación manual. " +
-                                        "Reinicia el servidor antes de reabrir el mercado."
-                                ) }, true)
+                                ctx.source.sendSuccess({ Component.translatableWithFallback("ziangts.cmd.recovery.resolved", "Revisión de %s registrada tras la conciliación manual. Reinicia el servidor antes de reabrir el mercado.", idText) }, true)
                                 1
                             }
                         }))))
@@ -96,22 +82,20 @@ object V2Commands {
         if(dispatcher.root.getChild("gts")==null)dispatcher.register(Commands.literal("gts").requires { GtsPermissions.allows(it,"use") }.executes { open(it.source) }.redirect(registered))
     }
 
-    private fun parseReference(source:CommandSourceStack,value:String):java.util.UUID?=try{ZianGtsV2Runtime.resolveReference(value)}catch(error:Exception){source.sendFailure(Component.literal("Referencia inexistente. Usa el autocompletado o un UUID válido."));null}
+    private fun parseReference(source:CommandSourceStack,value:String):java.util.UUID?=try{ZianGtsV2Runtime.resolveReference(value)}catch(error:Exception){source.sendFailure(Component.translatableWithFallback("ziangts.cmd.bad_reference", "Referencia inexistente. Usa el autocompletado o un UUID válido."));null}
     private fun open(source: CommandSourceStack): Int {
         val player = try {
             source.playerOrException
         } catch (_: Exception) {
-            source.sendFailure(Component.literal("This command must be used by a player."))
+            source.sendFailure(Component.translatableWithFallback("ziangts.cmd.player_only", "This command must be used by a player."))
             return 0
         }
         if (!GtsPermissions.allows(player, "use")) {
-            source.sendFailure(Component.literal(GtsPermissions.denialMessage()))
+            source.sendFailure(GtsPermissions.denialMessage())
             return 0
         }
         if (!ZianGtsV2Runtime.isReady()) {
-            source.sendFailure(Component.literal(
-                "Zian GTS V2 market unavailable: ${ZianGtsV2Runtime.blockedReason()}"
-            ))
+            source.sendFailure(Component.translatableWithFallback("ziangts.cmd.market_unavailable", "Zian GTS V2 market unavailable: %s", ZianGtsV2Runtime.blockedReason().toString()))
             return 0
         }
         PacketDistributor.sendToPlayer(player, OpenMarketScreenPayload)
@@ -122,7 +106,7 @@ object V2Commands {
         try {
             java.util.UUID.fromString(value)
         } catch (_: IllegalArgumentException) {
-            source.sendFailure(Component.literal("Invalid operation UUID: $value"))
+            source.sendFailure(Component.translatableWithFallback("ziangts.cmd.invalid_uuid", "Invalid operation UUID: %s", value))
             null
         }
 }
