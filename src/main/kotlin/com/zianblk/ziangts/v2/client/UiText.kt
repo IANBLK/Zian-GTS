@@ -25,6 +25,14 @@ object UiText {
         "ziangts.currency.goldticket" to "Ticket de Oro",
         "ziangts.currency.diamondticket" to "Ticket de Diamante",
         "ziangts.currency.netheriteticket" to "Ticket de Netherita",
+        "ziangts.currency.coppercoin.plural" to "Monedas de Cobre",
+        "ziangts.currency.ironcoin.plural" to "Monedas de Hierro",
+        "ziangts.currency.goldcoin.plural" to "Monedas de Oro",
+        "ziangts.currency.diamondcoin.plural" to "Monedas de Diamante",
+        "ziangts.currency.netheritecoin.plural" to "Monedas de Netherita",
+        "ziangts.currency.goldticket.plural" to "Tickets de Oro",
+        "ziangts.currency.diamondticket.plural" to "Tickets de Diamante",
+        "ziangts.currency.netheriteticket.plural" to "Tickets de Netherita",
         "ziangts.stat.card.hp" to "PS",
         "ziangts.stat.card.atk" to "Atq",
         "ziangts.stat.card.def" to "Def",
@@ -45,7 +53,7 @@ object UiText {
         "ziangts.stat.radar.spe" to "Vel."
     )
 
-    fun currency(id: String): Component = fromTable("ziangts.currency.$id")
+    fun currency(id: String, plural: Boolean = false): Component = fromTable(if (plural) "ziangts.currency.$id.plural" else "ziangts.currency.$id")
 
     private val statIds = listOf("hp", "atk", "def", "spa", "spd", "spe")
     fun stat(variant: String, index: Int): Component = fromTable("ziangts.stat.$variant.${statIds[index]}")

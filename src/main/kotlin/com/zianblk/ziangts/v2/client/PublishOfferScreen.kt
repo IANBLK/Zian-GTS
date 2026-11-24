@@ -75,7 +75,7 @@ class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Componen
             val result = V2MarketClientState.publishResultSnapshot()
             if (result != null) {
                 pending = false
-                message = result.message
+                message = result.message.string
                 if (result.success) {
                     minecraft?.setScreen(parent)
                     return

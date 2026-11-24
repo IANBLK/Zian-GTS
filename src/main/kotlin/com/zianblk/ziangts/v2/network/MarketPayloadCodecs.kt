@@ -4,6 +4,7 @@ import com.zianblk.ziangts.v2.domain.MarketTab
 import com.zianblk.ziangts.v2.domain.OfferFilter
 import com.zianblk.ziangts.v2.domain.OfferSort
 import net.minecraft.network.RegistryFriendlyByteBuf
+import net.minecraft.network.chat.ComponentSerialization
 import net.minecraft.network.codec.StreamCodec
 import java.util.UUID
 
@@ -52,8 +53,8 @@ object MarketPayloadCodecs {
 
     val ACTION_RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, MarketActionResponsePayload> =
         StreamCodec.of(
-            { buf, value -> buf.writeUUID(value.offerId); buf.writeBoolean(value.success); buf.writeUtf(value.message, 256) },
-            { buf -> MarketActionResponsePayload(buf.readUUID(), buf.readBoolean(), buf.readUtf(256)) }
+            { buf, value -> buf.writeUUID(value.offerId); buf.writeBoolean(value.success); ComponentSerialization.STREAM_CODEC.encode(buf, value.message) },
+            { buf -> MarketActionResponsePayload(buf.readUUID(), buf.readBoolean(), ComponentSerialization.STREAM_CODEC.decode(buf)) }
         )
 
     val PUBLISH_OPTIONS_REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, PublishOptionsRequestPayload> =
@@ -88,8 +89,8 @@ object MarketPayloadCodecs {
 
     val PUBLISH_OFFER_RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, PublishOfferResponsePayload> =
         StreamCodec.of(
-            { buf, value -> buf.writeBoolean(value.success); buf.writeUtf(value.message, 256) },
-            { buf -> PublishOfferResponsePayload(buf.readBoolean(), buf.readUtf(256)) }
+            { buf, value -> buf.writeBoolean(value.success); ComponentSerialization.STREAM_CODEC.encode(buf, value.message) },
+            { buf -> PublishOfferResponsePayload(buf.readBoolean(), ComponentSerialization.STREAM_CODEC.decode(buf)) }
         )
 
     val PROCEEDS_REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, ProceedsRequestPayload> =
@@ -115,8 +116,8 @@ object MarketPayloadCodecs {
 
     val CLAIM_PROCEEDS_RESPONSE_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, ClaimProceedsResponsePayload> =
         StreamCodec.of(
-            { buf, value -> buf.writeBoolean(value.success); buf.writeUtf(value.message, 256) },
-            { buf -> ClaimProceedsResponsePayload(buf.readBoolean(), buf.readUtf(256)) }
+            { buf, value -> buf.writeBoolean(value.success); ComponentSerialization.STREAM_CODEC.encode(buf, value.message) },
+            { buf -> ClaimProceedsResponsePayload(buf.readBoolean(), ComponentSerialization.STREAM_CODEC.decode(buf)) }
         )
 
     val HISTORY_REQUEST_PAYLOAD: StreamCodec<RegistryFriendlyByteBuf, HistoryRequestPayload> =

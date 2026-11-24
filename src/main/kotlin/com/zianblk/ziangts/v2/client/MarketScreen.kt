@@ -194,7 +194,7 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
             val result = V2MarketClientState.actionSnapshot()
             if (result != null) {
                 actionPending = false
-                actionMessage = result.message
+                actionMessage = result.message.string
                 requestCurrent()
             }
         }

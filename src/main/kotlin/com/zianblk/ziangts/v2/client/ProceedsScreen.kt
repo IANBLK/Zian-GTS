@@ -44,7 +44,7 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.tr
             observedClaim = claimRev
             V2MarketClientState.claimResultSnapshot()?.let {
                 pending = false
-                message = it.message
+                message = it.message.string
                 messageTicks = 100
                 V2MarketClient.requestProceeds()
             }

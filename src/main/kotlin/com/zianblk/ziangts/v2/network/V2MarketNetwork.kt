@@ -10,7 +10,9 @@ import com.zianblk.ziangts.v2.domain.MarketTab
 import com.zianblk.ziangts.v2.application.TradeResult
 import com.zianblk.ziangts.v2.application.ClaimResult
 import com.zianblk.ziangts.v2.domain.ProceedsKey
+import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
+import com.zianblk.ziangts.v2.client.UiText
 import net.neoforged.neoforge.network.PacketDistributor
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 import java.time.Instant
@@ -21,7 +23,7 @@ import java.time.Instant
  */
 object V2MarketNetwork {
     fun register(event: RegisterPayloadHandlersEvent) {
-        val registrar = event.registrar("v3-market")
+        val registrar = event.registrar("v4-market")
         registrar.playToServer(
             MarketPageRequestPayload.TYPE,
             MarketPayloadCodecs.REQUEST_PAYLOAD
@@ -54,12 +56,12 @@ object V2MarketNetwork {
                     MarketAction.WITHDRAW -> "cancel"
                 }
                 if (!permitted(player, permission)) {
-                    PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, false, GtsPermissions.denialMessage().string))
+                    PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, false, GtsPermissions.denialMessage()))
                     return@enqueueWork
                 }
                 val engine = ZianGtsV2Runtime.engineOrNull()
                 if (engine == null) {
-                    PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, false, "GTS no disponible"))
+                    PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, false, Component.translatableWithFallback("ziangts.net.unavailable", "GTS no disponible")))
                     return@enqueueWork
                 }
                 try {
@@ -69,9 +71,9 @@ object V2MarketNetwork {
                     }
                     val success = result is TradeResult.Success
                     val message = when (result) {
-                        is TradeResult.Success -> if (payload.action == MarketAction.BUY) "Compra completada" else "Pokémon retirado"
-                        is TradeResult.Rejected -> result.reason
-                        is TradeResult.Quarantined -> "Operación bloqueada para recuperación: ${result.operationId}"
+                        is TradeResult.Success -> if (payload.action == MarketAction.BUY) Component.translatableWithFallback("ziangts.net.purchase_ok", "Compra completada") else Component.translatableWithFallback("ziangts.net.withdraw_ok", "Pokémon retirado")
+                        is TradeResult.Rejected -> Component.literal(result.reason)
+                        is TradeResult.Quarantined -> Component.translatableWithFallback("ziangts.net.blocked", "Operación bloqueada para recuperación: %s", result.operationId.toString())
                     }
                     PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, success, message))
                 } catch (error: Exception) {
@@ -81,7 +83,7 @@ object V2MarketNetwork {
                     )
                     PacketDistributor.sendToPlayer(
                         player,
-                        MarketActionResponsePayload(payload.offerId, false, "No se pudo completar la operación")
+                        MarketActionResponsePayload(payload.offerId, false, Component.translatableWithFallback("ziangts.net.action_failed", "No se pudo completar la operación"))
                     )
                 }
             }
@@ -111,7 +113,7 @@ object V2MarketNetwork {
                     PacketDistributor.sendToPlayer(player, PublishOptionsResponsePayload(PublishOptionsResponse(dto, currencies)))
                 } catch (error: Exception) {
                     ZianGts.LOGGER.error("Failed to prepare V2 publish options for {}", player.scoreboardName, error)
-                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, "No se pudieron cargar las opciones de publicación"))
+                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, Component.translatableWithFallback("ziangts.net.options_failed", "No se pudieron cargar las opciones de publicación")))
                 }
             }
         }
@@ -131,7 +133,7 @@ object V2MarketNetwork {
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
                 if (!permitted(player, "sell")) {
-                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, GtsPermissions.denialMessage().string))
+                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, GtsPermissions.denialMessage()))
                     return@enqueueWork
                 }
                 try {
@@ -140,7 +142,7 @@ object V2MarketNetwork {
                     require(payload.currency in supported) { "unsupported currency" }
                     val engine = ZianGtsV2Runtime.engineOrNull()
                     if (engine == null) {
-                        PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, "GTS no disponible"))
+                        PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, Component.translatableWithFallback("ziangts.net.unavailable", "GTS no disponible")))
                         return@enqueueWork
                     }
                     val result = engine.publish(
@@ -151,14 +153,14 @@ object V2MarketNetwork {
                     )
                     val success = result is TradeResult.Success
                     val message = when (result) {
-                        is TradeResult.Success -> "Pokémon publicado"
-                        is TradeResult.Rejected -> result.reason
-                        is TradeResult.Quarantined -> "Operación bloqueada para recuperación: ${result.operationId}"
+                        is TradeResult.Success -> Component.translatableWithFallback("ziangts.net.publish_ok", "Pokémon publicado")
+                        is TradeResult.Rejected -> Component.literal(result.reason)
+                        is TradeResult.Quarantined -> Component.translatableWithFallback("ziangts.net.blocked", "Operación bloqueada para recuperación: %s", result.operationId.toString())
                     }
                     PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(success, message))
                 } catch (error: Exception) {
                     ZianGts.LOGGER.error("Unhandled V2 publish for player {}", player.scoreboardName, error)
-                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, "No se pudo publicar el Pokémon"))
+                    PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(false, Component.translatableWithFallback("ziangts.net.publish_failed", "No se pudo publicar el Pokémon")))
                 }
             }
         }
@@ -210,7 +212,7 @@ object V2MarketNetwork {
             if (player !is ServerPlayer) return@playToServer
             context.enqueueWork {
                 if (!permitted(player, "claim")) {
-                    PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, GtsPermissions.denialMessage().string))
+                    PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, GtsPermissions.denialMessage()))
                     return@enqueueWork
                 }
                 try {
@@ -218,20 +220,20 @@ object V2MarketNetwork {
                     require(payload.currency in AvecoinsWallet.supportedCurrencies()) { "unsupported currency" }
                     val engine = ZianGtsV2Runtime.engineOrNull()
                     if (engine == null) {
-                        PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, "GTS no disponible"))
+                        PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, Component.translatableWithFallback("ziangts.net.unavailable", "GTS no disponible")))
                         return@enqueueWork
                     }
                     val result = engine.claim(player.uuid, ProceedsKey(payload.adapter, payload.currency))
                     val success = result is ClaimResult.Success
                     val message = when (result) {
-                        is ClaimResult.Success -> "Se agregaron ${result.amount} ${currencyDisplayName(result.key.currency, result.amount)} a tu wallet exitosamente"
-                        is ClaimResult.Rejected -> result.reason
-                        is ClaimResult.Quarantined -> "Cobro bloqueado para recuperación: ${result.operationId}"
+                        is ClaimResult.Success -> Component.translatableWithFallback("ziangts.net.claim_ok", "Se agregaron %s %s a tu wallet exitosamente", result.amount.toString(), currencyDisplayName(result.key.currency, result.amount))
+                        is ClaimResult.Rejected -> Component.literal(result.reason)
+                        is ClaimResult.Quarantined -> Component.translatableWithFallback("ziangts.net.claim_blocked", "Cobro bloqueado para recuperación: %s", result.operationId.toString())
                     }
                     PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(success, message))
                 } catch (error: Exception) {
                     ZianGts.LOGGER.error("Unhandled V2 proceeds claim for {}", player.scoreboardName, error)
-                    PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, "No se pudieron cobrar las ganancias"))
+                    PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(false, Component.translatableWithFallback("ziangts.net.claim_failed", "No se pudieron cobrar las ganancias")))
                 }
             }
         }
@@ -290,19 +292,11 @@ object V2MarketNetwork {
         }
     }
 
-    private fun currencyDisplayName(currency: String, amount: Long): String {
-        val singular = amount == 1L
-        return when (currency.substringAfter(':')) {
-            "coppercoin" -> if (singular) "Moneda de Cobre" else "Monedas de Cobre"
-            "ironcoin" -> if (singular) "Moneda de Hierro" else "Monedas de Hierro"
-            "goldcoin" -> if (singular) "Moneda de Oro" else "Monedas de Oro"
-            "diamondcoin" -> if (singular) "Moneda de Diamante" else "Monedas de Diamante"
-            "netheritecoin" -> if (singular) "Moneda de Netherita" else "Monedas de Netherita"
-            "goldticket" -> if (singular) "Ticket de Oro" else "Tickets de Oro"
-            "diamondticket" -> if (singular) "Ticket de Diamante" else "Tickets de Diamante"
-            "netheriteticket" -> if (singular) "Ticket de Netherita" else "Tickets de Netherita"
-            else -> currency.substringAfter(':').replace('_', ' ')
-        }
+    private val knownCurrencies = setOf("coppercoin", "ironcoin", "goldcoin", "diamondcoin", "netheritecoin", "goldticket", "diamondticket", "netheriteticket")
+
+    private fun currencyDisplayName(currency: String, amount: Long): Component {
+        val id = currency.substringAfter(':')
+        return if (id in knownCurrencies) UiText.currency(id, amount != 1L) else Component.literal(id.replace('_', ' '))
     }
 
     private fun handlePageRequest(player: ServerPlayer, requestId: Long, request: MarketPageRequest) {
