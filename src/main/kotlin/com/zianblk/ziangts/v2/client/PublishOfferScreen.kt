@@ -88,14 +88,14 @@ class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Componen
     private fun cyclePokemon() {
         confirmArmed=false
         val list=options?.party.orEmpty()
-        minecraft?.setScreen(MarketChoiceScreen(this,Component.translatableWithFallback("ziangts.publish.choose_pokemon", "Elegir Pokémon del equipo"),list.map { it.pokemonId.toString() to Component.translatableWithFallback("ziangts.level_short", "%s · Nv. %s", friendly(it.species), it.level).string }) { id ->
+        minecraft?.setScreen(MarketChoiceScreen(this,Component.translatableWithFallback("ziangts.publish.choose_pokemon", "Elegir Pokémon del equipo"),list.map { it.pokemonId.toString() to Component.translatableWithFallback("ziangts.level_short", "%s · Nv. %s", ClientNames.species(it.species), it.level).string }) { id ->
             selectedPokemon=list.indexOfFirst{it.pokemonId.toString()==id}.coerceAtLeast(0);refresh()
         })
     }
     private fun cycleCurrency() {
         confirmArmed=false
         val list=options?.currencies.orEmpty()
-        minecraft?.setScreen(MarketChoiceScreen(this,Component.translatableWithFallback("ziangts.publish.choose_currency", "Elegir moneda"),list.map{it to friendly(it)}){id->selectedCurrency=list.indexOf(id).coerceAtLeast(0);refresh()})
+        minecraft?.setScreen(MarketChoiceScreen(this,Component.translatableWithFallback("ziangts.publish.choose_currency", "Elegir moneda"),list.map{it to ClientNames.currency(it)}){id->selectedCurrency=list.indexOf(id).coerceAtLeast(0);refresh()})
     }
 
     private fun publish() {
@@ -110,7 +110,7 @@ class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Componen
         }
         if (!confirmArmed) {
             confirmArmed = true
-            message = Component.translatableWithFallback("ziangts.publish.confirm", "Confirma: %s por %s %s", friendly(pokemon.species), amount, friendly(currency)).string
+            message = Component.translatableWithFallback("ziangts.publish.confirm", "Confirma: %s por %s %s", ClientNames.species(pokemon.species), amount, ClientNames.currency(currency)).string
             confirmText = message
             refresh()
             return
@@ -129,7 +129,7 @@ class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Componen
         pokemonButton?.message=if(pokemon!=null)Component.translatableWithFallback("ziangts.publish.change_pokemon", "Cambiar Pokémon") else Component.translatableWithFallback("ziangts.publish.no_pokemon", "Sin Pokémon disponible")
         pokemonButton?.active = !pending && !options?.party.isNullOrEmpty()
         val currency = options?.currencies?.getOrNull(selectedCurrency)
-        currencyButton?.message = currency?.let { Component.literal(friendly(it)) } ?: Component.translatableWithFallback("ziangts.publish.no_currency", "Sin moneda disponible")
+        currencyButton?.message = currency?.let { Component.literal(ClientNames.currency(it)) } ?: Component.translatableWithFallback("ziangts.publish.no_currency", "Sin moneda disponible")
         currencyButton?.active = !pending && !options?.currencies.isNullOrEmpty()
         confirmButton?.message = if (confirmArmed) Component.translatableWithFallback("ui.ziangts.81b4b67ff827", "Confirmar") else Component.translatableWithFallback("ui.ziangts.9df643f06945", "Publicar")
         confirmButton?.active = !pending && pokemon != null && currency != null
@@ -155,7 +155,7 @@ class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Componen
             graphics.drawCenteredString(font,Component.translatableWithFallback("ziangts.publish.party_empty", "Equipo vacío"),left+115,top+103,0xFF9FAAB5.toInt())
             graphics.drawCenteredString(font,Component.translatableWithFallback("ziangts.publish.need_pokemon", "Necesitas un Pokémon"),left+115,top+120,0xFF9FAAB5.toInt())
         }else{
-            graphics.drawCenteredString(font,friendly(selected.species),left+115,top+59,ZianGtsTheme.GOLD)
+            graphics.drawCenteredString(font,ClientNames.species(selected.species),left+115,top+59,ZianGtsTheme.GOLD)
             graphics.drawCenteredString(font,Component.translatableWithFallback("ziangts.publish.level_slot", "Nivel %s · Slot %s", selected.level, selected.slot),left+115,top+76,0xFFB8C0C8.toInt())
             graphics.drawCenteredString(font,listOfNotNull(if(selected.shiny)Component.translatableWithFallback("ziangts.trait.shiny", "✦ Shiny").string else null,if(selected.legendary)Component.translatableWithFallback("ziangts.trait.legendary", "Legendario").string else null,if(selected.alpha)Component.translatableWithFallback("ziangts.trait.alpha", "Alfa").string else null).joinToString(" · "),left+115,top+159,ZianGtsTheme.GOLD)
             val pose=previewStates.getOrPut(selected.pokemonId){com.cobblemon.mod.common.client.render.models.blockbench.FloatingState()}
@@ -175,8 +175,4 @@ class PublishOfferScreen(private val parent: Screen) : ResponsiveScreen(Componen
         if(mouseX in left+18 until left+216 && mouseY in top+221 until top+239)queueTooltip(listOf(Component.literal(text)))
         renderWidgets(graphics,mouseX,mouseY,partialTick)
     }
-
-    private fun friendly(value: String): String = value.substringAfter(':')
-        .replace('_', ' ').replace('-', ' ').split(' ').filter { it.isNotBlank() }
-        .joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
 }

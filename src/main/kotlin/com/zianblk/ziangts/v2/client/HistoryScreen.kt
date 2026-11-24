@@ -78,7 +78,7 @@ class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.tra
             val y = 62 + index * 25
             val sold = viewer == entry.sellerId
             val kind = if (sold) Component.translatableWithFallback("ziangts.history.sale", "Venta").string else Component.translatableWithFallback("ziangts.history.purchase", "Compra").string
-            val species = entry.species.substringAfter(':').replaceFirstChar(Char::uppercase)
+            val species = ClientNames.species(entry.species)
             val line = "$kind · $species · ${entry.amount} ${friendly(entry.currency)}"
             graphics.drawString(font, font.plainSubstrByWidth(line,288), width / 2 - 205, y, if (sold) 0xFFF4D481.toInt() else 0xFFE2E8F0.toInt(), false)
             if(mouseX in width/2-205 until width/2+83 && mouseY in y until y+12)queueTooltip(listOf(Component.literal(line)))
@@ -88,7 +88,6 @@ class HistoryScreen(private val parent: Screen) : ResponsiveScreen(Component.tra
 
     private fun friendly(value: String): String {
         val path = value.substringAfter(':')
-        val known = setOf("coppercoin", "ironcoin", "goldcoin", "diamondcoin", "netheritecoin", "copperticket", "ironticket", "goldticket", "diamondticket", "netheriteticket")
-        return if (path.lowercase() in known) UiText.currency(path.lowercase()).string else path.replace('_', ' ').replace('-', ' ').split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
+        return if (UiText.hasCurrency(path.lowercase())) UiText.currency(path.lowercase()).string else path.replace('_', ' ').replace('-', ' ').split(' ').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     }
 }

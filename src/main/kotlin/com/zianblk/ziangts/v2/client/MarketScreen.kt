@@ -157,7 +157,7 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
                         if (!actionPending) {
                             minecraft?.setScreen(MarketConfirmScreen(this,
                                 if(action==MarketAction.BUY) Component.translatableWithFallback("gui.ziangts.purchase_confirm", "Confirmar compra") else Component.translatableWithFallback("gui.ziangts.remove_listing", "Retirar anuncio"),
-                                listOf(Component.translatableWithFallback("ziangts.level_short", "%s · Nv. %s", entry.species.substringAfter(':').replace('_',' '), entry.level),
+                                listOf(Component.translatableWithFallback("ziangts.level_short", "%s · Nv. %s", ClientNames.species(entry.species), entry.level),
                                     Component.translatableWithFallback("gui.ziangts.seller", "Vendedor: %s", entry.sellerName),
                                     Component.translatableWithFallback("gui.ziangts.price", "Precio: %s", entry.price.toString()+" "+currencyDisplayName(entry.currency.substringAfter(':'))),
                                     if(action==MarketAction.BUY)Component.translatableWithFallback("ziangts.market.confirm_buy_hint", "Revisa el precio y el Pokémon antes de pagar.") else Component.translatableWithFallback("ziangts.market.confirm_withdraw_hint", "El Pokémon se devolverá a tu almacenamiento cuando se confirme la retirada."))) {
@@ -240,7 +240,7 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
             graphics.fill(x + 1, y + 1, x + cardW - 1, y + cardH - 1, 0xF0181D24.toInt())
             graphics.fill(x + 1, y + 1, x + cardW - 1, y + 4, rarityAccent(entry))
 
-            val species = entry.species.substringAfter(':').replace('_',' ').replaceFirstChar { it.uppercase() }
+            val species = ClientNames.species(entry.species)
             graphics.drawString(font, fitText(species,cardW-16), x+8,y+10,ZianGtsTheme.GOLD)
             val gender=when(entry.gender.uppercase()){ "MALE"->"♂ "+Component.translatableWithFallback("gui.ziangts.gender.male", "Macho").string;"FEMALE"->"♀ "+Component.translatableWithFallback("gui.ziangts.gender.female", "Hembra").string;else->Component.translatableWithFallback("ziangts.market.no_sex", "Sin sexo").string }
             graphics.drawString(font,fitText(Component.translatableWithFallback("ziangts.level_short", "%s · Nv. %s", gender, entry.level).string,cardW-88),x+80,y+25,0xFFB8C0C8.toInt())
@@ -260,7 +260,7 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
             graphics.drawString(font,priceLabel,x+8,footerTop+5,0xFFF7E4A6.toInt())
             renderCurrencyIcon(graphics,entry.currency,x+12+font.width(priceLabel),footerTop+1,mouseX,mouseY)
             if(mouseX in x until x+cardW && mouseY in y until footerTop){
-                queueTooltip(listOf(Component.literal(species),UiText.genderLevel(gender, entry.level),Component.translatableWithFallback("ziangts.market.ivs_line", "IVs: %s", entry.ivs.joinToString(" / ")),Component.translatableWithFallback("gui.ziangts.nature", "Naturaleza: %s", entry.nature.substringAfter(':')),Component.translatableWithFallback("gui.ziangts.ability", "Habilidad: %s", entry.ability.substringAfter(':')),Component.translatableWithFallback("ui.ziangts.2088184a2408", "Haz clic para ver los detalles")))
+                queueTooltip(listOf(Component.literal(species),UiText.genderLevel(gender, entry.level),Component.translatableWithFallback("ziangts.market.ivs_line", "IVs: %s", entry.ivs.joinToString(" / ")),Component.translatableWithFallback("gui.ziangts.nature", "Naturaleza: %s", ClientNames.cobblemon("cobblemon.nature.", entry.nature).string),Component.translatableWithFallback("gui.ziangts.ability", "Habilidad: %s", ClientNames.cobblemon("cobblemon.ability.", entry.ability).string),Component.translatableWithFallback("ui.ziangts.2088184a2408", "Haz clic para ver los detalles")))
             }
 
             val seller = fitText(Component.translatableWithFallback("gui.ziangts.seller", "Vendedor: %s", entry.sellerName).string, cardW - 16)
@@ -381,8 +381,7 @@ class MarketScreen : ResponsiveScreen(Component.translatableWithFallback("ui.zia
     }
 
     private fun currencyDisplayName(path: String): String {
-        val known = setOf("coppercoin", "ironcoin", "goldcoin", "diamondcoin", "netheritecoin", "goldticket", "diamondticket", "netheriteticket")
-        return if (path in known) UiText.currency(path).string else path
+        return if (UiText.hasCurrency(path)) UiText.currency(path).string else path
             .replace('_', ' ')
             .replace('-', ' ')
             .split(' ')

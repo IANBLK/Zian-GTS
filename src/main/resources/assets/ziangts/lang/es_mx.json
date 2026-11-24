@@ -273,5 +273,7 @@
   "ziangts.reason.pokemon_remove_rejected": "No se pudo retirar el Pokémon de tu almacenamiento.",
   "ziangts.reason.pokemon_storage_full": "No hay espacio en tu equipo ni en tu PC.",
   "ziangts.reason.proceeds_availability_check_failed": "No se pudieron comprobar tus ganancias.",
-  "ziangts.reason.wallet_full": "No hay espacio suficiente en tu monedero AVECOINS."
+  "ziangts.reason.wallet_full": "No hay espacio suficiente en tu monedero AVECOINS.",
+  "ziangts.currency.copperticket.plural": "Tickets de Cobre",
+  "ziangts.currency.ironticket.plural": "Tickets de Hierro"
 }

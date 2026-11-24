@@ -27,6 +27,8 @@ object UiText {
         "ziangts.currency.netheriteticket" to "Ticket de Netherita",
         "ziangts.currency.coppercoin.plural" to "Monedas de Cobre",
         "ziangts.currency.ironcoin.plural" to "Monedas de Hierro",
+        "ziangts.currency.copperticket.plural" to "Tickets de Cobre",
+        "ziangts.currency.ironticket.plural" to "Tickets de Hierro",
         "ziangts.currency.goldcoin.plural" to "Monedas de Oro",
         "ziangts.currency.diamondcoin.plural" to "Monedas de Diamante",
         "ziangts.currency.netheritecoin.plural" to "Monedas de Netherita",
@@ -52,6 +54,8 @@ object UiText {
         "ziangts.stat.radar.spd" to "Def.E",
         "ziangts.stat.radar.spe" to "Vel."
     )
+
+    fun hasCurrency(id: String): Boolean = "ziangts.currency.$id" in fallbacks
 
     fun currency(id: String, plural: Boolean = false): Component = fromTable(if (plural) "ziangts.currency.$id.plural" else "ziangts.currency.$id")
 

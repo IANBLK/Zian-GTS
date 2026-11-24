@@ -294,7 +294,7 @@ object V2MarketNetwork {
 
     private fun reason(code: String) = Component.translatableWithFallback("ziangts.reason." + code.replace(' ', '_'), code)
 
-    private val knownCurrencies = setOf("coppercoin", "ironcoin", "goldcoin", "diamondcoin", "netheritecoin", "goldticket", "diamondticket", "netheriteticket")
+    private val knownCurrencies = setOf("coppercoin", "ironcoin", "goldcoin", "diamondcoin", "netheritecoin", "copperticket", "ironticket", "goldticket", "diamondticket", "netheriteticket")
 
     private fun currencyDisplayName(currency: String, amount: Long): Component {
         val id = currency.substringAfter(':')

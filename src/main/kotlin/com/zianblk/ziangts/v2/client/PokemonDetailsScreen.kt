@@ -36,7 +36,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
         graphics.renderOutline(left, top, layout.width, layout.height, 0xFF666D75.toInt())
         graphics.fill(left + 1, top + 1, left + layout.width - 1, top + 3, ZianGtsTheme.GOLD)
         graphics.drawCenteredString(font, title, width / 2, top + 11, ZianGtsTheme.TEXT)
-        val speciesName = entry.species.substringAfter(':').replaceFirstChar { it.uppercase() }
+        val speciesName = ClientNames.species(entry.species)
         if (layout.compact) renderCompactDetails(graphics, layout, speciesName) else renderWideDetails(graphics, layout, speciesName)
         renderPokemonModel(graphics, layout, partialTick)
         if(mouseX in layout.left+125 until layout.left+layout.width-175 && mouseY in layout.top+32 until layout.top+170){
@@ -167,10 +167,7 @@ class PokemonDetailsScreen(private val entry: MarketEntryDto, private val parent
     private fun localizedAbility(value: String): Component = cobblemonTranslation("cobblemon.ability.", value)
     private fun localizedMove(value: String): Component = cobblemonTranslation("cobblemon.move.", value)
     private fun cobblemonTranslation(prefix: String, value: String): Component {
-        val id = value.substringAfter(':').lowercase().replace("_", "").replace("-", "")
-        if (id.isBlank()) return Component.literal(friendly(value))
-        val key = prefix + id; val translated = Component.translatable(key)
-        return if (net.minecraft.client.resources.language.I18n.exists(key)) translated else Component.literal(friendly(value))
+        return ClientNames.cobblemon(prefix, value)
     }
     private fun yesNo(value: Boolean): String = if (value) Component.translatableWithFallback("ziangts.yes", "Sí").string else Component.translatableWithFallback("ziangts.no", "No").string
     private fun friendly(value: String): String = value.substringAfter(':').replace('_', ' ').split(' ').joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }

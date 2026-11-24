@@ -89,8 +89,7 @@ class ProceedsScreen(private val parent: Screen) : ResponsiveScreen(Component.tr
 
     private fun friendly(value: String): String {
         val path = value.substringAfter(':')
-        val known = setOf("coppercoin", "ironcoin", "goldcoin", "diamondcoin", "netheritecoin", "goldticket", "diamondticket", "netheriteticket")
-        return if (path in known) UiText.currency(path).string else path.replace('_', ' ').replace('-', ' ').split(' ')
+        return if (UiText.hasCurrency(path)) UiText.currency(path).string else path.replace('_', ' ').replace('-', ' ').split(' ')
             .joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     }
 }
