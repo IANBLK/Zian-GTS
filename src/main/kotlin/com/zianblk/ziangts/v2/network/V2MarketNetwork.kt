@@ -72,7 +72,7 @@ object V2MarketNetwork {
                     val success = result is TradeResult.Success
                     val message = when (result) {
                         is TradeResult.Success -> if (payload.action == MarketAction.BUY) Component.translatableWithFallback("ziangts.net.purchase_ok", "Compra completada") else Component.translatableWithFallback("ziangts.net.withdraw_ok", "Pokémon retirado")
-                        is TradeResult.Rejected -> Component.literal(result.reason)
+                        is TradeResult.Rejected -> reason(result.reason)
                         is TradeResult.Quarantined -> Component.translatableWithFallback("ziangts.net.blocked", "Operación bloqueada para recuperación: %s", result.operationId.toString())
                     }
                     PacketDistributor.sendToPlayer(player, MarketActionResponsePayload(payload.offerId, success, message))
@@ -154,7 +154,7 @@ object V2MarketNetwork {
                     val success = result is TradeResult.Success
                     val message = when (result) {
                         is TradeResult.Success -> Component.translatableWithFallback("ziangts.net.publish_ok", "Pokémon publicado")
-                        is TradeResult.Rejected -> Component.literal(result.reason)
+                        is TradeResult.Rejected -> reason(result.reason)
                         is TradeResult.Quarantined -> Component.translatableWithFallback("ziangts.net.blocked", "Operación bloqueada para recuperación: %s", result.operationId.toString())
                     }
                     PacketDistributor.sendToPlayer(player, PublishOfferResponsePayload(success, message))
@@ -227,7 +227,7 @@ object V2MarketNetwork {
                     val success = result is ClaimResult.Success
                     val message = when (result) {
                         is ClaimResult.Success -> Component.translatableWithFallback("ziangts.net.claim_ok", "Se agregaron %s %s a tu wallet exitosamente", result.amount.toString(), currencyDisplayName(result.key.currency, result.amount))
-                        is ClaimResult.Rejected -> Component.literal(result.reason)
+                        is ClaimResult.Rejected -> reason(result.reason)
                         is ClaimResult.Quarantined -> Component.translatableWithFallback("ziangts.net.claim_blocked", "Cobro bloqueado para recuperación: %s", result.operationId.toString())
                     }
                     PacketDistributor.sendToPlayer(player, ClaimProceedsResponsePayload(success, message))
@@ -291,6 +291,8 @@ object V2MarketNetwork {
             }
         }
     }
+
+    private fun reason(code: String) = Component.translatableWithFallback("ziangts.reason." + code.replace(' ', '_'), code)
 
     private val knownCurrencies = setOf("coppercoin", "ironcoin", "goldcoin", "diamondcoin", "netheritecoin", "goldticket", "diamondticket", "netheriteticket")
 
